@@ -1,0 +1,144 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <script src="Slider.js"></script>
+  </head>
+  <body>
+    <div class="page_div">
+      <div class="interface_div">
+        <div id="canvas_div" style="filter: blur(0px);">
+          <canvas id="eyes" width="370" height="180"></canvas>
+        </div>
+        <div id="main_slider_bank">
+          <!-- js will put the main sliders here -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      canvas         = document.getElementById("eyes");
+      context        = this.canvas.getContext('2d');
+      var led_width  = 16;
+      var led_height = 9;
+      var num_leds   = led_width * led_height;
+      var radius_x   = 0.5 * canvas.width  / led_width;
+      var radius_y   = 0.5 * canvas.height / led_height;
+      var led_values = new Array(led_width * led_height).fill(0);
+
+      function set_blur(blur)
+      {
+        var div = document.getElementById("canvas_div");
+        canvas_div.style = "filter: blur("+blur+"px);";
+      }      
+
+      function draw()
+      {
+        this.context.fillStyle = "black";
+        this.context.fillRect(0, 0, canvas.width,canvas.height);
+
+        var i, j, led_index=0;
+        for(j=0; j<led_height; j++) //top to bottom
+          for(i=0; i<led_width; i++) //left to right
+            {
+              var col = led_values[led_index];
+              context.beginPath();
+              context.fillStyle = "rgb("+col+", "+col+", "+col+")";
+              context.ellipse(radius_x * (2*i+1), radius_y * (2*j+1), 0.9*radius_x, 0.9*radius_y, 0, 0, 2*Math.PI);
+              context.fill();
+              ++led_index;
+            }
+      }
+
+      function drawPixel(x, y, color /*0 to 255 int*/)
+      {
+        if((x >= led_width) || (y >= led_height))
+          return;
+        var index = y * led_width + x;
+        led_values[index] = color;
+      }
+
+      function set_pixel_color(x, y, color)
+      {
+        if((x >= led_width) || (y >= led_height))
+          return;
+        if((x < 0) || (y < 0))
+          return;
+        var index = y * led_width + x;
+
+        led_values[index] = color;
+      }
+
+      function clear()
+      {
+        var i;
+        for(i=0; i<num_leds; i++)
+          led_values[i] = 0;
+      }
+
+      var eye_spacing = 1;
+      var eye_width = 4;
+      var eye_height = 4;
+      var eye_position_x = 3;
+      var eye_position_y = 0;
+      var iris_width;
+      var iris_height;
+      var iris_position_x;
+      var iris_position_y;
+
+    
+
+      function draw_rect(x1, y1, x2, y2, color) /*float args*/
+      {
+        var /*int*/ x1_floor = Math.floor(x1);
+        var /*int*/ x2_floor = Math.floor(x2);
+        var /*int*/ y1_floor = Math.floor(y1);
+        var /*int*/ y2_floor = Math.floor(y2);
+
+        var /*float*/ x1_mantissa = Math.sqrt(1 - (x1 - x1_floor));
+        var /*float*/ x2_mantissa = Math.sqrt(x2 - x2_floor);
+        var /*float*/ y1_mantissa = Math.sqrt(1 - (y1 - y1_floor));
+        var /*float*/ y2_mantissa = Math.sqrt(y2 - y2_floor);
+        
+
+        for(y=y1_floor; y<=y2_floor; y++) //top to bottom
+          {
+            y_coeff = 1;
+            if(y==y1_floor) y_coeff = y1_mantissa;
+            if(y==y2_floor) y_coeff = y2_mantissa;
+
+            for(x=x1_floor; x<=x2_floor; x++) //left to right
+              {
+                var x_coeff = 1;
+                if(x==x1_floor) x_coeff = x1_mantissa;
+                if(x==x2_floor) x_coeff = x2_mantissa;
+                set_pixel_color(x, y, Math.round(color * x_coeff * y_coeff));
+              }
+          }
+      }
+
+      function draw_eyes()
+      {
+        clear();
+        var center_x = led_width * 0.5;
+        var center_y = led_height * 0.5;
+ 
+        var half_spacing = 0.5 * eye_spacing;
+        var half_height = 0.5 * eye_height;  
+       
+        draw_rect(center_x-eye_position_x-half_spacing-eye_width, center_y-eye_position_y-half_height, center_x-eye_position_x-half_spacing, center_y-eye_position_y+half_height, 255);
+        draw_rect(center_x-eye_position_x+half_spacing, center_y-eye_position_y-half_height, center_x-eye_position_x+half_spacing+eye_width, center_y-eye_position_y+half_height, 255);
+        draw();
+        
+      }
+      
+      draw_eyes();
+
+      new Slider("main_slider_bank", -5.0, 5.0, eye_position_x, "Eye Position X", "linear", function(val){eye_position_x=val; draw_eyes()});
+      new Slider("main_slider_bank", -5.0, 5.0, eye_position_y, "Eye Position Y", "linear", function(val){eye_position_y=val; draw_eyes()});
+      new Slider("main_slider_bank",  0.0, 8.0, eye_width, "Eye Width", "linear", function(val){eye_width=val; draw_eyes()});
+      new Slider("main_slider_bank",  0.0, 8.0, eye_height, "Eye Height", "linear", function(val){eye_height=val; draw_eyes()});
+      new Slider("main_slider_bank", 0.0  , 5.0, 0, "Blur", "linear", set_blur);
+    </script>
+
+  </body>
+</html>

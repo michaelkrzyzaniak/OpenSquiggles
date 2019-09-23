@@ -1,0 +1,617 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <script src="Slider.js"></script>
+  </head>
+  <body>
+    <div class="page_div">
+      <div class="interface_div">
+        <div id="canvas_div" style="filter: blur(0px);">
+          <canvas id="eyes" width="370" height="180"></canvas>
+        </div>
+        <button onclick="eye_animate_blink(__eye, queues)">blink</button>
+        <button onclick="eye_animate_inquisitive(__eye, queues)">inquisitive</button>
+        <button onclick="eye_animate_focused(__eye, queues)">focused</button>
+        <button onclick="eye_animate_suprised(__eye, queues)">suprised</button>
+        <button onclick="eye_animate_neutral_size(__eye, queues)">neutral size</button>
+        <button onclick="eye_animate_neutral_position(__eye, queues)">neutral position</button>
+        <button onclick="eye_animate_roll(__eye, queues, 2)">roll</button>
+        <button onclick="eye_animate_shifty(__eye, queues, 4, 100)">shifty</button>
+        <button onclick="eye_animate_shifty(__eye, queues, 1, 30)">No</button>
+        <button onclick="eye_animate_yes(__eye, queues, 2, 50)">Yes</button>
+        <button onclick="eye_animate_yes(__eye, queues, 4, 50)">YES!</button>
+        
+        
+        <div id="main_slider_bank">
+          <!-- js will put the main sliders here -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* LIBRARY FOR DRAWING TO LED ARRAY */
+      canvas         = document.getElementById("eyes");
+      context        = this.canvas.getContext('2d');
+      var led_width  = 16;
+      var led_height = 9;
+      var num_leds   = led_width * led_height;
+      var radius_x   = 0.5 * canvas.width  / led_width;
+      var radius_y   = 0.5 * canvas.height / led_height;
+      var led_values = new Array(led_width * led_height).fill(0);
+
+      /* -------------------------------------------------------------- */
+      function set_blur(blur)
+      {
+        var div = document.getElementById("canvas_div");
+        canvas_div.style = "filter: blur("+blur+"px);";
+      }      
+    
+      /* -------------------------------------------------------------- */
+      function draw()
+      {
+        this.context.fillStyle = "black";
+        this.context.fillRect(0, 0, canvas.width,canvas.height);
+
+        var i, j, led_index=0;
+        for(j=0; j<led_height; j++) //top to bottom
+          for(i=0; i<led_width; i++) //left to right
+            {
+              var col = led_values[led_index];
+              context.beginPath();
+              context.fillStyle = "rgb("+col+", "+col+", "+col+")";
+              context.ellipse(radius_x * (2*i+1), radius_y * (2*j+1), 0.9*radius_x, 0.9*radius_y, 0, 0, 2*Math.PI);
+              context.fill();
+              ++led_index;
+            }
+      }
+
+      /* -------------------------------------------------------------- */
+      function set_pixel_color(x, y, color)
+      {
+        if((x >= led_width) || (y >= led_height))
+          return;
+        if((x < 0) || (y < 0))
+          return;
+        var index = y * led_width + x;
+
+        led_values[index] = color;
+      }
+    
+      /* -------------------------------------------------------------- */
+      function clear()
+      {
+        var i;
+        for(i=0; i<num_leds; i++)
+          led_values[i] = 0;
+      }
+
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* USER CODE FOR DRAWING EYES */
+      //typedef enum
+      var EYE_WIDTH           = 0;
+      var EYE_HEIGHT          = 1;
+      var EYE_POSITION_X      = 2;
+      var EYE_POSITION_Y      = 3;
+      var EYE_IRIS_WIDTH      = 4;
+      var EYE_IRIS_HEIGHT     = 5;
+      var EYE_IRIS_POSITION_X = 6;
+      var EYE_IRIS_POSITION_Y = 7;
+      var EYE_NUM_PARAMS      = 8;
+      
+      //#define
+      var EYE_DEFAULT_VALS    = [12, 9, 0, 0, 6, 2, 0, 0];
+      //#define EYE_NULL_VALUE -128
+      var EYE_INIT_USE_DEFAULTS = -128;
+      var EYE_NULL_VALUE        = -127;
+      
+      
+      
+      //#define EYE_UPDATE_INTERVAL 30 //millisecs
+      var EYE_UPDATE_INTERVAL     = 30; //millisecs
+
+      /* -------------------------------------------------------------- */
+      //struct
+      function Eye(init_val)
+      {
+        this.c = Array(EYE_NUM_PARAMS);
+        if(init_val == EYE_INIT_USE_DEFAULTS)
+          {
+            var defaults = EYE_DEFAULT_VALS;
+            for(i=0; i<EYE_NUM_PARAMS; i++)
+              this.c[i] = defaults[i];
+          }
+        else
+          for(i=0; i<EYE_NUM_PARAMS; i++)
+            this.c[i] = init_val;
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_copy(from, to)
+      {
+        //memset
+        for(i=0; i<EYE_NUM_PARAMS; i++)
+          to.c[i] = from.c[i];
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_draw(eye, is_robot_left)
+      {
+        var center_x = led_width * 0.5;
+        var center_y = led_height * 0.5;
+ 
+        //var half_spacing = 0.5 * spacing;
+        var half_height = 0.5 * eye.c[EYE_HEIGHT];
+        var half_width  = 0.5 * eye.c[EYE_WIDTH];
+
+        var top = Math.round(center_y - half_height + eye.c[EYE_POSITION_Y]);
+        var bottom = top + eye.c[EYE_HEIGHT];
+        
+        var left = Math.round(center_x - half_width + eye.c[EYE_POSITION_X]);
+        var right = left + eye.c[EYE_WIDTH];
+
+        var top_iris = Math.round(center_y - (0.5*eye.c[EYE_IRIS_HEIGHT]) + eye.c[EYE_POSITION_Y] + eye.c[EYE_IRIS_POSITION_Y]);
+        top_iris = Math.max(top_iris, top);
+        top_iris = Math.min(top_iris, bottom-eye.c[EYE_IRIS_HEIGHT]);
+        var bottom_iris = top_iris + eye.c[EYE_IRIS_HEIGHT];
+        bottom_iris = Math.min(bottom_iris, bottom);
+
+        var left_iris = Math.round(center_x  + eye.c[EYE_POSITION_X] + eye.c[EYE_IRIS_POSITION_X]  - (0.5*eye.c[EYE_IRIS_WIDTH])) ;
+        left_iris = Math.max(left_iris, left);
+        left_iris = Math.min(left_iris, right-eye.c[EYE_IRIS_WIDTH]);
+        var right_iris = left_iris + eye.c[EYE_IRIS_WIDTH];
+        right_iris = Math.min(right_iris, right);
+
+        var x, y;
+        //draw rectangular eye
+        for(y=top; y<bottom; y++) //top to bottom
+          for(x=left; x<right; x++) //left to right
+            set_pixel_color(x, y, 255);
+        
+        //take out corners from eye
+        if(eye.c[EYE_HEIGHT] > 2)
+          {
+            if(eye.c[EYE_WIDTH] > 1)
+              set_pixel_color(right-1, top, 0);
+            if(eye.c[EYE_WIDTH] > 2)
+              set_pixel_color(left, top, 0);
+          }
+        if(eye.c[EYE_HEIGHT] > 1)
+          {
+            if(eye.c[EYE_WIDTH] > 1)
+              set_pixel_color(right-1, bottom-1, 0);
+            if(eye.c[EYE_WIDTH] > 2)
+              set_pixel_color(left, bottom-1, 0);
+          }
+        if((eye.c[EYE_WIDTH] > 4) && (eye.c[EYE_HEIGHT] > 4))
+          {
+            //4%, 56%, 85%
+            set_pixel_color(right-2, top, 60);// 25%
+            set_pixel_color(left+1, top, 60);
+            set_pixel_color(right-1, top+1, 60);
+            set_pixel_color(left, top+1, 60);
+            set_pixel_color(right-2, bottom-1, 60);
+            set_pixel_color(left+1, bottom-1, 60);
+            set_pixel_color(right-1, bottom-2, 60);
+            set_pixel_color(left, bottom-2, 60);
+            
+            set_pixel_color(right-3, top, 130);
+            set_pixel_color(left+2, top, 130);
+            set_pixel_color(right-1, top+2, 130);
+            set_pixel_color(left, top+2, 130);
+            set_pixel_color(right-3, bottom-1, 130);
+            set_pixel_color(left+2, bottom-1, 130);
+            set_pixel_color(right-1, bottom-3, 130);
+            set_pixel_color(left, bottom-3, 130);
+            
+            set_pixel_color(right-2, top+1, 210);
+            set_pixel_color(left+1, top+1, 210);
+            set_pixel_color(right-2, bottom-2, 210);
+            set_pixel_color(left+1, bottom-2, 210);
+          }
+        
+        //irises
+        for(y=top_iris; y<bottom_iris; y++) //top to bottom
+          {
+            for(x=left_iris; x<right_iris; x++) //left to right
+              set_pixel_color(x, y, 0);
+          }
+      }
+      
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* USER CODE FOR ANIMATING EYES */
+      function eye_animate_run_loop(eye, queues)
+      {
+        var q;
+        for(q=0; q<queues.length; q++)
+          {
+            var queue = queues[q];
+            if(queue.poses.length > queue.pose+1)
+              {
+                ++queue.pose_timer;
+                var this_pose = queue.poses[queue.pose];
+                var next_pose = queue.poses[queue.pose+1];
+                var steps = next_pose.steps;
+                
+                var param;
+                for(param=0; param<EYE_NUM_PARAMS; param++)
+                  {
+                    //interpolate robot eye
+                    if((this_pose.eye.c[param] != EYE_NULL_VALUE) && (next_pose.eye.c[param] != EYE_NULL_VALUE))
+                      eye.c[param] = Math.round(eye_animation_scalef(queue.pose_timer, 0, steps, this_pose.eye.c[param], next_pose.eye.c[param]));
+                  }
+                if(queue.pose_timer >= steps)
+                  {
+                    ++queue.pose;
+                    queue.pose_timer = 0;
+                  }
+              }
+            else
+              {
+                //destroy queues[q] and remove from queues
+              }
+          }
+      
+        clear();
+        eye_draw(eye, false);
+        draw();
+        
+        var r;
+        r = Math.random();
+        /* typical blink rate of adults is every 4 seconds */
+
+        if(r < (EYE_UPDATE_INTERVAL / (4.0 * 1000.0)))
+          eye_animate_blink(eye, queues);
+         
+        r = Math.random();
+        if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
+           eye_animate_single_param(eye, queues, EYE_IRIS_POSITION_X, Math.floor(4*Math.random()) - 1, 200);
+
+        r = Math.random();
+        if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
+          eye_animate_single_param(eye, queues, EYE_IRIS_POSITION_Y, Math.floor(4*Math.random()) - 1, 200);
+
+        r = Math.random();
+        if(r < (EYE_UPDATE_INTERVAL / (5 * 1000.0)))
+          eye_animate_single_param(eye, queues, EYE_POSITION_Y, Math.floor(3*Math.random()) - 1, 200);
+
+        r = Math.random();
+        if(r < (EYE_UPDATE_INTERVAL / (30 * 1000.0)))
+          eye_animate_shifty(eye, queues, 4, 500);
+
+        setTimeout(eye_animate_run_loop.bind(this, eye, queues), EYE_UPDATE_INTERVAL);
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_animation_scalef(x, in_min, in_max, out_min, out_max)
+      {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+      }
+    
+      /* -------------------------------------------------------------- */
+      //typedef struct
+      //duration of first pose is ignored
+      function Eye_Animation_Pose(eye, duration_millisecs)
+      {
+        this.eye = eye;
+        this.steps = Math.max(1, Math.round(duration_millisecs / EYE_UPDATE_INTERVAL));
+      }
+
+      /* -------------------------------------------------------------- */
+      //typedef struct
+      function Eye_Animation_Queue(poses/*linked_list*/, should_loop)
+      {
+        this.poses = poses;
+        this.pose         = 0;
+        this.pose_timer   = 0;
+        this.should_loop = should_loop;
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_initalize_initial_eye_hahaha(eye, initial_eye, target_eye)
+      {
+        var param;
+        for(param=0; param<EYE_NUM_PARAMS; param++)
+          {
+            if(target_eye.c[param] != EYE_NULL_VALUE)
+              initial_eye.c[param] = eye.c[param];
+          }
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_initalize_final_eye_hahaha(eye, initial_eye, final_eye)
+      {
+        var param;
+        var defaults = EYE_DEFAULT_VALS;
+        
+        for(param=0; param<EYE_NUM_PARAMS; param++)
+          {
+            if(initial_eye.c[param] != EYE_NULL_VALUE)
+              final_eye.c[param] = defaults[param];
+          }
+      }
+      
+      /* -------------------------------------------------------------- */
+      //update defaults?
+      function eye_go_to_pose(eye, queues, target_eye, go_duration)
+      {
+        var initial_eye = new Eye(EYE_NULL_VALUE);
+        eye_initalize_initial_eye_hahaha(eye, initial_eye, target_eye);
+        
+        /* linked list */
+        var poses = [];
+        var pose = new Eye_Animation_Pose(initial_eye, 0);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        var pose = new Eye_Animation_Pose(target_eye, go_duration);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        
+        var queue = new Eye_Animation_Queue(poses, false);
+        
+        //insert at index 0 so it has lower priority
+        //noInterrupts();
+        queues.unshift(queue);
+        //interrupts();
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_go_to_pose_stay_and_return(eye, queues, target_eye, go_duration, stay_duration, return_duration)
+      {
+        var initial_eye = new Eye(EYE_NULL_VALUE);
+        eye_initalize_initial_eye_hahaha(eye, initial_eye, target_eye);
+        var final_eye = new Eye(EYE_NULL_VALUE);
+        eye_initalize_final_eye_hahaha(eye, initial_eye, final_eye);
+
+        /* linked list */
+        var poses = [];
+        var pose = new Eye_Animation_Pose(initial_eye, 0);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        var pose = new Eye_Animation_Pose(target_eye, go_duration);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        if(stay_duration > 0)
+          {
+            var pose = new Eye_Animation_Pose(target_eye, stay_duration);
+            //if(pose == NULL) return;
+            poses.push(pose);
+          }
+        var pose = new Eye_Animation_Pose(final_eye, return_duration);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        var queue = new Eye_Animation_Queue(poses, false);
+        
+        //noInterrupts();
+        queues.push(queue);
+        //interrupts();
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_go_to_poses_stay_and_return(eye, queues, num_poses, target_eye /* array of eyes */, go_durations /* array, size num_poses + 1*/, stay_durations /*array*/)
+      {
+        var initial_eye = new Eye(EYE_NULL_VALUE);
+        eye_initalize_initial_eye_hahaha(eye, initial_eye, target_eye[0]);
+        var final_eye = new Eye(EYE_NULL_VALUE);
+        eye_initalize_final_eye_hahaha(eye, initial_eye, final_eye);
+        
+        /* linked list */
+        var poses = [];
+        
+        var pose = new Eye_Animation_Pose(initial_eye, 0);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        
+        var i;
+        for(i=0; i<num_poses; i++)
+          {
+            var pose = new Eye_Animation_Pose(target_eye[i], go_durations[i]);
+            //if(pose == NULL) return;
+            poses.push(pose);
+            if(stay_durations[i] > 0)
+              {
+                var pose = new Eye_Animation_Pose(target_eye[i], stay_durations[i]);
+                //if(pose == NULL) return;
+                poses.push(pose);
+              }
+          }
+          
+        var pose = new Eye_Animation_Pose(final_eye, go_durations[i]);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        var queue = new Eye_Animation_Queue(poses, false);
+        //noInterrupts();
+        queues.push(queue);
+        //interrupts();
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_blink(eye, queues)
+      {
+        var target_eye = new Eye(EYE_NULL_VALUE);
+        
+        target_eye.c[EYE_HEIGHT]      = 1;
+        target_eye.c[EYE_WIDTH]       = led_width;
+        target_eye.c[EYE_IRIS_HEIGHT] = 0;
+        target_eye.c[EYE_IRIS_WIDTH]  = 0;
+        target_eye.c[EYE_POSITION_Y]  = eye.c[EYE_POSITION_Y]+2;
+        
+        eye_go_to_pose_stay_and_return(eye, queues, target_eye, 60, 60, 60);
+      }
+  
+      /* -------------------------------------------------------------- */
+      function eye_animate_inquisitive(eye, queues)
+      {
+        var target_eye = new Eye(EYE_NULL_VALUE);
+        
+        target_eye.c[EYE_HEIGHT]  = 7;
+        target_eye.c[EYE_WIDTH]   = 6;
+        target_eye.c[EYE_IRIS_HEIGHT]  = 2;
+        target_eye.c[EYE_IRIS_WIDTH]   = 2;
+        
+        eye_go_to_pose_stay_and_return(eye, queues, target_eye, 200, 1000, 300)
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_focused(eye, queues)
+      {
+        var target_eye = new Eye(EYE_NULL_VALUE);
+        
+        target_eye.c[EYE_HEIGHT]  = 5;
+        target_eye.c[EYE_WIDTH]   = 5;
+        target_eye.c[EYE_IRIS_HEIGHT]  = 1;
+        target_eye.c[EYE_IRIS_WIDTH]   = 1;
+        
+        eye_go_to_pose_stay_and_return(eye, queues, target_eye, 200, 1000, 300)
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_animate_suprised(eye, queues)
+      {
+        var target_eye = new Eye(EYE_NULL_VALUE);
+        
+        target_eye.c[EYE_HEIGHT]  = 9;
+        target_eye.c[EYE_WIDTH]   = 4;
+        target_eye.c[EYE_IRIS_HEIGHT]  = 2;
+        target_eye.c[EYE_IRIS_WIDTH]   = 2;
+
+        eye_go_to_pose_stay_and_return(eye, queues, target_eye, 200, 600, 200)
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_neutral_size(eye, queues)
+      {
+        var target_eye = new Eye(EYE_NULL_VALUE);
+        
+        target_eye.c[EYE_HEIGHT]  = 8;
+        target_eye.c[EYE_WIDTH]   = 7;
+        target_eye.c[EYE_IRIS_HEIGHT]  = 6;
+        target_eye.c[EYE_IRIS_WIDTH]   = 2;
+        
+        eye_go_to_pose(eye, queues, target_eye, 200);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_neutral_position(eye, queues)
+      {
+        var target_eye = new Eye(EYE_NULL_VALUE);
+      
+        target_eye.c[EYE_POSITION_X]  = 0;
+        target_eye.c[EYE_POSITION_Y]  = 0;
+
+        target_eye.c[EYE_IRIS_POSITION_X]  = 0;
+        target_eye.c[EYE_IRIS_POSITION_Y]  = 0;
+        
+        eye_go_to_pose(eye, queues, target_eye, 200);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_single_param(eye, queues, param, val, millisecs)
+      {
+        var target_eye = new Eye(EYE_NULL_VALUE);
+        target_eye.c[param]  = val;
+        eye_go_to_pose(eye, queues, target_eye, millisecs);
+        EYE_DEFAULT_VALS[param] = val;
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_roll(eye, queues, depth)
+      {
+        var target_eye_1 = new Eye(EYE_NULL_VALUE);
+        var target_eye_2 = new Eye(EYE_NULL_VALUE);
+        var target_eye_3 = new Eye(EYE_NULL_VALUE);
+        var target_eye_4 = new Eye(EYE_NULL_VALUE);
+        
+        target_eye_1.c[EYE_POSITION_X]       = depth;
+        target_eye_1.c[EYE_POSITION_Y]       = depth;
+        target_eye_1.c[EYE_IRIS_POSITION_X]  = depth;
+        target_eye_1.c[EYE_IRIS_POSITION_Y]  = depth;
+
+        target_eye_2.c[EYE_POSITION_X]       = -depth;
+        target_eye_2.c[EYE_POSITION_Y]       = depth;
+        target_eye_2.c[EYE_IRIS_POSITION_X]  = -depth;
+        target_eye_2.c[EYE_IRIS_POSITION_Y]  = depth;
+
+        target_eye_3.c[EYE_POSITION_X]       = -depth;
+        target_eye_3.c[EYE_POSITION_Y]       = -depth;
+        target_eye_3.c[EYE_IRIS_POSITION_X]  = -depth;
+        target_eye_3.c[EYE_IRIS_POSITION_Y]  = -depth;
+
+        target_eye_4.c[EYE_POSITION_X]       = depth;
+        target_eye_4.c[EYE_POSITION_Y]       = -depth;
+        target_eye_4.c[EYE_IRIS_POSITION_X]  = depth;
+        target_eye_4.c[EYE_IRIS_POSITION_Y]  = -depth;
+
+        var target_eye  = [target_eye_1, target_eye_2, target_eye_3, target_eye_4, target_eye_1, target_eye_2, target_eye_3, target_eye_4, target_eye_1];
+        var go_durations = [100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
+        var stay_durations = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        eye_go_to_poses_stay_and_return(eye, queues, 9, target_eye, go_durations, stay_durations);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_shifty(eye, queues, depth, speed)
+      {
+        var target_eye_1 = new Eye(EYE_NULL_VALUE);
+        var target_eye_2 = new Eye(EYE_NULL_VALUE);
+        
+        target_eye_1.c[EYE_POSITION_X]       = depth;
+        target_eye_1.c[EYE_IRIS_POSITION_X]  = depth;
+
+        target_eye_2.c[EYE_POSITION_X]       = -depth;
+        target_eye_2.c[EYE_IRIS_POSITION_X]  = -depth;
+
+        var target_eye  = [target_eye_1, target_eye_2, target_eye_1];
+        var go_durations = [speed, 2*speed, 2*speed,speed];
+        var stay_durations = [2*speed, 2*speed, 2*speed];
+
+        eye_go_to_poses_stay_and_return(eye, queues, 3, target_eye, go_durations, stay_durations);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_yes(eye, queues, depth, speed)
+      {
+        var target_eye_1 = new Eye(EYE_NULL_VALUE);
+        var target_eye_2 = new Eye(EYE_NULL_VALUE);
+        
+        target_eye_1.c[EYE_POSITION_Y]       = depth;
+        target_eye_1.c[EYE_IRIS_POSITION_Y]  = depth;
+
+        target_eye_2.c[EYE_POSITION_Y]       = -depth;
+        target_eye_2.c[EYE_IRIS_POSITION_Y]  = -depth;
+
+        var target_eye  = [target_eye_1, target_eye_2, target_eye_1];
+        var go_durations = [speed, 2*speed, 2*speed,speed];
+        var stay_durations = [2*speed, 2*speed, 2*speed];
+
+        eye_go_to_poses_stay_and_return(eye, queues, 3, target_eye, go_durations, stay_durations);
+      }
+    
+    /* -------------------------------------------------------------- */
+    
+      /* linked_list */
+      var queues = new Array();
+      var __eye = new Eye(EYE_INIT_USE_DEFAULTS);
+      eye_animate_run_loop(__eye, queues);
+
+
+      new Slider("main_slider_bank", -led_width , led_width , __eye.c[EYE_POSITION_X], "Eye Position X", "linear", function(val){__eye.c[EYE_POSITION_X]=val}).set_step(1);
+      new Slider("main_slider_bank", -led_height, led_height, __eye.c[EYE_POSITION_Y], "Eye Position Y", "linear", function(val){__eye.c[EYE_POSITION_Y]=val}).set_step(1);
+      new Slider("main_slider_bank",  0.0       , led_width , __eye.c[EYE_WIDTH]     , "Eye Width"     , "linear", function(val){__eye.c[EYE_WIDTH]=val}).set_step(1);
+      new Slider("main_slider_bank",  0.0       , led_height*2, __eye.c[EYE_HEIGHT]    , "Eye Height"    , "linear", function(val){__eye.c[EYE_HEIGHT]=val}).set_step(1);
+
+      new Slider("main_slider_bank", -led_width , led_width , __eye.c[EYE_IRIS_POSITION_X], "Iris Position X", "linear", function(val){__eye.c[EYE_IRIS_POSITION_X]=val}).set_step(1);
+      new Slider("main_slider_bank", -led_height, led_height, __eye.c[EYE_IRIS_POSITION_Y], "Iris Position Y", "linear", function(val){__eye.c[EYE_IRIS_POSITION_Y]=val}).set_step(1);
+      new Slider("main_slider_bank",  0.0       , led_width , __eye.c[EYE_IRIS_WIDTH]     , "Iris Width"     , "linear", function(val){__eye.c[EYE_IRIS_WIDTH]=val}).set_step(1);
+      new Slider("main_slider_bank",  0.0       , led_height, __eye.c[EYE_IRIS_HEIGHT]    , "Iris Height"    , "linear", function(val){__eye.c[EYE_IRIS_HEIGHT]=val}).set_step(1);
+      new Slider("main_slider_bank", 0.0  , 5.0, 0, "Blur", "linear", set_blur);
+    </script>
+
+  </body>
+</html>
