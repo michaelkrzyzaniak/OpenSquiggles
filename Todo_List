@@ -1,0 +1,34 @@
+todo: 
+
+1) Fix 5v supply
+	make shunt to measure current
+	check max current of regulator and components
+	put correct capacitors on both regulators.
+	work out how to power bela from headers
+
+2) Fix laser-cut skeleton
+	Eye hole too small
+	eye hole could stick forward further
+	notches in eye hole to receive diffuser plate
+	large tentacles smaller, small ones bigger
+	make yarn grabber points bigger
+	make enough space for internal components (pi, bealge?)
+	fix issues with wood thickness
+	mounting points for solenoids and whatever they strike
+
+3) Firmware
+	fix priority competition between eye and solenoid -- move midi read to solenoid thread?
+	control striking strength
+	optimize eye code and library, check i2c speed with logic analyzer
+	
+4) Main
+	include tap strength in rhythm generation
+	make new rhythm generation algorithms, e.g. 2-beat delay
+	check if it will run on bela or raspi, and port code.
+	Add methods to Microphone.c like turn beat bell on / off.
+
+5) Strikers
+	find metal scraps for beat bell, other materials for other solenoids?
+
+Cecilie Sundet in IFI 
+Send Kyrre link to conference

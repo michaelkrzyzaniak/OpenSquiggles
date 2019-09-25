@@ -98,12 +98,12 @@ int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned lo
   */
   Rhythm_Template* self = (Rhythm_Template*)SELF;
   
-  returned_rhythm[0] = 0;
-  returned_rhythm[1] = 0.25;
-  returned_rhythm[2] = 0.5;
-  returned_rhythm[3] = 0.75;
+  //returned_rhythm[0] = 0;
+  //returned_rhythm[1] = 0.25;
+  //returned_rhythm[2] = 0.5;
+  //returned_rhythm[3] = 0.75;
   
-  return 4;
+  return 0;
   
   
 }

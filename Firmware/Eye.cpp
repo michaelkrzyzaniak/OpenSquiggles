@@ -7,6 +7,7 @@
 
 #define EYE_UNCONNECTED_ANALOG_PIN 0 //for seeding random
 #define EYE_BRIGHTNESS 30 //max is 255
+#define  EYE_UPDATE_INTERVAL    30 //millisecs
 
 /* -------------------------------------------------------------- */
 typedef enum eye_param_indices_enum
@@ -25,7 +26,6 @@ typedef enum eye_param_indices_enum
 float    EYE_DEFAULT_VALS[] =  {12, 9, 0, 0, 6, 2, 0, 0};
 #define  EYE_INIT_USE_DEFAULTS -128
 #define  EYE_NULL_VALUE        -127
-#define  EYE_UPDATE_INTERVAL    200 //millisecs
 #define  EYE_LED_WIDTH  16
 #define  EYE_LED_HEIGHT 9
 

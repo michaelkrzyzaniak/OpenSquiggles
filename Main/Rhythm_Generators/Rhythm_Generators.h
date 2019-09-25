@@ -14,8 +14,6 @@
 extern "C"{
 #endif   //(__cplusplus)
 
-#include <stdio.h> //testing only!
-
 //Protected Stuff
 #include "../../Beat-and-Tempo-Tracking/BTT.h"
 
@@ -38,7 +36,6 @@ typedef Rhythm* (*rhythm_new_funct)(BTT*);
 Rhythm* rhythm_template_new(BTT* btt);
 Rhythm* rhythm_random_beat_from_list_new(BTT* btt);
 Rhythm* rhythm_two_beat_delay_new(BTT* btt);
-//Rhythm* rhythm_random_beat_new(BTT* btt);
 
 static const rhythm_new_funct rhythm_constructors[] =
 {
