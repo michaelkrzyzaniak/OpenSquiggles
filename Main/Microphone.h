@@ -27,6 +27,7 @@ Rhythm*           mic_set_rhythm_generator_index (Microphone* self, int index);
 int               mic_get_rhythm_generator_index (Microphone* self);
 Rhythm*           mic_get_rhythm_generator       (Microphone* self);
 
+int               mic_audio_callback             (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
 
 //Microphone*  mic_destroy             (Microphone*      self      );
 //call with self->destroy(self);

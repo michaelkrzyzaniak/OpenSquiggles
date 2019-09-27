@@ -30,5 +30,16 @@ todo:
 5) Strikers
 	find metal scraps for beat bell, other materials for other solenoids?
 
-Cecilie Sundet in IFI 
-Send Kyrre link to conference
+CPPFLAGS+=-D__BELA__
+
+
+C_SRC += $(wildcard $(PROJECT_DIR)/Robot_Communication_Framework/*.c); 
+
+
+CPP_SRC += $(wildcard $(PROJECT_DIR)/Robot_Communication_Framework/*.cpp);
+
+
+gcc -c -D__BELA__ -I../../../include/ *.c *.cpp
+
+
+Software: malloc.c:2406: sysmalloc: Assertion `(old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)' failed

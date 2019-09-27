@@ -51,7 +51,7 @@ struct OpaqueMicrophoneStruct
 };
 
 /*--------------------------------------------------------------------*/
-int         mic_audio_callback  (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
+//int         mic_audio_callback  (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
 Microphone* mic_destroy         (Microphone* self);
 
 /*--------------------------------------------------------------------*/
@@ -62,7 +62,7 @@ Microphone* mic_new()
   if(self != NULL)
     {
       self->destroy = (Audio* (*)(Audio*))mic_destroy;
-    
+
       self->click = click_new();
       if(self->click == NULL)
         return (Microphone*)auDestroy((Audio*)self);
@@ -159,7 +159,7 @@ Microphone* mic_destroy(Microphone* self)
 {
   if(self != NULL)
     {
-      if(self->rhythm_thread != NULL)
+      if(self->rhythm_thread != 0)
         {
           self->rhythm_thread_run_loop_running = 0;
           pthread_join(self->rhythm_thread, NULL);
@@ -272,8 +272,9 @@ int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_c
   for(frame=0; frame<num_frames; frame++)
     for(channel=1; channel<num_channels; channel++)
       buffer[frame] += buffer[frame * num_channels + channel];
-  
+
   btt_process(self->btt, buffer, num_frames);
+
   return  num_frames;
 }
 

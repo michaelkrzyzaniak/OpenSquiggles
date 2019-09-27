@@ -7,6 +7,7 @@ extern "C"{
 #endif   //(__cplusplus)
 
 #include <stdint.h>
+#include <stdio.h>
 
 typedef uint64_t timestamp_microsecs_t;
 timestamp_microsecs_t timestamp_get_current_time();

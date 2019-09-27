@@ -17,6 +17,14 @@ extern "C"{
 
 #if defined __APPLE__
 #include <AudioToolbox/AudioToolbox.h>
+#elif defined __BELA__
+#include <stdlib.h>
+#include <stdint.h>
+#include <time.h>
+#include <string.h>
+#include <math.h>
+#include <unistd.h> //usleep
+#include <stdio.h> // NULL
 #elif defined __linux__
 #include <stdlib.h>
 #include <signal.h>
@@ -50,6 +58,9 @@ typedef  int (*auAudioCallback_t) (void* SELF, auSample_t* buffer, int numFrames
   AudioQueueRef               queue                         ; \
   AudioQueueBufferRef         buffers[AU_NUM_AUDIO_BUFFERS] ; \
   AudioStreamBasicDescription dataFormat                    ; \
+
+#elif defined __BELA__
+#define AUDIO_PLATFORM_SPECIFIC_GUTS
   
 #elif defined __linux__                                    
 #define AUDIO_PLATFORM_SPECIFIC_GUTS                          \

@@ -39,24 +39,32 @@ typedef enum robot_message_hash_enum
 typedef void  (*robot_message_received_callback)(void* self, char* message, robot_arg_t args[], int num_args);
 
 /*--------------------------------------------------------*/
-#ifdef  __APPLE__
 
+#if (defined __APPLE__) || (defined __BELA__)
+#define __ROBOT_MIDI_HOST__ 1
+#endif
+
+#if defined  __APPLE__
 #define ROBOT_MIDI_DEVICE_NAME "Dr Squiggles"
 
-typedef   struct opaque_robot_struct Robot;
+#elif defined  __BELA__
+#define ROBOT_MIDI_DEVICE_NAME "hw:1,0,0"
+#endif
 
+#if defined __ROBOT_MIDI_HOST__
+typedef   struct opaque_robot_struct Robot;
 Robot*    robot_new                (robot_message_received_callback callback, void* callback_self);
 Robot*    robot_destroy            (Robot* self);
 void      robot_send_message       (Robot* self, const char *message, /*args*/...);
 void      robot_send_raw_midi      (Robot* self, uint8_t* midi_bytes, int num_bytes);
 
-
-#else //!__APPLE__, ie this code is running on the robot
-
+//CODE FOR CLIENT ONLY (e.g. Arduino)
+#else //!__ROBOT_MIDI_HOST__,
 void     robot_send_message       (const char *message, /*args*/...);
 
 #endif// __APPLE__
 
+//SHARED CODE
 void     robot_init               (robot_message_received_callback callback, void* callback_self);
 float    robot_arg_to_float       (robot_arg_t* arg);
 int32_t  robot_arg_to_int         (robot_arg_t* arg);

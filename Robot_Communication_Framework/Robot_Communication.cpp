@@ -1,6 +1,7 @@
 #include "Robot_Communication.h"
 #include "MIDI_Parser.h"
 #include <stdarg.h>
+#include <stdio.h> //vsnprintf
 
 /*--------------------------------------------------------*/
 //should be instance var, not class var
@@ -9,53 +10,75 @@ void* robot_callback_self;
 void  robot_sysex_handler(midi_sysex_mfr_t mfr, char* message);
 
 /*--------------------------------------------------------*/
-#define ROBOT_SYSEX_BUFFER_SIZE 100
+#define ROBOT_SYSEX_BUFFER_SIZE 127
 #define ROBOT_MIDI_MFR MIDI_MFR_NON_COMMERCIAL
 
+//Apple includes
 #ifdef __APPLE__
-
 #include <pthread.h>
 #include <CoreMIDI/MIDIServices.h>
 #include <Carbon/Carbon.h>
-
 const   CFStringRef ROBOT_DEVICE_NAME = CFSTR(ROBOT_MIDI_DEVICE_NAME);
 
+//Bela includes
+#elif defined __BELA__
+//#include <pthread.h>
+#include <Bela.h>
+#include <Midi.h>
+
+#endif //__BELA__
+
 /*--------------------------------------------------------*/
+#if defined __ROBOT_MIDI_HOST__
 struct opaque_robot_struct
 {
+#if defined __APPLE__
   MIDIDeviceRef   device;
   MIDIEndpointRef source;
   MIDIEndpointRef destination;
   
   MIDIClientRef   client;
   MIDIPortRef     out_port, in_port;
-  
   pthread_t       midi_client_thread;
+
+#elif defined __BELA__
+  Midi* midi;
+
+#endif
 };
+#endif //__ROBOT_MIDI_HOST__
 
 /*--------------------------------------------------------*/
+#if defined __APPLE__
 void    robot_connect(Robot* self);
 Boolean robot_setup_midi_client(Robot* self);
 void*   robot_setup_midi_client_run_loop(void* SELF);
 void    robot_midi_data_recd_callback(const MIDIPacketList *pktlist, void* SELF, void *SELF2);
 void    robot_midi_state_changed_callback(const MIDINotification  *message, void* SELF);
 Boolean robot_check_midi_object_name(Robot* self, MIDIObjectRef midi_object);
+#endif //__APPLE__
 
 /*--------------------------------------------------------*/
+#if defined __APPLE__
 void robot_disconnect(Robot* self)
 {
   self->source = 0;
   MIDIFlushOutput(self->out_port);
-  //fprintf(stderr, "Disconnected\n");
 }
+#endif
 
 /*--------------------------------------------------------*/
 Robot* robot_destroy(Robot* self)
 {
   if(self != NULL)
     {
+#if defined __APPLE__
       robot_disconnect(self);
       pthread_kill(self->midi_client_thread, SIGUSR1);
+
+#elif defined __BELA__
+
+#endif
       free(self);
     }
   return (Robot*)NULL;
@@ -64,23 +87,29 @@ Robot* robot_destroy(Robot* self)
 /*--------------------------------------------------------*/
 Robot* robot_new(robot_message_received_callback callback, void* callback_self)
 {
-  Robot* self = calloc(1, sizeof(*self));
+  Robot* self = (Robot*)calloc(1, sizeof(*self));
+  fprintf(stderr, "We are not HERE\r\n");
+  
   if(self != NULL)
     {
       //aarg, these should be instance vars, not class vars...
-      robot_recv_callback = callback;
-      robot_callback_self = callback_self;
-      
-      midi_sysex_event_handler = robot_sysex_handler;
-      
+      robot_init(callback, callback_self);
+
+#if defined __APPLE__
       if(!robot_setup_midi_client(self))
         self = robot_destroy(self);
+#elif defined __BELA__
+  self->midi = NULL;//new Midi();
+  //self->midi->readFrom(ROBOT_MIDI_DEVICE_NAME);
+  //self->midi->writeTo(ROBOT_MIDI_DEVICE_NAME);
+  //self->midi->enableParser(true);
+  //self->midi->setParserCallback(midiMessageCallback, (void*) ROBOT_MIDI_DEVICE_NAME);
+#endif
     }
     
   return self;
 }
 
-#endif //__APPLE__
 /*--------------------------------------------------------*/
 void robot_init(robot_message_received_callback callback, void* callback_self)
 {
@@ -89,8 +118,8 @@ void robot_init(robot_message_received_callback callback, void* callback_self)
   midi_sysex_event_handler = robot_sysex_handler;
 }
 
-#ifdef __APPLE__
 /*--------------------------------------------------------*/
+#ifdef __APPLE__
 void robot_connect(Robot* self)
 {
   ItemCount num_sources      = MIDIGetNumberOfSources();
@@ -127,15 +156,19 @@ void robot_connect(Robot* self)
         self->destination = MIDIEntityGetDestination(self->device, 0);
     }
 }
+#endif //__APPLE__
 
 /*--------------------------------------------------------*/
+#ifdef __APPLE__
 //true on success
 Boolean robot_setup_midi_client(Robot* self)
 {
   return !pthread_create(&self->midi_client_thread, NULL, robot_setup_midi_client_run_loop, self);
 }
+#endif //__APPLE__
 
 /*--------------------------------------------------------*/
+#ifdef __APPLE__
 void* robot_setup_midi_client_run_loop(void* SELF)
 {
   Robot* self = (Robot*)SELF;
@@ -174,8 +207,10 @@ void* robot_setup_midi_client_run_loop(void* SELF)
   
   return NULL;
 }
+#endif //__APPLE__
 
 /*--------------------------------------------------------*/
+#ifdef __APPLE__
 Boolean robot_check_midi_object_name(Robot* self, MIDIObjectRef midi_object)
 {
   CFStringRef str;
@@ -185,8 +220,10 @@ Boolean robot_check_midi_object_name(Robot* self, MIDIObjectRef midi_object)
   
   return comparison == kCFCompareEqualTo;
 }
+#endif //__APPLE__
 
 /*--------------------------------------------------------*/
+#ifdef __APPLE__
 void robot_midi_data_recd_callback(const MIDIPacketList *packet_list, void* SELF, void *SELF2)
 {
   //Robot* self = (Robot*)SELF;
@@ -199,8 +236,10 @@ void robot_midi_data_recd_callback(const MIDIPacketList *packet_list, void* SELF
       packet = MIDIPacketNext (packet);
     }
 }
+#endif //__APPLE__
 
 /*--------------------------------------------------------*/
+#ifdef __APPLE__
 void robot_midi_state_changed_callback(const MIDINotification *message, void* SELF)
 {
   Robot* self = (Robot*)SELF;
@@ -231,27 +270,39 @@ void robot_midi_state_changed_callback(const MIDINotification *message, void* SE
       default: break;
     }
 }
+#endif //__APPLE__
 
 /*--------------------------------------------------------*/
+#if defined __ROBOT_MIDI_HOST__
 void robot_send_raw_midi(Robot* self, uint8_t* midi_bytes, int num_bytes)
 {
+#if defined __APPLE__
 	MIDIPacketList packet_list;
 	MIDIPacket* current_packet;
 	current_packet = MIDIPacketListInit(&packet_list);	
 	current_packet = MIDIPacketListAdd(&packet_list, sizeof(packet_list), current_packet, 0 /*mach_absolute_time()*/, num_bytes, midi_bytes);
   MIDISend(self->out_port, self->destination, &packet_list);
+  
+#elif defined __BELA__
+  self->midi->writeOutput(midi_bytes, num_bytes);
+
+#endif
 }
+#endif //defined __ROBOT_MIDI_HOST__
 
 /*--------------------------------------------------------*/
+#if defined __ROBOT_MIDI_HOST__
 void robot_send_message(Robot* self, const char *fmt, ...)
 {
+#if defined __APPLE__
   if(self->source != 0)
+#endif
     {
-#else //!__APPLE__
+#else  //MIDI CLIENT
 void robot_send_message(const char *fmt, ...)
 {
-#endif //__APPLE__
 
+#endif //SHARED CODE
       uint8_t  buffer[ROBOT_SYSEX_BUFFER_SIZE];
       uint8_t* b = buffer;
 
@@ -269,12 +320,14 @@ void robot_send_message(const char *fmt, ...)
       //replace '\0' with EOX
       *b++ = MIDI_STATUS_END_OF_EXCLUSIVE;
       
-#ifdef __APPLE__
+#ifdef __ROBOT_MIDI_HOST__
       robot_send_raw_midi(self, buffer, b - buffer);
     }
-#else
+    
+#else   //MIDI CLIENT
       usb_midi_send_sysex(buffer, b-buffer);
-#endif
+
+#endif //SHARED CODE
 }
 
 /*---------------------------------------------------*/
