@@ -32,10 +32,12 @@ struct OpaqueMicrophoneStruct
   int     silent_beat_count;
   int     max_silent_beats ;
   
+  int     play_beat_bell   ;
+  
   Rhythm* rhythm;
   int     rhythm_constructor_index;
   
-  float*  rhythm_onsets;
+  rhythm_onset_t*  rhythm_onsets;
   int     rhythm_onsets_len;
   int     num_rhythm_onsets;
   int     rhythm_onsets_index;
@@ -112,18 +114,21 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
     rhythm_onset(self->rhythm, self->btt, sample_time);
   pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
   
+  
   if(btt_get_tracking_mode(self->btt) <= BTT_ONSET_TRACKING)
     {
-      click_click(self->click);
-      //robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
-      //fprintf(stderr, "onset\r\n");
+      if(self->play_beat_bell)
+        {
+          click_click(self->click, 1.0);
+          robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
+          //fprintf(stderr, "onset\r\n");
+        }
     }
 
   self->silent_beat_count = 0;
 }
 
 /*--------------------------------------------------------------------*/
-/* store each beat as a single click in an AIFF file so we can compare it to the original */
 void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
 {
   Microphone* self = (Microphone*) SELF;
@@ -139,14 +144,14 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   int i;
   float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   for(i=0; i<self->num_rhythm_onsets; i++)
-    self->rhythm_onsets[i] *= round(beat_period * (1000000 / (double)MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL));
+    self->rhythm_onsets[i].beat_time *= round(beat_period * (1000000 / (double)MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL));
   
   self->beat_clock = 0;
   
-  //if(self->play_beat_bell)
+  if(self->play_beat_bell)
     {
-      click_klop(self->click);
-      robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
+      click_klop(self->click, 1.0);
+      robot_send_message(self->robot, robot_cmd_bell, 1.0 /*strength*/);
     }
   
   ++self->silent_beat_count;
@@ -208,7 +213,7 @@ Rhythm* mic_set_rhythm_generator       (Microphone* self, rhythm_new_funct const
   pthread_mutex_lock(&self->rhythm_generator_swap_mutex);
   if(self->rhythm != NULL)
     self->rhythm = rhythm_destroy(self->rhythm);
-  self->rhythm = constructor(self->btt);
+  self->rhythm = (constructor == NULL) ? NULL : constructor(self->btt);
   pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
   
   return self->rhythm;
@@ -238,6 +243,18 @@ Rhythm* mic_get_rhythm_generator       (Microphone* self)
 }
 
 /*--------------------------------------------------------------------*/
+void              mic_set_should_play_beat_bell   (Microphone* self, int should)
+{
+  self->play_beat_bell = (should != 0);
+}
+
+/*--------------------------------------------------------------------*/
+int               mic_get_should_play_beat_bell   (Microphone* self)
+{
+  return (self->play_beat_bell != 0);
+}
+
+/*--------------------------------------------------------------------*/
 void* mic_rhythm_thread_run_loop (void* SELF)
 {
   Microphone* self = (Microphone*)SELF;
@@ -246,10 +263,10 @@ void* mic_rhythm_thread_run_loop (void* SELF)
   while(self->rhythm_thread_run_loop_running)
     {
       if(self->rhythm_onsets_index < self->num_rhythm_onsets)
-        if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index])
+        if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
           {
-            click_click(self->click);
-            robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
+            click_click(self->click, self->rhythm_onsets[self->rhythm_onsets_index].strength);
+            robot_send_message(self->robot, robot_cmd_tap, self->rhythm_onsets[self->rhythm_onsets_index].strength);
             ++self->rhythm_onsets_index;
           }
         
@@ -267,12 +284,16 @@ int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_c
 {
   Microphone* self = (Microphone*)SELF;
   int frame, channel;
+  auSample_t samp = 0;
+  
   
   //mix to mono without correcting amplitude
   for(frame=0; frame<num_frames; frame++)
-    for(channel=1; channel<num_channels; channel++)
-      buffer[frame] += buffer[frame * num_channels + channel];
-
+    {
+      for(channel=0; channel<num_channels; channel++)
+        samp += buffer[frame * num_channels + channel];
+      buffer[frame] = samp;
+  }
   btt_process(self->btt, buffer, num_frames);
 
   return  num_frames;

@@ -18,6 +18,8 @@ struct OpaqueClickStruct
   AUDIO_GUTS                  ;
   BOOL needs_click            ;
   int   klop_samples_remaining;
+  float click_strength        ;
+  float klop_strength         ;
   double klop_phase;
 };
 
@@ -51,14 +53,21 @@ Click* click_destroy(Click* self)
 }
 
 /*--------------------------------------------------------------------*/
-void         click_click             (Click* self)
+void         click_click             (Click* self, float strength)
 {
+  if(strength > 1) strength = 1;
+  if(strength < 0) strength = 0;
+  
+  self->click_strength = strength;
   self->needs_click = YES;
 }
 
 /*--------------------------------------------------------------------*/
-void         click_klop             (Click* self)
+void         click_klop             (Click* self, float strength)
 {
+  if(strength > 1) strength = 1;
+  if(strength < 0) strength = 0;
+  self->klop_strength = strength;
   self->klop_samples_remaining = CLICK_KLOP_DURATION;
   self->klop_phase = 0;
 }
@@ -77,18 +86,19 @@ int click_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num
       for(chan=0; chan<num_channels; chan++)
         {
           --self->klop_samples_remaining;
-          buffer[frame + chan] = sin(self->klop_phase);
+          buffer[frame + chan] = self->klop_strength * sin(self->klop_phase);
           self->klop_phase += CLICK_KLOP_FREQ;
         }
+/*
   if(self->klop_samples_remaining>0)
     {
       buffer[0] = 1;
       self->needs_click = NO;
     }
-
+*/
   if(self->needs_click)
     {
-      buffer[0] = 1;
+      buffer[0] = self->click_strength;
       self->needs_click = NO;
     }
 

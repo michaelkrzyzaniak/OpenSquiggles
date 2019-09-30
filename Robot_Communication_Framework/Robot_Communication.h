@@ -25,13 +25,15 @@ typedef struct robot_arg_struct
 typedef enum robot_message_hash_enum
 {
   robot_hash_tap                         = 2085486991,
+  robot_hash_bell                        = 100947277,
   robot_hash_aok                         = 2085472399,
   robot_hash_error                       = 3342388946,
     
 }robot_message_hash_t;
 
 /*--------------------------------------------------------*/
-#define robot_cmd_tap                         "/tap %f"         //strength, 0.0~1.0
+#define robot_cmd_tap                         "/bell %f"        //strength, 0.0~1.0
+#define robot_cmd_bell                        "/tap %f"         //strength, 0.0~1.0
 #define robot_reply_aok                       "/aok"
 #define robot_reply_error                     "/error %s"
 

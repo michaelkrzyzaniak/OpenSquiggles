@@ -21,7 +21,7 @@
 void*        rhythm_two_beat_delay_destroy (void*);
 const char*  rhythm_two_beat_delay_name    (void*);
 void         rhythm_two_beat_delay_onset   (void*, BTT*, unsigned long long);
-int          rhythm_two_beat_delay_beat    (void*, BTT*, unsigned long long, float*, int);
+int          rhythm_two_beat_delay_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
 /*--------------------------------------------------------------------*/
 typedef struct opaque_rhythm_two_beat_delay_struct
@@ -79,17 +79,33 @@ void         rhythm_two_beat_delay_onset   (void* SELF, BTT* beat_tracker, unsig
 }
 
 /*--------------------------------------------------------------------*/
-int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, float* returned_rhythm, int returned_rhythm_maxlen)
+int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
 {
   Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
   
-  returned_rhythm[0] = 0;
-  returned_rhythm[1] = 1.0/6.0;
-  returned_rhythm[2] = 2.0/6.0;
-  returned_rhythm[3] = 3.0/6.0;
-  returned_rhythm[4] = 4.0/6.0;
-  returned_rhythm[5] = 5.0/6.0;
+  returned_rhythm[0].beat_time    = 0;
+  returned_rhythm[0].strength     = 1;
+  returned_rhythm[0].timbre_class = 0;
 
+  returned_rhythm[1].beat_time    = 1/6;
+  returned_rhythm[1].strength     = 0.1;
+  returned_rhythm[1].timbre_class = 0;
+  
+  returned_rhythm[2].beat_time    = 2/6;
+  returned_rhythm[2].strength     = 0.1;
+  returned_rhythm[2].timbre_class = 0;
+  
+  returned_rhythm[3].beat_time    = 3/6;
+  returned_rhythm[3].strength     = 0.5;
+  returned_rhythm[3].timbre_class = 0;
+
+  returned_rhythm[4].beat_time    = 4/6;
+  returned_rhythm[4].strength     = 0.1;
+  returned_rhythm[4].timbre_class = 0;
+  
+  returned_rhythm[5].beat_time    = 4/6;
+  returned_rhythm[5].strength     = 0.1;
+  returned_rhythm[5].timbre_class = 0;
   
   return 6;
   

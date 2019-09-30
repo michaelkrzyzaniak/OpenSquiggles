@@ -21,7 +21,7 @@
 void*        rhythm_template_destroy (void*);
 const char*  rhythm_template_name    (void*);
 void         rhythm_template_onset   (void*, BTT*, unsigned long long);
-int          rhythm_template_beat    (void*, BTT*, unsigned long long, float*, int);
+int          rhythm_template_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
 /*--------------------------------------------------------------------*/
 typedef struct opaque_rhythm_template_struct
@@ -85,7 +85,7 @@ void         rhythm_template_onset   (void* SELF, BTT* beat_tracker, unsigned lo
 }
 
 /*--------------------------------------------------------------------*/
-int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, float* returned_rhythm, int returned_rhythm_maxlen)
+int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
 {
   /* This will be called whenever a beat is detected.
      You should generate one beat of rhythm and write it into returned_rhythm.
@@ -98,12 +98,23 @@ int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned lo
   */
   Rhythm_Template* self = (Rhythm_Template*)SELF;
   
-  //returned_rhythm[0] = 0;
-  //returned_rhythm[1] = 0.25;
-  //returned_rhythm[2] = 0.5;
-  //returned_rhythm[3] = 0.75;
+  returned_rhythm[0].beat_time    = 0;
+  returned_rhythm[0].strength     = 1;
+  returned_rhythm[0].timbre_class = 0;
+
+  returned_rhythm[1].beat_time    = 0.25;
+  returned_rhythm[1].strength     = 0.1;
+  returned_rhythm[1].timbre_class = 0;
   
-  return 0;
+  returned_rhythm[2].beat_time    = 0.5;
+  returned_rhythm[2].strength     = 0.1;
+  returned_rhythm[2].timbre_class = 0;
+  
+  returned_rhythm[3].beat_time    = 0.75;
+  returned_rhythm[3].strength     = 1;
+  returned_rhythm[3].timbre_class = 0;
+  
+  return 4;
   
   
 }

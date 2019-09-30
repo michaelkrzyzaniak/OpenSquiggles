@@ -19,8 +19,8 @@ extern "C"{
 typedef struct OpaqueClickStruct Click;
 
 Click*       click_new               ();
-void         click_click             (Click* self);
-void         click_klop              (Click* self);
+void         click_click             (Click* self, float strength);
+void         click_klop              (Click* self, float strength);
 
 //Click*  click_destroy             (Click*      self      );
 //call with self->destroy(self);

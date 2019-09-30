@@ -21,7 +21,7 @@
 void*        rhythm_random_beat_from_list_destroy (void*);
 const char*  rhythm_random_beat_from_list_name    (void*);
 void         rhythm_random_beat_from_list_onset   (void*, BTT*, unsigned long long);
-int          rhythm_random_beat_from_list_beat    (void*, BTT*, unsigned long long, float*, int);
+int          rhythm_random_beat_from_list_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
 /*--------------------------------------------------------------------*/
 const float rhythm_random_beat_from_list_list[][8] =
@@ -106,7 +106,7 @@ void         rhythm_random_beat_from_list_onset   (void* SELF, BTT* beat_tracker
 }
 
 /*--------------------------------------------------------------------*/
-int          rhythm_random_beat_from_list_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, float* returned_rhythm, int returned_rhythm_maxlen)
+int          rhythm_random_beat_from_list_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
 {
   Rhythm_Random_Beat_From_List* self = (Rhythm_Random_Beat_From_List*)SELF;
   
@@ -117,8 +117,11 @@ int          rhythm_random_beat_from_list_beat    (void* SELF, BTT* beat_tracker
 
   
   for(i=0; i<len; i++)
-    returned_rhythm[i] = rhythm_random_beat_from_list_list[r][i+1];
-  
+    {
+      returned_rhythm[i].beat_time = rhythm_random_beat_from_list_list[r][i+1];
+      returned_rhythm[i].strength = rhythm_random_beat_from_list_list[r][i+1];
+      returned_rhythm[i].timbre_class = 1;
+    }
   return len;
   
   
