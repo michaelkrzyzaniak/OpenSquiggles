@@ -32,8 +32,8 @@ typedef enum robot_message_hash_enum
 }robot_message_hash_t;
 
 /*--------------------------------------------------------*/
-#define robot_cmd_tap                         "/bell %f"        //strength, 0.0~1.0
-#define robot_cmd_bell                        "/tap %f"         //strength, 0.0~1.0
+#define robot_cmd_tap                         "/tap %f"        //strength, 0.0~1.0
+#define robot_cmd_bell                        "/bell %f"       //strength, 0.0~1.0
 #define robot_reply_aok                       "/aok"
 #define robot_reply_error                     "/error %s"
 

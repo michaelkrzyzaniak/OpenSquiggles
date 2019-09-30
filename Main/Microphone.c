@@ -97,6 +97,8 @@ Microphone* mic_new()
       int error = pthread_create(&self->rhythm_thread, NULL, mic_rhythm_thread_run_loop, self);
       if(error != 0)
         return (Microphone*)auDestroy((Audio*)self);
+      
+      mic_set_should_play_beat_bell   (self, 1);
     }
   
   //there should be a play callback that I can intercept and do this there.
@@ -119,8 +121,8 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
     {
       if(self->play_beat_bell)
         {
-          click_click(self->click, 1.0);
-          robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
+          click_click(self->click, 0.5);
+          robot_send_message(self->robot, robot_cmd_tap, 0.5 /*strength*/);
           //fprintf(stderr, "onset\r\n");
         }
     }
@@ -150,8 +152,8 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   
   if(self->play_beat_bell)
     {
-      click_klop(self->click, 1.0);
-      robot_send_message(self->robot, robot_cmd_bell, 1.0 /*strength*/);
+      click_klop(self->click, 0.5);
+      robot_send_message(self->robot, robot_cmd_bell, 0.5 /*strength*/);
     }
   
   ++self->silent_beat_count;

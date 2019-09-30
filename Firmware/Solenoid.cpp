@@ -52,7 +52,7 @@ void solenoid_tap_specific(int index, float strength)
    
   noInterrupts();
   solenoid_timers[index] = solenoid_duration;
-  analogWrite(solenoid_pins[index], 100 + strength*155);
+  analogWrite(solenoid_pins[index], 120 + strength*135);
   interrupts(); 
 }
 

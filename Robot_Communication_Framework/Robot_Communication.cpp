@@ -68,6 +68,7 @@ void robot_disconnect(Robot* self)
 #endif
 
 /*--------------------------------------------------------*/
+#if defined __ROBOT_MIDI_HOST__
 Robot* robot_destroy(Robot* self)
 {
   if(self != NULL)
@@ -83,8 +84,10 @@ Robot* robot_destroy(Robot* self)
     }
   return (Robot*)NULL;
 }
+#endif// __ROBOT_MIDI_HOST__
 
 /*--------------------------------------------------------*/
+#if defined __ROBOT_MIDI_HOST__
 Robot* robot_new(robot_message_received_callback callback, void* callback_self)
 {
   Robot* self = (Robot*)calloc(1, sizeof(*self));
@@ -109,6 +112,7 @@ Robot* robot_new(robot_message_received_callback callback, void* callback_self)
     
   return self;
 }
+#endif // __ROBOT_MIDI_HOST__
 
 /*--------------------------------------------------------*/
 void robot_init(robot_message_received_callback callback, void* callback_self)
