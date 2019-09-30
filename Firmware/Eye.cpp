@@ -5,9 +5,13 @@
 #include "Adafruit_GFX.h"
 #include "Adafruit_IS31FL3731.h"
 
+/* eye is powered by 3.3 V */
+/* draws 20 mA at brightness 30 */
+/* draws 100 mA at brightness 255 */
+
 #define EYE_UNCONNECTED_ANALOG_PIN 0 //for seeding random
 #define EYE_BRIGHTNESS 30 //max is 255
-#define  EYE_UPDATE_INTERVAL    30 //millisecs
+#define  EYE_UPDATE_INTERVAL    33 //millisecs
 
 /* -------------------------------------------------------------- */
 typedef enum eye_param_indices_enum
