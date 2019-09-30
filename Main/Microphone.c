@@ -284,28 +284,18 @@ int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_c
 {
   Microphone* self = (Microphone*)SELF;
   int frame, channel;
-<<<<<<< Updated upstream
   auSample_t samp = 0;
   
-=======
-  float samples;
->>>>>>> Stashed changes
   
   //mix to mono without correcting amplitude
   for(frame=0; frame<num_frames; frame++)
     {
-<<<<<<< Updated upstream
+      samp = 0;
       for(channel=0; channel<num_channels; channel++)
         samp += buffer[frame * num_channels + channel];
       buffer[frame] = samp;
   }
-=======
-      sample = 0;
-      for(channel=0; channel<num_channels; channel++)
-        sample += buffer[frame * num_channels + channel];
-      buffer[frame] = sample;
-    }
->>>>>>> Stashed changes
+
   btt_process(self->btt, buffer, num_frames);
 
   return  num_frames;
