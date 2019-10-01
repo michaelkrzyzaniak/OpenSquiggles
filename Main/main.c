@@ -310,11 +310,19 @@ int num_params = sizeof(params) / sizeof(params[0]);
             btt_set_tracking_mode(btt, BTT_COUNT_IN_TRACKING);
             break;
 
+          case 'l':
+            btt_set_tracking_mode(btt, BTT_TEMPO_LOCKED_BEAT_TRACKING);
+            break;
+          case 'L':
+            btt_set_tracking_mode(btt, BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING);
+            break;
+            
           case 'q': /* cascade */
           case 'Q':
             goto out;
             break;
-          
+
+
           default: break;
         }
 

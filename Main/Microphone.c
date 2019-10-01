@@ -122,7 +122,7 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
       if(self->play_beat_bell)
         {
           click_click(self->click, 0.5);
-          robot_send_message(self->robot, robot_cmd_tap, 0.5 /*strength*/);
+          //robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
           //fprintf(stderr, "onset\r\n");
         }
     }
@@ -153,12 +153,16 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   if(self->play_beat_bell)
     {
       click_klop(self->click, 0.5);
-      robot_send_message(self->robot, robot_cmd_bell, 0.5 /*strength*/);
+      robot_send_message(self->robot, robot_cmd_bell, 1.0 /*strength*/);
     }
   
-  ++self->silent_beat_count;
-  if(self->silent_beat_count > self->max_silent_beats)
-      btt_set_tracking_mode(self->btt, BTT_COUNT_IN_TRACKING);
+  
+  if(btt_get_tracking_mode(self->btt) != BTT_TEMPO_LOCKED_BEAT_TRACKING)
+    {
+      ++self->silent_beat_count;
+      if(self->silent_beat_count > self->max_silent_beats)
+        btt_set_tracking_mode(self->btt, BTT_COUNT_IN_TRACKING);
+    }
 }
 
 /*--------------------------------------------------------------------*/

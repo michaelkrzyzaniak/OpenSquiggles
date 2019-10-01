@@ -91,7 +91,6 @@ Robot* robot_destroy(Robot* self)
 Robot* robot_new(robot_message_received_callback callback, void* callback_self)
 {
   Robot* self = (Robot*)calloc(1, sizeof(*self));
-  fprintf(stderr, "We are not HERE\r\n");
   
   if(self != NULL)
     {

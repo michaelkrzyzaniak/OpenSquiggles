@@ -37,7 +37,6 @@ struct OpaqueAudioStruct
 /*auNew---------------------------------------------------*/
 Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, unsigned numChannels)
 {
-  fprintf(stderr, "SIZE: %i\r\n", (int)sizeofstarself);
   Audio* self = (Audio*)calloc(1, sizeofstarself);
 
   if(self != NULL)

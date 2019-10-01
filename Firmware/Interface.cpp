@@ -75,10 +75,16 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
             solenoid_tap(robot_arg_to_float(&args[0]));
             interface_send_aok();
           }
+         break;
+      case robot_hash_bell:
+        if(num_args == 1)
+          {
+            solenoid_ding(robot_arg_to_float(&args[0]));
+            interface_send_aok();
+          }
         break;
         
       /*---------------------------------------------------*/
       default: break;
     }
 }
-

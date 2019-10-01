@@ -3,12 +3,12 @@
 
 /*----------------------------------------------------*/
 #define       SOLENOID_TIMER_THREAD_INTERVAL 10000 //usec
-#define       SOLENOID_NUM_SOLENOIDS 1
+#define       SOLENOID_NUM_SOLENOIDS 2
 #define       SOLENOID_TIMER_DURATION_SECONDS 0.05
 IntervalTimer solenoid_timer_thread;
 int           solenoid_duration = (int)((SOLENOID_TIMER_DURATION_SECONDS * 1000000.0 / ((double)SOLENOID_TIMER_THREAD_INTERVAL)) + 0.5);
 int           solenoid_current_solenoid = 0;
-volatile int  solenoid_pins[SOLENOID_NUM_SOLENOIDS]    = {10};
+volatile int  solenoid_pins[SOLENOID_NUM_SOLENOIDS]    = {9, 10};
 volatile int  solenoid_timers[SOLENOID_NUM_SOLENOIDS]  = {0};
 
 void solenoid_timer_thread_run_loop(void);
@@ -32,14 +32,14 @@ void solenoid_init()
 /*----------------------------------------------------*/
 void solenoid_tap (float strength)
 {
-  solenoid_tap_specific(solenoid_current_solenoid, strength);
-  ++solenoid_current_solenoid; solenoid_current_solenoid %= SOLENOID_NUM_SOLENOIDS;
+  solenoid_tap_specific(solenoid_current_solenoid+1, strength);
+  ++solenoid_current_solenoid; solenoid_current_solenoid %= (SOLENOID_NUM_SOLENOIDS-1);
 }
 
 /*----------------------------------------------------*/
 void solenoid_ding(float strength)
 {
-  solenoid_tap_specific(solenoid_current_solenoid, strength);
+  solenoid_tap_specific(0, strength);
 }
 
 /*----------------------------------------------------*/
