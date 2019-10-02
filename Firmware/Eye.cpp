@@ -42,16 +42,7 @@ typedef struct opaque_eye_struct
 /* -------------------------------------------------------------- */
 Eye* eye_new(float init_val);
 void eye_draw(Eye* eye);
-void eye_animate_blink(Eye* eye, List* queues);
-void eye_animate_inquisitive(Eye* eye, List* queues);
-void eye_animate_focused(Eye* eye, List* queues);
-void eye_animate_suprised(Eye* eye, List* queues);
-void eye_animate_neutral_size(Eye* eye, List* queues);
-void eye_animate_neutral_position(Eye* eye, List* queues);
 void eye_animate_single_param(Eye* eye, List* queues, eye_param_t param, int val, float millisecs);
-void eye_animate_roll(Eye* eye, List* queues, int depth);
-void eye_animate_shifty(Eye* eye, List* queues, int depth, float speed);
-void eye_animate_yes(Eye* eye, List* queues, int depth, float speed);
 
 void eye_animate_run_loop(void);
 
@@ -75,7 +66,7 @@ void eye_init_module()
   randomSeed(analogRead(EYE_UNCONNECTED_ANALOG_PIN));
   eye_timer_thread.priority(128);
   eye_timer_thread.begin(eye_animate_run_loop, EYE_UPDATE_INTERVAL * 1000);
-  eye_animate_roll(eye_global_eye, eye_global_queues, 2);
+  eye_animate_roll(2);
 }
 
 /* -------------------------------------------------------------- */
@@ -351,6 +342,7 @@ void eye_animate_run_loop(void)
   r = eye_random();
   
   // typical blink rate of adults is every 4 seconds
+  /*
   if(r < (EYE_UPDATE_INTERVAL / (4.0 * 1000.0)))
     eye_animate_blink(eye, queues);
 
@@ -369,6 +361,7 @@ void eye_animate_run_loop(void)
   r = eye_random();
   if(r < (EYE_UPDATE_INTERVAL / (30 * 1000.0)))
     eye_animate_shifty(eye, queues, 4, 500);
+    */
 }
 
 /* -------------------------------------------------------------- */
@@ -496,7 +489,7 @@ void eye_go_to_poses_stay_and_return(Eye* eye, List* queues, int num_poses, Eye*
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_blink(Eye* eye, List* queues)
+void eye_animate_blink()
 {
   Eye* target_eye = eye_new(EYE_NULL_VALUE);
   if(target_eye == NULL) return;
@@ -505,13 +498,13 @@ void eye_animate_blink(Eye* eye, List* queues)
   target_eye->c[EYE_WIDTH]       = EYE_LED_WIDTH;
   target_eye->c[EYE_IRIS_HEIGHT] = 0;
   target_eye->c[EYE_IRIS_WIDTH]  = 0;
-  target_eye->c[EYE_POSITION_Y]  = eye->c[EYE_POSITION_Y]+2;
+  target_eye->c[EYE_POSITION_Y]  = eye_global_eye->c[EYE_POSITION_Y]+2;
 
-  eye_go_to_pose_stay_and_return(eye, queues, target_eye, 60, 60, 60);
+  eye_go_to_pose_stay_and_return(eye_global_eye, eye_global_queues, target_eye, 60, 60, 60);
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_inquisitive(Eye* eye, List* queues)
+void eye_animate_inquisitive()
 {
   Eye* target_eye = eye_new(EYE_NULL_VALUE);
   if(target_eye == NULL) return;
@@ -521,11 +514,11 @@ void eye_animate_inquisitive(Eye* eye, List* queues)
   target_eye->c[EYE_IRIS_HEIGHT]  = 2;
   target_eye->c[EYE_IRIS_WIDTH]   = 2;
 
-  eye_go_to_pose_stay_and_return(eye, queues, target_eye, 200, 1000, 300);
+  eye_go_to_pose_stay_and_return(eye_global_eye, eye_global_queues, target_eye, 200, 1000, 300);
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_focused(Eye* eye, List* queues)
+void eye_animate_focused()
 {
   Eye* target_eye = eye_new(EYE_NULL_VALUE);
   if(target_eye == NULL) return;
@@ -535,11 +528,11 @@ void eye_animate_focused(Eye* eye, List* queues)
   target_eye->c[EYE_IRIS_HEIGHT]  = 1;
   target_eye->c[EYE_IRIS_WIDTH]   = 1;
 
-  eye_go_to_pose_stay_and_return(eye, queues, target_eye, 200, 1000, 300);
+  eye_go_to_pose_stay_and_return(eye_global_eye, eye_global_queues, target_eye, 200, 1000, 300);
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_suprised(Eye* eye, List* queues)
+void eye_animate_suprised()
 {
   Eye* target_eye = eye_new(EYE_NULL_VALUE);
   if(target_eye == NULL) return;
@@ -549,11 +542,11 @@ void eye_animate_suprised(Eye* eye, List* queues)
   target_eye->c[EYE_IRIS_HEIGHT]  = 2;
   target_eye->c[EYE_IRIS_WIDTH]   = 2;
 
-  eye_go_to_pose_stay_and_return(eye, queues, target_eye, 200, 600, 200);
+  eye_go_to_pose_stay_and_return(eye_global_eye, eye_global_queues, target_eye, 200, 600, 200);
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_neutral_size(Eye* eye, List* queues)
+void eye_animate_neutral_size()
 {
   Eye* target_eye = eye_new(EYE_NULL_VALUE);
   if(target_eye == NULL) return;
@@ -563,11 +556,11 @@ void eye_animate_neutral_size(Eye* eye, List* queues)
   target_eye->c[EYE_IRIS_HEIGHT]  = 6;
   target_eye->c[EYE_IRIS_WIDTH]   = 2;
 
-  eye_go_to_pose(eye, queues, target_eye, 200);
+  eye_go_to_pose(eye_global_eye, eye_global_queues, target_eye, 200);
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_neutral_position(Eye* eye, List* queues)
+void eye_animate_neutral_position()
 {
   Eye* target_eye = eye_new(EYE_NULL_VALUE);
   if(target_eye == NULL) return;
@@ -578,22 +571,22 @@ void eye_animate_neutral_position(Eye* eye, List* queues)
   target_eye->c[EYE_IRIS_POSITION_X]  = 0;
   target_eye->c[EYE_IRIS_POSITION_Y]  = 0;
 
-  eye_go_to_pose(eye, queues, target_eye, 200);
+  eye_go_to_pose(eye_global_eye, eye_global_queues, target_eye, 200);
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_single_param(Eye* eye, List* queues, eye_param_t param, int val, float millisecs)
+void eye_animate_single_param(eye_param_t param, int val, float millisecs)
 {
   Eye* target_eye = eye_new(EYE_NULL_VALUE);
   if(target_eye == NULL) return;
   
   target_eye->c[param]  = val;
-  eye_go_to_pose(eye, queues, target_eye, millisecs);
+  eye_go_to_pose(eye_global_eye, eye_global_queues, target_eye, millisecs);
   EYE_DEFAULT_VALS[param] = val;
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_roll(Eye* eye, List* queues, int depth)
+void eye_animate_roll(int depth)
 {
   Eye* target_eye_1 = eye_new(EYE_NULL_VALUE);
   Eye* target_eye_2 = eye_new(EYE_NULL_VALUE);
@@ -633,11 +626,11 @@ void eye_animate_roll(Eye* eye, List* queues, int depth)
   float go_durations[] = {100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
   float stay_durations[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-  eye_go_to_poses_stay_and_return(eye, queues, 9, target_eye, go_durations, stay_durations);
+  eye_go_to_poses_stay_and_return(eye_global_eye, eye_global_queues, 9, target_eye, go_durations, stay_durations);
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_shifty(Eye* eye, List* queues, int depth, float speed)
+void eye_animate_shifty(int depth, float speed)
 {
   Eye* target_eye_1 = eye_new(EYE_NULL_VALUE);
   Eye* target_eye_2 = eye_new(EYE_NULL_VALUE);
@@ -659,11 +652,11 @@ void eye_animate_shifty(Eye* eye, List* queues, int depth, float speed)
   float go_durations[]   = {speed, 2*speed, 2*speed,speed};
   float stay_durations[] = {2*speed, 2*speed, 2*speed};
 
-  eye_go_to_poses_stay_and_return(eye, queues, 3, target_eye, go_durations, stay_durations);
+  eye_go_to_poses_stay_and_return(eye_global_eye, eye_global_queues, 3, target_eye, go_durations, stay_durations);
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_yes(Eye* eye, List* queues, int depth, float speed)
+void eye_animate_yes(int depth, float speed)
 {
   Eye* target_eye_1 = eye_new(EYE_NULL_VALUE);
   Eye* target_eye_2 = eye_new(EYE_NULL_VALUE);
@@ -685,5 +678,5 @@ void eye_animate_yes(Eye* eye, List* queues, int depth, float speed)
   float go_durations[]   = {speed, 2*speed, 2*speed,speed};
   float stay_durations[] = {2*speed, 2*speed, 2*speed};
 
-  eye_go_to_poses_stay_and_return(eye, queues, 3, target_eye, go_durations, stay_durations);
+  eye_go_to_poses_stay_and_return(eye_global_eye, eye_global_queues, 3, target_eye, go_durations, stay_durations);
 }

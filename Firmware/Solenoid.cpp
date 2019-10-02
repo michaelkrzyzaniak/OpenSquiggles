@@ -1,5 +1,6 @@
 #include "Solenoid.h"
 #include "Arduino.h"
+#include "Interface.h"
 
 /*----------------------------------------------------*/
 #define       SOLENOID_TIMER_THREAD_INTERVAL 10000 //usec
@@ -59,6 +60,8 @@ void solenoid_tap_specific(int index, float strength)
 /*----------------------------------------------------*/
 void solenoid_timer_thread_run_loop(void)
 {
+  interface_run_loop();
+  
   int i;
   for(i=0; i<SOLENOID_NUM_SOLENOIDS; i++)
     {

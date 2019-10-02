@@ -5,7 +5,7 @@
 /*----------------------------------------------*/
 void setup(void)
 {
-  //eye_init_module();
+  eye_init_module();
   solenoid_init();
   interface_init();
 }
@@ -13,5 +13,5 @@ void setup(void)
 /*----------------------------------------------*/
 void loop(void) 
 {
-  interface_run_loop();
+  //interface_run_loop();
 }

@@ -2,6 +2,7 @@
 #include "Interface.h"
 #include "Robot_Communication.h"
 #include "Solenoid.h"
+#include "Eye.h"
 
 void interface_dispatch          (void* self, char* message, robot_arg_t args[], int num_args);
 void interface_note_on_callback  (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
@@ -80,6 +81,7 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
         if(num_args == 1)
           {
             solenoid_ding(robot_arg_to_float(&args[0]));
+            eye_animate_blink();
             interface_send_aok();
           }
         break;
