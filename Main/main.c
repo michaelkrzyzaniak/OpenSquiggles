@@ -27,8 +27,6 @@ typedef struct parameter_struct
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  i_hate_canonical_input_processing();
-  
   fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   int param_index = 0;
@@ -265,6 +263,8 @@ param_t params[] =
 int num_params = sizeof(params) / sizeof(params[0]);
 
   auPlay((Audio*)mic);
+  
+  i_hate_canonical_input_processing();
   
   for(;;)
     {

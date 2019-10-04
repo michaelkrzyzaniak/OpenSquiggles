@@ -20,13 +20,16 @@ void  robot_sysex_handler(midi_sysex_mfr_t mfr, char* message);
 #include <Carbon/Carbon.h>
 const   CFStringRef ROBOT_DEVICE_NAME = CFSTR(ROBOT_MIDI_DEVICE_NAME);
 
-//Bela includes
-#elif defined __BELA__
-//#include <pthread.h>
-#include <Bela.h>
-#include <Midi.h>
+//Linux includes
+#elif defined __linux__
+#include <pthread.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <ctype.h>
+#include <alsa/asoundlib.h>
+#include <signal.h>
 
-#endif //__BELA__
+#endif
 
 /*--------------------------------------------------------*/
 #if defined __ROBOT_MIDI_HOST__
@@ -41,8 +44,11 @@ struct opaque_robot_struct
   MIDIPortRef     out_port, in_port;
   pthread_t       midi_client_thread;
 
-#elif defined __BELA__
-  Midi* midi;
+#elif defined __linux__
+  snd_rawmidi_t*  in_port;
+  snd_rawmidi_t*  out_port;
+  pthread_t       midi_read_thread;
+  int             read_thread_should_continue_running;
 
 #endif
 };
@@ -56,6 +62,10 @@ void*   robot_setup_midi_client_run_loop(void* SELF);
 void    robot_midi_data_recd_callback(const MIDIPacketList *pktlist, void* SELF, void *SELF2);
 void    robot_midi_state_changed_callback(const MIDINotification  *message, void* SELF);
 Boolean robot_check_midi_object_name(Robot* self, MIDIObjectRef midi_object);
+
+#elif defined __linux__
+int   robot_setup_midi_read_thread(Robot* self);
+void* robot_read_thread_run_loop(void* SELF);
 #endif //__APPLE__
 
 /*--------------------------------------------------------*/
@@ -77,8 +87,13 @@ Robot* robot_destroy(Robot* self)
       robot_disconnect(self);
       pthread_kill(self->midi_client_thread, SIGUSR1);
 
-#elif defined __BELA__
-
+#elif defined __linux__
+      self->read_thread_should_continue_running = 0;
+      pthread_join(self->midi_read_thread);
+      snd_rawmidi_drain(self->in_port);
+      snd_rawmidi_close(self->in_port);
+      snd_rawmidi_drain(self->out_port);
+      snd_rawmidi_close(self->out_port);
 #endif
       free(self);
     }
@@ -99,16 +114,14 @@ Robot* robot_new(robot_message_received_callback callback, void* callback_self)
 
 #if defined __APPLE__
       if(!robot_setup_midi_client(self))
-        self = robot_destroy(self);
-#elif defined __BELA__
-  self->midi = NULL;//new Midi();
-  //self->midi->readFrom(ROBOT_MIDI_DEVICE_NAME);
-  //self->midi->writeTo(ROBOT_MIDI_DEVICE_NAME);
-  //self->midi->enableParser(true);
-  //self->midi->setParserCallback(midiMessageCallback, (void*) ROBOT_MIDI_DEVICE_NAME);
+        return robot_destroy(self);
+#elif defined __linux__
+      if(snd_rawmidi_open(&self->in_port, self->out_port, ROBOT_MIDI_DEVICE_NAME, 0))
+        return robot_destroy(self);
+      if(!robot_setup_midi_read_thread(self))
+        return robot_destroy(self);
 #endif
     }
-    
   return self;
 }
 #endif // __ROBOT_MIDI_HOST__
@@ -120,6 +133,30 @@ void robot_init(robot_message_received_callback callback, void* callback_self)
   robot_callback_self = callback_self;
   midi_sysex_event_handler = robot_sysex_handler;
 }
+
+/*--------------------------------------------------------*/
+#if defined __linux__
+int   robot_setup_midi_read_thread(Robot* SELF)
+{
+  return !pthread_create(&self->midi_read_thread, NULL, robot_read_thread_run_loop, self);
+}
+#endif //__linux__
+
+/*--------------------------------------------------------*/
+#if defined __linux__
+void* robot_read_thread_run_loop(void* self)
+{
+  Robot* self = (Robot*)self;
+  uint8_t data;
+  self->read_thread_should_continue_running = 1;
+  
+  while(self->read_thread_should_continue_running)
+    {
+      snd_rawmidi_read(self->in_port, &data, 1);
+      midi_parse(data);
+    }
+}
+#endif //__linux__
 
 /*--------------------------------------------------------*/
 #ifdef __APPLE__
@@ -286,8 +323,9 @@ void robot_send_raw_midi(Robot* self, uint8_t* midi_bytes, int num_bytes)
 	current_packet = MIDIPacketListAdd(&packet_list, sizeof(packet_list), current_packet, 0 /*mach_absolute_time()*/, num_bytes, midi_bytes);
   MIDISend(self->out_port, self->destination, &packet_list);
   
-#elif defined __BELA__
-  self->midi->writeOutput(midi_bytes, num_bytes);
+#elif defined __linux__
+  snd_rawmidi_write(self->out_port, midi_bytes, num_bytes);
+  snd_rawmidi_drain(self->out_port);
 
 #endif
 }

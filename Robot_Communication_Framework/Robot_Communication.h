@@ -42,14 +42,14 @@ typedef void  (*robot_message_received_callback)(void* self, char* message, robo
 
 /*--------------------------------------------------------*/
 
-#if (defined __APPLE__) || (defined __BELA__)
+#if (defined __APPLE__) || (defined __linux__)
 #define __ROBOT_MIDI_HOST__ 1
 #endif
 
 #if defined  __APPLE__
 #define ROBOT_MIDI_DEVICE_NAME "Dr Squiggles"
 
-#elif defined  __BELA__
+#elif defined  __linux__
 #define ROBOT_MIDI_DEVICE_NAME "hw:1,0,0"
 #endif
 
@@ -60,11 +60,10 @@ Robot*    robot_destroy            (Robot* self);
 void      robot_send_message       (Robot* self, const char *message, /*args*/...);
 void      robot_send_raw_midi      (Robot* self, uint8_t* midi_bytes, int num_bytes);
 
-//CODE FOR CLIENT ONLY (e.g. Arduino)
 #else //!__ROBOT_MIDI_HOST__,
 void     robot_send_message       (const char *message, /*args*/...);
 
-#endif// __APPLE__
+#endif // __ROBOT_MIDI_HOST__
 
 //SHARED CODE
 void     robot_init               (robot_message_received_callback callback, void* callback_self);
