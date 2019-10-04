@@ -37,6 +37,7 @@ todo:
 5) Strikers
 	find metal scraps for beat bell, other materials for other solenoids?
 
+//-----------------------------------------------
 CPPFLAGS+=-D__BELA__
 
 
@@ -50,3 +51,26 @@ gcc -c -D__BELA__ -I../../../include/ *.c *.cpp
 
 
 Software: malloc.c:2406: sysmalloc: Assertion `(old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)' failed
+
+//-----------------------------------------------
+Raspberry pi
+(online beat tracking demo)
+use mobile hotspot from my phone to connect pi wifi to internet
+sudo apt-get install libasound2-dev
+gcc ../../src/*.c *.c -lasound -lm -lpthread
+
+plug in USB Audio, make it default:
+
+sudo raspi-config Advanced Options -> Audio -> Force
+sudo raspi-config -> Interfacing -> Serial -> YES
+
+aplay /usr/share/sounds/alsa/Front_Center.wav
+
+https://raspberrypi.stackexchange.com/questions/80072/how-can-i-use-an-external-usb-sound-card-and-set-it-as-default
+cat /proc/asound/modules
+cat /proc/asound/cards
+
+
+~/.asoundrc
+
+https://www.alsa-project.org/alsa-doc/alsa-lib/_2test_2rawmidi_8c-example.html

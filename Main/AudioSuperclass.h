@@ -5,6 +5,8 @@
  *  Made by Michael Krzyzaniak at Arizona State University's
  *  School of Arts, Media + Engineering in Spring of 2013
  *  mkrzyzan@asu.edu
+ 
+   03 Oct 2019, fixed linux audio input for raspi.
  */
 
 
