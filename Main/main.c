@@ -1,6 +1,9 @@
-//gcc *.c ../Robot_Communication_Framework/*.c ../Robot_Communication_Framework/*.cpp ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2
+//OSX compile with:
+//gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2
 
-#ifdef __APPLE__
+//Linux compile with:
+//gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c -lasound -lm -lpthread -O2
+
 #include "Microphone.h"
 
 void i_hate_canonical_input_processing(void);
@@ -391,5 +394,3 @@ void make_stdin_cannonical_again()
   if (tcsetattr(fd, TCSANOW, &old_terminal_attributes) == -1)
     fprintf(stderr,  "Error setting serial attributes\r\n");
 }
-
-#endif// __APPLE__

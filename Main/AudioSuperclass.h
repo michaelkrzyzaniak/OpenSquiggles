@@ -29,6 +29,7 @@ extern "C"{
 #include <stdio.h> // NULL
 #elif defined __linux__
 #include <stdlib.h>
+#include <math.h>
 #include <signal.h>
 #include <pthread.h>
 #include <alsa/asoundlib.h>

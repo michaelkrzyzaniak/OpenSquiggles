@@ -89,7 +89,7 @@ Robot* robot_destroy(Robot* self)
 
 #elif defined __linux__
       self->read_thread_should_continue_running = 0;
-      pthread_join(self->midi_read_thread);
+      pthread_join(self->midi_read_thread, NULL);
       snd_rawmidi_drain(self->in_port);
       snd_rawmidi_close(self->in_port);
       snd_rawmidi_drain(self->out_port);
@@ -116,7 +116,7 @@ Robot* robot_new(robot_message_received_callback callback, void* callback_self)
       if(!robot_setup_midi_client(self))
         return robot_destroy(self);
 #elif defined __linux__
-      if(snd_rawmidi_open(&self->in_port, self->out_port, ROBOT_MIDI_DEVICE_NAME, 0))
+      if(snd_rawmidi_open(&self->in_port, &self->out_port, ROBOT_MIDI_DEVICE_NAME, 0))
         return robot_destroy(self);
       if(!robot_setup_midi_read_thread(self))
         return robot_destroy(self);
@@ -136,7 +136,7 @@ void robot_init(robot_message_received_callback callback, void* callback_self)
 
 /*--------------------------------------------------------*/
 #if defined __linux__
-int   robot_setup_midi_read_thread(Robot* SELF)
+int   robot_setup_midi_read_thread(Robot* self)
 {
   return !pthread_create(&self->midi_read_thread, NULL, robot_read_thread_run_loop, self);
 }
@@ -144,9 +144,9 @@ int   robot_setup_midi_read_thread(Robot* SELF)
 
 /*--------------------------------------------------------*/
 #if defined __linux__
-void* robot_read_thread_run_loop(void* self)
+void* robot_read_thread_run_loop(void* SELF)
 {
-  Robot* self = (Robot*)self;
+  Robot* self = (Robot*)SELF;
   uint8_t data;
   self->read_thread_should_continue_running = 1;
   
