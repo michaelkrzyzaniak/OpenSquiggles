@@ -193,7 +193,7 @@ BTT*           mic_get_btt        (Microphone* self)
 /*--------------------------------------------------------*/
 void mic_message_recd_from_robot(void* self, char* message, robot_arg_t args[], int num_args)
 {
-  robot_debug_print_message(message, args, num_args);
+  //robot_debug_print_message(message, args, num_args);
   
   /*
   switch(kiki_hash_message(message))

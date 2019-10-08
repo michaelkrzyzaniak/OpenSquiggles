@@ -12,6 +12,7 @@ todo:
 	check max current of regulator and components
 	put correct capacitors on both regulators.
 	work out how to power bela from headers
+	Find better regulator for raspi
 
 2) Fix laser-cut skeleton
 	Eye hole too small
@@ -22,11 +23,15 @@ todo:
 	make enough space for internal components (pi, bealge?)
 	fix issues with wood thickness
 	mounting points for solenoids and whatever they strike
+	space for pins on eye controller board
+	space for ttl connection to raspi?
+	INSERT EYE RIGHT_SIDE UP!
 
 3) Firmware
 	fix priority competition between eye and solenoid -- move midi read to solenoid thread?
 	control striking strength
 	optimize eye code and library, check i2c speed with logic analyzer
+	Check if eye is initalized and, if not, try again
 	
 4) Main
 	include tap strength in rhythm generation

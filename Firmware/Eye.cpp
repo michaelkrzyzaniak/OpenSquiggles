@@ -2,8 +2,8 @@
 #include "List.h"
 
 #include "Wire.h"
-#include "Adafruit_GFX.h"
-#include "Adafruit_IS31FL3731.h"
+//#include "Adafruit_GFX.h"
+//#include "Adafruit_IS31FL3731.h"
 
 /* eye is powered by 3.3 V */
 /* draws 20 mA at brightness 30 */
@@ -42,14 +42,13 @@ typedef struct opaque_eye_struct
 /* -------------------------------------------------------------- */
 Eye* eye_new(float init_val);
 void eye_draw(Eye* eye);
-void eye_animate_single_param(Eye* eye, List* queues, eye_param_t param, int val, float millisecs);
-
+void eye_animate_single_param(eye_param_t param, int val, float millisecs);
+void eye_setup_IS31FL3731(void);
 void eye_animate_run_loop(void);
 
 /* -------------------------------------------------------------- */
 /* GLOBAL VARIABLES */
 IntervalTimer       eye_timer_thread;
-Adafruit_IS31FL3731 eye_led_matrix = Adafruit_IS31FL3731();;
 List*               eye_global_queues;
 Eye*                eye_global_eye;
 volatile int        eye_current_frame;
@@ -57,9 +56,7 @@ volatile int        eye_current_frame;
 /* -------------------------------------------------------------- */
 void eye_init_module()
 {
-  //Serial.begin(115200);
-  Wire.setClock(400000);
-  eye_led_matrix.begin();
+  eye_setup_IS31FL3731();
   eye_global_queues = list_new();
   eye_global_eye    = eye_new(EYE_INIT_USE_DEFAULTS);
   eye_current_frame = 0;
@@ -131,12 +128,93 @@ float eye_random()
 }
 
 /* -------------------------------------------------------------- */
+float eye_draw_pixel(int x, int  y, float val, unsigned char pixel_buffer[])
+{
+  if((x >= 0) && (x < 16))
+    if((y >= 0) && (y < 9))
+       pixel_buffer[y * EYE_LED_WIDTH + x] = val;  
+}
+
+/* -------------------------------------------------------------- */
+void eye_setup_IS31FL3731()
+{
+  
+  Wire.setClock(400000);
+  Wire.begin();
+
+  //switch to page 9
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0xFD);
+  Wire.write((byte) 0x0B);
+  Wire.endTransmission();
+  
+  //go into shutdown mode
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0x0A);
+  Wire.write((byte) 0x00);
+  Wire.endTransmission();
+
+  delay(10);
+  
+  //come out of shutdown mode
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0x0A);
+  Wire.write((byte) 0x01);
+  Wire.endTransmission();
+
+  //picture mode
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0x00);
+  Wire.write((byte) 0x00);
+  Wire.endTransmission();
+
+
+  //display frame 0
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0x01);
+  Wire.write((byte) 0x00);
+  Wire.endTransmission();
+
+  //turn audio sync off
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0x06);
+  Wire.write((byte) 0x00);
+  Wire.endTransmission();
+
+  //turn all leds on in all frames
+  int frame, reg;
+  for (frame=0; frame<8; frame++)
+    {
+      //switch to frame 'frame'
+      Wire.beginTransmission(0x74);
+      Wire.write((byte) 0xFD);
+      Wire.write((byte) frame);
+      Wire.endTransmission(); 
+      for (reg=0; reg<=0x11; reg++)
+        {
+          Wire.beginTransmission(0x74);
+          Wire.write((byte) reg);
+          Wire.write((byte) 0xFF);
+          Wire.endTransmission(); 
+        }
+    }
+    
+  //switch back to page 0 for animating to frame 0
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0xFD);
+  Wire.write((byte) 0x00);
+  Wire.endTransmission();
+}
+
+/* -------------------------------------------------------------- */
 void eye_draw(Eye* eye)
 {
-  ++eye_current_frame; eye_current_frame %= 8;
-  eye_led_matrix.setFrame(eye_current_frame);
-  eye_led_matrix.clear();
+  //unsigned long now = millis();
+  int x, y;
+  unsigned char pixel_buffer[EYE_LED_WIDTH * EYE_LED_HEIGHT] = {0};
   
+  //++eye_current_frame; eye_current_frame %= 8;
+
   float center_x = EYE_LED_WIDTH  * 0.5;
   float center_y = EYE_LED_HEIGHT * 0.5;
 
@@ -161,62 +239,73 @@ void eye_draw(Eye* eye)
   float right_iris = left_iris + eye->c[EYE_IRIS_WIDTH];
   right_iris = eye_min(right_iris, right);
 
-  int x, y;
   //draw rectangular eye
   for(y=top; y<bottom; y++) //top to bottom
     for(x=left; x<right; x++) //left to right
-      eye_led_matrix.drawPixel(x, y, EYE_BRIGHTNESS);
+      eye_draw_pixel(x, y, EYE_BRIGHTNESS, pixel_buffer);
 
   //take out corners from eye
   if(eye->c[EYE_HEIGHT] > 2)
     {
       if(eye->c[EYE_WIDTH] > 1)
-        eye_led_matrix.drawPixel(right-1, top, 0);
+        eye_draw_pixel(right-1, top, 0, pixel_buffer);
       if(eye->c[EYE_WIDTH] > 2)
-        eye_led_matrix.drawPixel(left, top, 0);
+        eye_draw_pixel(left, top, 0, pixel_buffer);
     }
   if(eye->c[EYE_HEIGHT] > 1)
     {
       if(eye->c[EYE_WIDTH] > 1)
-        eye_led_matrix.drawPixel(right-1, bottom-1, 0);
+        eye_draw_pixel(right-1, bottom-1, 0, pixel_buffer);
       if(eye->c[EYE_WIDTH] > 2)
-        eye_led_matrix.drawPixel(left, bottom-1, 0);
+        eye_draw_pixel(left, bottom-1, 0, pixel_buffer);
     }
   if((eye->c[EYE_WIDTH] > 4) && (eye->c[EYE_HEIGHT] > 4))
     {
       //4%, 56%, 85%
-      eye_led_matrix.drawPixel(right-2, top, EYE_BRIGHTNESS * 0.05);// 25%
-      eye_led_matrix.drawPixel(left+1, top, EYE_BRIGHTNESS * 0.05);
-      eye_led_matrix.drawPixel(right-1, top+1, EYE_BRIGHTNESS * 0.05);
-      eye_led_matrix.drawPixel(left, top+1, EYE_BRIGHTNESS * 0.05);
-      eye_led_matrix.drawPixel(right-2, bottom-1, EYE_BRIGHTNESS * 0.05);
-      eye_led_matrix.drawPixel(left+1, bottom-1, EYE_BRIGHTNESS * 0.05);
-      eye_led_matrix.drawPixel(right-1, bottom-2, EYE_BRIGHTNESS * 0.05);
-      eye_led_matrix.drawPixel(left, bottom-2, EYE_BRIGHTNESS * 0.05);
+      eye_draw_pixel(right-2, top, EYE_BRIGHTNESS * 0.05, pixel_buffer);// 25%
+      eye_draw_pixel(left+1, top, EYE_BRIGHTNESS * 0.05, pixel_buffer);
+      eye_draw_pixel(right-1, top+1, EYE_BRIGHTNESS * 0.05, pixel_buffer);
+      eye_draw_pixel(left, top+1, EYE_BRIGHTNESS * 0.05, pixel_buffer);
+      eye_draw_pixel(right-2, bottom-1, EYE_BRIGHTNESS * 0.05, pixel_buffer);
+      eye_draw_pixel(left+1, bottom-1, EYE_BRIGHTNESS * 0.05, pixel_buffer);
+      eye_draw_pixel(right-1, bottom-2, EYE_BRIGHTNESS * 0.05, pixel_buffer);
+      eye_draw_pixel(left, bottom-2, EYE_BRIGHTNESS * 0.05, pixel_buffer);
             
-      eye_led_matrix.drawPixel(right-3, top, EYE_BRIGHTNESS * 0.3);
-      eye_led_matrix.drawPixel(left+2, top, EYE_BRIGHTNESS * 0.3);
-      eye_led_matrix.drawPixel(right-1, top+2, EYE_BRIGHTNESS * 0.3);
-      eye_led_matrix.drawPixel(left, top+2, EYE_BRIGHTNESS * 0.3);
-      eye_led_matrix.drawPixel(right-3, bottom-1, EYE_BRIGHTNESS * 0.3);
-      eye_led_matrix.drawPixel(left+2, bottom-1, EYE_BRIGHTNESS * 0.3);
-      eye_led_matrix.drawPixel(right-1, bottom-3, EYE_BRIGHTNESS * 0.5);
-      eye_led_matrix.drawPixel(left, bottom-3, EYE_BRIGHTNESS * 0.3);
+      eye_draw_pixel(right-3, top, EYE_BRIGHTNESS * 0.3, pixel_buffer);
+      eye_draw_pixel(left+2, top, EYE_BRIGHTNESS * 0.3, pixel_buffer);
+      eye_draw_pixel(right-1, top+2, EYE_BRIGHTNESS * 0.3, pixel_buffer);
+      eye_draw_pixel(left, top+2, EYE_BRIGHTNESS * 0.3, pixel_buffer);
+      eye_draw_pixel(right-3, bottom-1, EYE_BRIGHTNESS * 0.3, pixel_buffer);
+      eye_draw_pixel(left+2, bottom-1, EYE_BRIGHTNESS * 0.3, pixel_buffer);
+      eye_draw_pixel(right-1, bottom-3, EYE_BRIGHTNESS * 0.3, pixel_buffer);
+      eye_draw_pixel(left, bottom-3, EYE_BRIGHTNESS * 0.3, pixel_buffer);
             
-      eye_led_matrix.drawPixel(right-2, top+1, EYE_BRIGHTNESS * 0.75);
-      eye_led_matrix.drawPixel(left+1, top+1, EYE_BRIGHTNESS * 0.75);
-      eye_led_matrix.drawPixel(right-2, bottom-2, EYE_BRIGHTNESS * 0.75);
-      eye_led_matrix.drawPixel(left+1, bottom-2, EYE_BRIGHTNESS * 0.75);
+      eye_draw_pixel(right-2, top+1, EYE_BRIGHTNESS * 0.75, pixel_buffer);
+      eye_draw_pixel(left+1, top+1, EYE_BRIGHTNESS * 0.75, pixel_buffer);
+      eye_draw_pixel(right-2, bottom-2, EYE_BRIGHTNESS * 0.75, pixel_buffer);
+      eye_draw_pixel(left+1, bottom-2, EYE_BRIGHTNESS * 0.75, pixel_buffer);
     }   
 
   //irises
   for(y=top_iris; y<bottom_iris; y++) //top to bottom
     {
       for(x=left_iris; x<right_iris; x++) //left to right
-        eye_led_matrix.drawPixel(x, y, 0);
+        eye_draw_pixel(x, y, 0, pixel_buffer);
     }
-  
-  eye_led_matrix.displayFrame(eye_current_frame);
+
+  int i = 0;
+  for(x=0; x<6; x++)
+    {
+      Wire.beginTransmission(0x74);
+      Wire.write((byte) 0x24 + i);
+      
+      for(y=0; y<24; y++)
+        Wire.write((byte) pixel_buffer[i++]);
+        
+      Wire.endTransmission();
+    }
+
+  //Serial.println(millis() - now);
 }
 
 /* -------------------------------------------------------------- */
@@ -340,28 +429,32 @@ void eye_animate_run_loop(void)
 
   float r;
   r = eye_random();
+
+
   
   // typical blink rate of adults is every 4 seconds
-  /*
+
+/*
   if(r < (EYE_UPDATE_INTERVAL / (4.0 * 1000.0)))
-    eye_animate_blink(eye, queues);
+    eye_animate_blink();
+*/
+/*
+  r = eye_random();
+  if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
+    eye_animate_single_param(EYE_IRIS_POSITION_X, floor(4*eye_random()) - 1, 200);
 
   r = eye_random();
   if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
-    eye_animate_single_param(eye, queues, EYE_IRIS_POSITION_X, floor(4*eye_random()) - 1, 200);
-
+    eye_animate_single_param(EYE_IRIS_POSITION_Y, floor(4*eye_random()) - 1, 200);
   r = eye_random();
   if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
-    eye_animate_single_param(eye, queues, EYE_IRIS_POSITION_Y, floor(4*eye_random()) - 1, 200);
-
-  r = eye_random();
-  if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
-    eye_animate_single_param(eye, queues, EYE_POSITION_Y, floor(3*eye_random()) - 1, 200);
-
+    eye_animate_single_param(EYE_POSITION_Y, floor(3*eye_random()) - 1, 200);
+*/
+/*
   r = eye_random();
   if(r < (EYE_UPDATE_INTERVAL / (30 * 1000.0)))
-    eye_animate_shifty(eye, queues, 4, 500);
-    */
+    eye_animate_shifty(4, 200);
+*/
 }
 
 /* -------------------------------------------------------------- */

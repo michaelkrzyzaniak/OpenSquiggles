@@ -3,7 +3,7 @@
 #include "Interface.h"
 
 /*----------------------------------------------------*/
-#define       SOLENOID_TIMER_THREAD_INTERVAL 10000 //usec
+#define       SOLENOID_TIMER_THREAD_INTERVAL 1000 //usec
 #define       SOLENOID_NUM_SOLENOIDS 2
 #define       SOLENOID_TIMER_DURATION_SECONDS 0.05
 IntervalTimer solenoid_timer_thread;
