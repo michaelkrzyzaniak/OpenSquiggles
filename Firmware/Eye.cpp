@@ -8,10 +8,8 @@
 /* eye is powered by 3.3 V */
 /* draws 20 mA at brightness 30 */
 /* draws 100 mA at brightness 255 */
+/* eye update loop takesnabout 15 ms to run (mostly consumed by i2c) */
 
-#define EYE_UNCONNECTED_ANALOG_PIN 0 //for seeding random
-#define EYE_BRIGHTNESS 30 //max is 255
-#define  EYE_UPDATE_INTERVAL    33 //millisecs
 
 /* -------------------------------------------------------------- */
 typedef enum eye_param_indices_enum
@@ -27,11 +25,16 @@ typedef enum eye_param_indices_enum
   EYE_NUM_PARAMS         ,
 }eye_param_t;
 
-float    EYE_DEFAULT_VALS[] =  {12, 9, 0, 0, 6, 2, 0, 0};
-#define  EYE_INIT_USE_DEFAULTS -128
-#define  EYE_NULL_VALUE        -127
-#define  EYE_LED_WIDTH  16
-#define  EYE_LED_HEIGHT 9
+float    EYE_DEFAULT_VALS[] =     {12, 9, 0, 0, 6, 2, 0, 0};
+#define  EYE_INIT_USE_DEFAULTS    -128
+#define  EYE_NULL_VALUE           -127
+#define  EYE_LED_WIDTH             16
+#define  EYE_LED_HEIGHT            9
+
+#define EYE_UNCONNECTED_ANALOG_PIN 0   //for seeding random
+#define EYE_BRIGHTNESS             30  //max is 255
+#define EYE_UPDATE_INTERVAL        33  //millisecs
+#define EYE_SACCADE_TIMER_DURATION 2000 /*milliseconds*/ / EYE_UPDATE_INTERVAL
 
 /* -------------------------------------------------------------- */
 typedef struct opaque_eye_struct
@@ -51,15 +54,18 @@ void eye_animate_run_loop(void);
 IntervalTimer       eye_timer_thread;
 List*               eye_global_queues;
 Eye*                eye_global_eye;
-volatile int        eye_current_frame;
+
+int                 eye_global_saccade_resume_timer;
+int                 eye_global_is_initalized;
 
 /* -------------------------------------------------------------- */
 void eye_init_module()
 {
+  eye_global_is_initalized = 0;
   eye_setup_IS31FL3731();
   eye_global_queues = list_new();
   eye_global_eye    = eye_new(EYE_INIT_USE_DEFAULTS);
-  eye_current_frame = 0;
+  eye_global_saccade_resume_timer = 0;
   randomSeed(analogRead(EYE_UNCONNECTED_ANALOG_PIN));
   eye_timer_thread.priority(128);
   eye_timer_thread.begin(eye_animate_run_loop, EYE_UPDATE_INTERVAL * 1000);
@@ -147,6 +153,19 @@ void eye_setup_IS31FL3731()
   Wire.write((byte) 0xFD);
   Wire.write((byte) 0x0B);
   Wire.endTransmission();
+
+  //make sure the byte we just wrote 'stuck'
+  //otherwise the board is not powered on.
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0xFD);
+  Wire.endTransmission();
+  
+  Wire.requestFrom(0x74, 1, true);
+  if(Wire.available())
+    if(Wire.read() == 0x0B)
+      eye_global_is_initalized = 1;
+  if(eye_global_is_initalized != 1)
+    return;
   
   //go into shutdown mode
   Wire.beginTransmission(0x74);
@@ -155,19 +174,12 @@ void eye_setup_IS31FL3731()
   Wire.endTransmission();
 
   delay(10);
-  
-  //come out of shutdown mode
-  Wire.beginTransmission(0x74);
-  Wire.write((byte) 0x0A);
-  Wire.write((byte) 0x01);
-  Wire.endTransmission();
 
   //picture mode
   Wire.beginTransmission(0x74);
   Wire.write((byte) 0x00);
   Wire.write((byte) 0x00);
   Wire.endTransmission();
-
 
   //display frame 0
   Wire.beginTransmission(0x74);
@@ -189,7 +201,19 @@ void eye_setup_IS31FL3731()
       Wire.beginTransmission(0x74);
       Wire.write((byte) 0xFD);
       Wire.write((byte) frame);
-      Wire.endTransmission(); 
+      Wire.endTransmission();
+
+      /* set PWM to 0 for each pixel in this frame */
+      int i, j;
+      for(i=0; i<6; i++)
+        {
+          Wire.beginTransmission(0x74);
+          Wire.write((byte) 0x24 + 24*i);
+          for(j=0; j<24; j++)
+            Wire.write((byte) 0);
+          Wire.endTransmission();
+        }
+      /* turn LED on for each pixel in this frame */
       for (reg=0; reg<=0x11; reg++)
         {
           Wire.beginTransmission(0x74);
@@ -198,7 +222,19 @@ void eye_setup_IS31FL3731()
           Wire.endTransmission(); 
         }
     }
-    
+
+  //switch back to page 9
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0xFD);
+  Wire.write((byte) 0x0B);
+  Wire.endTransmission();
+  
+  //come out of shutdown mode
+  Wire.beginTransmission(0x74);
+  Wire.write((byte) 0x0A);
+  Wire.write((byte) 0x01);
+  Wire.endTransmission();
+  
   //switch back to page 0 for animating to frame 0
   Wire.beginTransmission(0x74);
   Wire.write((byte) 0xFD);
@@ -209,11 +245,8 @@ void eye_setup_IS31FL3731()
 /* -------------------------------------------------------------- */
 void eye_draw(Eye* eye)
 {
-  //unsigned long now = millis();
   int x, y;
   unsigned char pixel_buffer[EYE_LED_WIDTH * EYE_LED_HEIGHT] = {0};
-  
-  //++eye_current_frame; eye_current_frame %= 8;
 
   float center_x = EYE_LED_WIDTH  * 0.5;
   float center_y = EYE_LED_HEIGHT * 0.5;
@@ -293,19 +326,17 @@ void eye_draw(Eye* eye)
         eye_draw_pixel(x, y, 0, pixel_buffer);
     }
 
-  int i = 0;
+  //for unknown reasons we have to write blocks of at most 24 bytes at a time
+  //this takes 15 ms, could be closer to 5 ms it we could write all in one transmission
+  int i=0;
   for(x=0; x<6; x++)
     {
       Wire.beginTransmission(0x74);
       Wire.write((byte) 0x24 + i);
-      
       for(y=0; y<24; y++)
         Wire.write((byte) pixel_buffer[i++]);
-        
       Wire.endTransmission();
     }
-
-  //Serial.println(millis() - now);
 }
 
 /* -------------------------------------------------------------- */
@@ -386,8 +417,14 @@ Eye_Animation_Queue* eye_animation_queue_destroy(Eye_Animation_Queue* self)
 /* -------------------------------------------------------------- */
 void eye_animate_run_loop(void)
 {  
-  Eye* eye = eye_global_eye; //mate
+  Eye* eye = eye_global_eye;
   List* queues = eye_global_queues;
+
+  if(eye_global_is_initalized != 1)
+    {
+       eye_setup_IS31FL3731();
+       return;
+    }
   
   list_iterator_t iter = list_reset_iterator(queues);
   Eye_Animation_Queue* queue;
@@ -427,34 +464,43 @@ void eye_animate_run_loop(void)
 
   eye_draw(eye);
 
-  float r;
-  r = eye_random();
+  if(eye_global_saccade_resume_timer <= 0)
+    {
+      float r;
+      r = eye_random();  
+      // typical blink rate of adults is every 4 seconds
+      // but this is too busy looking
+      if(r < (EYE_UPDATE_INTERVAL / (6.0 * 1000.0)))
+        eye_animate_blink();
 
+        
+      r = eye_random();
+      if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
+        {
+          float xx = 4*eye_random();
+          eye_animate_single_param(EYE_IRIS_POSITION_X, floor(xx) - 1, 200);
+          eye_animate_single_param(EYE_POSITION_X     , floor(xx) - 1, 200);
+        }
 
-  
-  // typical blink rate of adults is every 4 seconds
+      r = eye_random();
+      if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
+        {
+          float yy = 3*eye_random();
+          eye_animate_single_param(EYE_IRIS_POSITION_Y, 2 * (floor(yy) - 1), 200);
+          eye_animate_single_param(EYE_POSITION_Y     , floor(yy) - 1, 200);
+        }
 
-/*
-  if(r < (EYE_UPDATE_INTERVAL / (4.0 * 1000.0)))
-    eye_animate_blink();
-*/
-/*
-  r = eye_random();
-  if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
-    eye_animate_single_param(EYE_IRIS_POSITION_X, floor(4*eye_random()) - 1, 200);
-
-  r = eye_random();
-  if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
-    eye_animate_single_param(EYE_IRIS_POSITION_Y, floor(4*eye_random()) - 1, 200);
-  r = eye_random();
-  if(r < (EYE_UPDATE_INTERVAL / (1.5 * 1000.0)))
-    eye_animate_single_param(EYE_POSITION_Y, floor(3*eye_random()) - 1, 200);
-*/
-/*
-  r = eye_random();
-  if(r < (EYE_UPDATE_INTERVAL / (30 * 1000.0)))
-    eye_animate_shifty(4, 200);
-*/
+      /*
+      r = eye_random();
+      if(r < (EYE_UPDATE_INTERVAL / (60 * 1000.0)))
+        eye_animate_shifty(4, 100);
+     */
+     
+      //not completely thread safe, but issues should correct themselves on next run loop
+      eye_global_saccade_resume_timer = 0;
+    }
+  else
+    --eye_global_saccade_resume_timer;
 }
 
 /* -------------------------------------------------------------- */
@@ -593,7 +639,9 @@ void eye_animate_blink()
   target_eye->c[EYE_IRIS_WIDTH]  = 0;
   target_eye->c[EYE_POSITION_Y]  = eye_global_eye->c[EYE_POSITION_Y]+2;
 
-  eye_go_to_pose_stay_and_return(eye_global_eye, eye_global_queues, target_eye, 60, 60, 60);
+  eye_go_to_pose_stay_and_return(eye_global_eye, eye_global_queues, target_eye, 66, 0, 66);
+
+  eye_global_saccade_resume_timer = EYE_SACCADE_TIMER_DURATION;
 }
 
 /* -------------------------------------------------------------- */

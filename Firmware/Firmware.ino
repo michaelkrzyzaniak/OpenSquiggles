@@ -5,7 +5,6 @@
 /*----------------------------------------------*/
 void setup(void)
 {
-  //Serial.begin(115200);  //testing only!
   eye_init_module();
   solenoid_init();
   interface_init();
