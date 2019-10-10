@@ -32,12 +32,15 @@ todo:
 	control striking strength
 	optimize eye code and library, check i2c speed with logic analyzer
 	Check if eye is initalized and, if not, try again
+	Turn saccades on and off automatically depending on whether rhythm is playing
 	
 4) Main
 	include tap strength in rhythm generation
 	make new rhythm generation algorithms, e.g. 2-beat delay
 	check if it will run on bela or raspi, and port code.
 	Add methods to Microphone.c like turn beat bell on / off.
+	auto boot main in foreground of raspi
+	optimize raspi for low latency, turn off x-window at boot
 
 5) Strikers
 	find metal scraps for beat bell, other materials for other solenoids?
@@ -79,3 +82,12 @@ cat /proc/asound/cards
 ~/.asoundrc
 
 https://www.alsa-project.org/alsa-doc/alsa-lib/_2test_2rawmidi_8c-example.html
+
+
+
+sudo raspi-config
+Start X-server after boot? --> disable
+sudo apt-get purge wolfram-engine
+
+
+
