@@ -8,7 +8,7 @@ chain 1 between each crochet in bind-off row
 todo: 
 
 1) Fix 5v supply
-	make shunt to measure current
+	*make shunt to measure current
 	check max current of regulator and components
 	put correct capacitors on both regulators.
 	work out how to power bela from headers
@@ -25,25 +25,32 @@ todo:
 	mounting points for solenoids and whatever they strike
 	space for pins on eye controller board
 	space for ttl connection to raspi?
+	Fix USB hole at bottom / hold pi in place securely for plugging and unplugging pi usb
 	INSERT EYE RIGHT_SIDE UP!
+        make central tentacles a flat panel to hold pi in place? Just at the bottom?
+	Notch for PI sd card?
 
 3) Firmware
-	fix priority competition between eye and solenoid -- move midi read to solenoid thread?
+	*fix priority competition between eye and solenoid -- move midi read to solenoid thread?
 	control striking strength
-	optimize eye code and library, check i2c speed with logic analyzer
-	Check if eye is initalized and, if not, try again
-	Turn saccades on and off automatically depending on whether rhythm is playing
+	*optimize eye code and library, check i2c speed with logic analyzer
+	*Check if eye is initalized and, if not, try again
+	*Turn saccades on and off automatically depending on whether rhythm is playing
 	
 4) Main
-	include tap strength in rhythm generation
-	make new rhythm generation algorithms, e.g. 2-beat delay
-	check if it will run on bela or raspi, and port code.
-	Add methods to Microphone.c like turn beat bell on / off.
+	*include tap strength in rhythm generation
+	*make new rhythm generation algorithms, e.g. 2-beat delay
+	*check if it will run on bela or raspi, and port code.
+	*Add methods to Microphone.c like turn beat bell on / off.
 	auto boot main in foreground of raspi
 	optimize raspi for low latency, turn off x-window at boot
+	New module for teaching rhythms?
+	Two-beat delay fix lag between onset and beat
+	Option to turn on and off quantization
 
 5) Strikers
 	find metal scraps for beat bell, other materials for other solenoids?
+	Figure out which capacitors to put across solenoids
 
 //-----------------------------------------------
 CPPFLAGS+=-D__BELA__

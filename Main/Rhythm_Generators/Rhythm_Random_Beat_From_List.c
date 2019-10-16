@@ -106,50 +106,6 @@ void         rhythm_random_beat_from_list_onset   (void* SELF, BTT* beat_tracker
 }
 
 /*--------------------------------------------------------------------*/
-//move this whole thing later
-#include <math.h>
-float       rhythm_default_strength_for_onset(float beat_time, int n)
-{
-  //returns the 1 over the denominator of the nearest rational
-  //number to beat_time, considering only denominators not
-  //greater than n. Uses some damn thing related to the Ford
-  //circle packing. Good luck trying to understand how it works.
-  
-  int i;
-  int num_a=0, denom_a=1, num_b=1, denom_b=1, num_c, denom_c;
-  float a,c;
-  
-  for(i=0; i<n; i++)
-    {
-      a = num_a / (float)denom_a;
-      if(a == beat_time)
-        break;
-      
-      if((denom_a + denom_b) > n)
-        break;
-
-      num_c = num_a + num_b;
-      denom_c = denom_a + denom_b;
-
-      c = num_c / (float)denom_c;
-  
-      if(beat_time < c)
-        {num_b=num_c; denom_b=denom_c;}
-      else
-        {num_a=num_c; denom_a=denom_c;}
-    }
-
-  if(fabs(c-beat_time) < fabs(a-beat_time))
-     denom_a = denom_c;
-  float b = num_b / (float)denom_b;
-  if(fabs(b-beat_time) < fabs(a-beat_time))
-     denom_a = denom_b;
-
-  //return sqrt(1.0 / (float)denom_a);
-  return 1.0 / (float)denom_a;
-}
-
-/*--------------------------------------------------------------------*/
 int          rhythm_random_beat_from_list_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
 {
   Rhythm_Random_Beat_From_List* self = (Rhythm_Random_Beat_From_List*)SELF;
@@ -163,11 +119,9 @@ int          rhythm_random_beat_from_list_beat    (void* SELF, BTT* beat_tracker
   for(i=0; i<len; i++)
     {
       returned_rhythm[i].beat_time = rhythm_random_beat_from_list_list[r][i+1];
-      returned_rhythm[i].strength = rhythm_default_strength_for_onset(returned_rhythm[i].beat_time, 6);
+      returned_rhythm[i].strength = -1;
       returned_rhythm[i].timbre_class = 1;
     }
   return len;
-  
-  
 }
 

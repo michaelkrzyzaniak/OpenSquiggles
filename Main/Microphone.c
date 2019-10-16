@@ -146,7 +146,18 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   int i;
   float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   for(i=0; i<self->num_rhythm_onsets; i++)
-    self->rhythm_onsets[i].beat_time *= round(beat_period * (1000000 / (double)MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL));
+    {
+      rhythm_onset_t onset = self->rhythm_onsets[i];
+      int num, denom;
+      rhythm_get_rational_approximation(onset.beat_time, 8, &num, &denom);
+      if(onset.strength < 0)
+        onset.strength = 1.0 / denom;
+      if(true /*self->should_quantize*/)
+        onset.beat_time = (float)num / (float)denom;
+        
+      
+      self->rhythm_onsets[i].beat_time *= round(beat_period * (1000000 / (double)MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL));
+    }
   
   self->beat_clock = 0;
   

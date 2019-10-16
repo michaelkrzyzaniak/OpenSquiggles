@@ -62,6 +62,10 @@ const char*  rhythm_get_name(Rhythm* self);
 void         rhythm_onset   (Rhythm* self, BTT* beat_tracker, unsigned long long sample_time);
 int          rhythm_beat    (Rhythm* self, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen);
 
+//utilities
+void  rhythm_get_rational_approximation(float onset_time, int n, int* num, int* denom);
+float rhythm_get_default_onset_strength(float onset_time, int n);
+
 //Private
 #define rhythm_destroy(s)          ((Rhythm*)(s))->destroy ((s));
 #define rhythm_get_name(s)         ((Rhythm*)(s))->name    ((s));
