@@ -92,6 +92,7 @@ int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned lo
      returned_rhythm should contain values on [0~1) in ascending order
      that specify where within the beat the onset should occur. 0 indicates right now, 0.5
      is midway through the beat, etc. [0, 0.25, 0.5, 0.75] would be four 16th notes.
+   
      Return the number of values written into returned_rhythm, not to exceed returned_rhythm_maxlen.
      sample_time tells you how many samples into the audio stream the beat occurrs,
      and might be in the past or future.
@@ -99,7 +100,7 @@ int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned lo
   Rhythm_Template* self = (Rhythm_Template*)SELF;
   
   returned_rhythm[0].beat_time    = 0;
-  returned_rhythm[0].strength     = 1;
+  returned_rhythm[0].strength     = 1; //use -1 if you want a default strength to be applied
   returned_rhythm[0].timbre_class = 0;
 
   returned_rhythm[1].beat_time    = 0.25;
