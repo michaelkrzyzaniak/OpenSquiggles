@@ -4,12 +4,12 @@
 
 /*----------------------------------------------------*/
 #define       SOLENOID_TIMER_THREAD_INTERVAL 1000 //usec
-#define       SOLENOID_NUM_SOLENOIDS 2
-#define       SOLENOID_TIMER_DURATION_SECONDS 0.05
+#define       SOLENOID_NUM_SOLENOIDS 8
+#define       SOLENOID_TIMER_DURATION_SECONDS 0.025
 IntervalTimer solenoid_timer_thread;
 int           solenoid_duration = (int)((SOLENOID_TIMER_DURATION_SECONDS * 1000000.0 / ((double)SOLENOID_TIMER_THREAD_INTERVAL)) + 0.5);
 int           solenoid_current_solenoid = 0;
-volatile int  solenoid_pins[SOLENOID_NUM_SOLENOIDS]    = {9, 10};
+volatile int  solenoid_pins[SOLENOID_NUM_SOLENOIDS]    = {10, 9, 6, 5, 4, 3, 20, 21};
 volatile int  solenoid_timers[SOLENOID_NUM_SOLENOIDS]  = {0};
 
 void solenoid_timer_thread_run_loop(void);
@@ -33,8 +33,20 @@ void solenoid_init()
 /*----------------------------------------------------*/
 void solenoid_tap (float strength)
 {
-  solenoid_tap_specific(solenoid_current_solenoid+1, strength);
-  ++solenoid_current_solenoid; solenoid_current_solenoid %= (SOLENOID_NUM_SOLENOIDS-1);
+  /* cycle between indices but exclude index 0 because it is the bell */
+  //solenoid_tap_specific(solenoid_current_solenoid+1, strength);
+  //++solenoid_current_solenoid; solenoid_current_solenoid %= (SOLENOID_NUM_SOLENOIDS-1);
+
+  float decrement = 1.0/3.0;
+
+  while(strength > 0)
+    {
+
+      solenoid_tap_specific(solenoid_current_solenoid+1, 3.0 * min(decrement, strength));
+      strength -= decrement;
+      ++solenoid_current_solenoid; solenoid_current_solenoid %= (SOLENOID_NUM_SOLENOIDS-1);
+    }
+  
 }
 
 /*----------------------------------------------------*/
@@ -53,7 +65,9 @@ void solenoid_tap_specific(int index, float strength)
    
   noInterrupts();
   solenoid_timers[index] = solenoid_duration;
-  analogWrite(solenoid_pins[index], 120 + strength*135);
+  //analogWrite(solenoid_pins[index], strength*255);
+  //analogWrite(solenoid_pins[index], 127 + strength*128);
+  analogWrite(solenoid_pins[index], 205 + strength*50);
   interrupts(); 
 }
 

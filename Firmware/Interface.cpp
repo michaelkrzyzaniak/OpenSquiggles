@@ -46,13 +46,22 @@ void interface_note_on_callback(midi_channel_t chan, midi_pitch_t pitch, midi_ve
   
   //if(chan == (*midi_channel) - 1)
     {
-      float spd = vel / 127.0;
+      float strength = vel / 127.0;
       
       switch(pitch)
         {
-          
+          case 60: /* cascade */
+          case 61: /* cascade */
+          case 62: /* cascade */
+          case 63: /* cascade */
+          case 64: /* cascade */
+          case 65: /* cascade */
+          case 66: /* cascade */
+          case 67: /* cascade */
+              solenoid_tap_specific((pitch-60), strength); 
+              break;
           default: 
-            solenoid_tap(spd);
+            solenoid_tap(strength);
             break;
         }
     }
