@@ -29,6 +29,7 @@ todo:
 	INSERT EYE RIGHT_SIDE UP!
         make central tentacles a flat panel to hold pi in place? Just at the bottom?
 	Notch for PI sd card?
+	Holes for solenoid wires to enter bottom plate
 
 Teensy: Cut trace on underside of boards!
 
