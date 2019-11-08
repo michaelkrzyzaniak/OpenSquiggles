@@ -30,6 +30,7 @@ typedef struct parameter_struct
 /*--------------------------------------------------------------------*/
 int main(void)
 {
+  fprintf(stderr, "Version 1.0\r\n");
   fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   int param_index = 0;
