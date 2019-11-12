@@ -92,14 +92,20 @@ const char*  rhythm_two_beat_delay_name    (void* SELF)
   static const char* name = "Two_Beat_Delay";
   return name;
 }
+//TESTING ONLY!!!!!!!!!!!!!
+unsigned long long prev_beat_test = 0;
 
 /*--------------------------------------------------------------------*/
 void         rhythm_two_beat_delay_onset   (void* SELF, BTT* beat_tracker, unsigned long long sample_time)
 {
   Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
+  int adjustment = btt_get_beat_prediction_adjustment_audio_samples(beat_tracker);
+  if(sample_time > adjustment) sample_time -= adjustment;// sample_time -= 64;
+  fprintf(stderr, "discrepancy %lli\r\n", (signed long long)sample_time - (signed long long)prev_beat_test);
   self->onset_times[self->onsets_index] = sample_time;
   ++self->onsets_index; self->onsets_index %= NUM_ONSET_TIMES;
   ++self->num_onsets;
+  
   
   /* if buffer is full, shift out the oldest samples */
   if(self->num_onsets > NUM_ONSET_TIMES)
@@ -121,6 +127,10 @@ int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsig
 {
   Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
   
+  //fprintf(stderr, "beat_time %llu\r\n", sample_time);
+  
+  prev_beat_test = sample_time;
+  
   self->beat_times[self->beats_index] = sample_time;
   int start_beats_index = (self->beats_index + NUM_BEAT_TIMES - (int)self->beats_delay    ) % NUM_BEAT_TIMES;
   int end_beats_index   = (self->beats_index + NUM_BEAT_TIMES - (int)self->beats_delay + 1) % NUM_BEAT_TIMES;
@@ -130,7 +140,16 @@ int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsig
   
   if(beat_duration < 0) return 0;
   
-  
+  /*-----------------------------------*/
+  //testing only!!!!!!!!!!!!!!!!!!!!!!!!!!
+  /*
+  returned_rhythm[0].beat_time = 0;
+  returned_rhythm[0].strength  = -1;
+  returned_rhythm[0].timbre_class = 0;
+  return 1;
+  */
+  /*-----------------------------------*/
+
   int n=0;
   while(self->num_onsets > 0)
     {
@@ -143,12 +162,16 @@ int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsig
           returned_rhythm[n].timbre_class = 0;
           ++n;
         }
-      //else the onset is older than the start beat, so just ignore it and let it get shifted out
-      
+      else //the onset is older than the start beat, so just ignore it and let it get shifted out
+        {
+          //returned_rhythm[n].beat_time    = (self->onset_times[self->onsets_head_index] - self->beat_times[start_beats_index]) / (float)beat_duration;
+          //returned_rhythm[n].strength     = -1;
+          //returned_rhythm[n].timbre_class = 0;
+          //++n;
+        }
       ++self->onsets_head_index; self->onsets_head_index %= NUM_ONSET_TIMES;
       --self->num_onsets;
     }
-  
   
   return n;
 }

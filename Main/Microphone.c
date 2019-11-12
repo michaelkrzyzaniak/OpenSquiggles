@@ -152,7 +152,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
       rhythm_get_rational_approximation(onset->beat_time, 8, &num, &denom);
       if(onset->strength < 0)
         onset->strength = 1.0 / denom;
-      if(true /*self->should_quantize*/)
+      if(1 /*self->should_quantize*/)
         onset->beat_time = (float)num / (float)denom;
     
       onset->beat_time *= round(beat_period * (1000000 / (double)MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL));

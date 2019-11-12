@@ -102,7 +102,7 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
       if(error >= 0)
         {
           error = snd_pcm_hw_params_any(self->device, hardwareParameters);
-            if(error < 0) fprintf(stderr, "Audio.c: Unable to get a generic hardware configuration: %s\n", snd_strerror(error));
+          if(error < 0) fprintf(stderr, "Audio.c: Unable to get a generic hardware configuration: %s\n", snd_strerror(error));
         }
       if(error >= 0)
         {
