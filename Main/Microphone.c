@@ -123,7 +123,7 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
         {
           click_click(self->click, 0.5);
           //robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
-          //fprintf(stderr, "onset\r\n");
+          fprintf(stderr, "onset\r\n");
         }
     }
 
@@ -164,8 +164,8 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
     {
       click_klop(self->click, 0.5);
       robot_send_message(self->robot, robot_cmd_bell, 1.0 /*strength*/);
+      fprintf(stderr, "beat\r\n");
     }
-  
   
   if(btt_get_tracking_mode(self->btt) != BTT_TEMPO_LOCKED_BEAT_TRACKING)
     {
@@ -230,6 +230,7 @@ Rhythm* mic_set_rhythm_generator       (Microphone* self, rhythm_new_funct const
   if(self->rhythm != NULL)
     self->rhythm = rhythm_destroy(self->rhythm);
   self->rhythm = (constructor == NULL) ? NULL : constructor(self->btt);
+  self->num_rhythm_onsets = 0;
   pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
   
   return self->rhythm;

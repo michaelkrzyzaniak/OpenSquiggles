@@ -46,6 +46,7 @@ Rhythm* rhythm_template_new(BTT* beat_tracker)
     
       /* initalize instance variables below here */
       /* return rhythm_template_destroy(self) on failure */
+    
     }
   
   return (Rhythm*)self;
