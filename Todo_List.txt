@@ -40,6 +40,15 @@ Teensy: Cut trace on underside of boards!
 	*optimize eye code and library, check i2c speed with logic analyzer
 	*Check if eye is initalized and, if not, try again
 	*Turn saccades on and off automatically depending on whether rhythm is playing
+
+2.5 FIX LASER CUT SKELETON 2.0
+	Plywood is 3.75mm, not 4mm
+	solenoid molex connectors don't fit in bottom plate because of nub on connector
+	More space between button and switch
+	board height wrong
+	Move solenoid holes slightly up
+	Hole for power cable and teensy USB
+	close pi in all the way up
 	
 4) Main
 	*include tap strength in rhythm generation
