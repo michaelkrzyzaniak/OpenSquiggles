@@ -7,78 +7,18 @@ chain 1 between each crochet in bind-off row
 
 todo: 
 
-1) Fix 5v supply
-	*make shunt to measure current
-	check max current of regulator and components
-	put correct capacitors on both regulators.
-	work out how to power bela from headers
-	Find better regulator for raspi
-
 2) Fix laser-cut skeleton
-	Eye hole too small
-	eye hole could stick forward further
-	notches in eye hole to receive diffuser plate
-	large tentacles smaller, small ones bigger
-	make yarn grabber points bigger
-	make enough space for internal components (pi, bealge?)
-	fix issues with wood thickness
-	mounting points for solenoids *** and whatever they strike ***
-	space for pins on eye controller board
 	space for ttl connection to raspi?
-	Fix USB hole at bottom / hold pi in place securely for plugging and unplugging pi usb
-	INSERT EYE RIGHT_SIDE UP!
-        make central tentacles a flat panel to hold pi in place? Just at the bottom?
-	Notch for PI sd card?
-	Holes for solenoid wires to enter bottom plate
-	Make sure SD card is removable
-
-Teensy: Cut trace on underside of boards!
-
-3) Firmware
-	*fix priority competition between eye and solenoid -- move midi read to solenoid thread?
-	*control striking strength
-	*optimize eye code and library, check i2c speed with logic analyzer
-	*Check if eye is initalized and, if not, try again
-	*Turn saccades on and off automatically depending on whether rhythm is playing
-
-2.5 FIX LASER CUT SKELETON 2.0
-	Plywood is 3.75mm, not 4mm
-	solenoid molex connectors don't fit in bottom plate because of nub on connector
-	More space between button and switch
-	board height wrong
-	Move solenoid holes slightly up
-	Hole for power cable and teensy USB
-	close pi in all the way up
 	
 4) Main
-	*include tap strength in rhythm generation
-	*make new rhythm generation algorithms, e.g. 2-beat delay
-	*check if it will run on bela or raspi, and port code.
-	*Add methods to Microphone.c like turn beat bell on / off.
 	auto boot main in foreground of raspi
 	optimize raspi for low latency, turn off x-window at boot
 	New module for teaching rhythms?
+	New module for decaying histograms
 	Two-beat delay fix lag between onset and beat
 	Option to turn on and off quantization
 
-5) Strikers
-	find metal scraps for beat bell, other materials for other solenoids?
-	Figure out which capacitors to put across solenoids
 
-//-----------------------------------------------
-CPPFLAGS+=-D__BELA__
-
-
-C_SRC += $(wildcard $(PROJECT_DIR)/Robot_Communication_Framework/*.c); 
-
-
-CPP_SRC += $(wildcard $(PROJECT_DIR)/Robot_Communication_Framework/*.cpp);
-
-
-gcc -c -D__BELA__ -I../../../include/ *.c *.cpp
-
-
-Software: malloc.c:2406: sysmalloc: Assertion `(old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)' failed
 
 //-----------------------------------------------
 Raspberry pi
