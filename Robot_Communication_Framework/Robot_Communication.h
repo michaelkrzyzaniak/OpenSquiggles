@@ -50,7 +50,7 @@ typedef void  (*robot_message_received_callback)(void* self, char* message, robo
 #define ROBOT_MIDI_DEVICE_NAME "Dr Squiggles"
 
 #elif defined  __linux__
-#define ROBOT_MIDI_DEVICE_NAME "hw:0,0,0"
+#define ROBOT_MIDI_DEVICE_NAME "default"
 #endif
 
 #if defined __ROBOT_MIDI_HOST__

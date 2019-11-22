@@ -38,8 +38,36 @@ https://raspberrypi.stackexchange.com/questions/80072/how-can-i-use-an-external-
 cat /proc/asound/modules
 cat /proc/asound/cards
 
+sudo nano /boot/config.txt
+#dtparam=audio=on
+dtparam=audio=off
+sudo reboot now
 
 ~/.asoundrc
+pcm.!default {
+        type hw
+        card 0
+}
+
+ctl.!default {
+        type hw
+        card 0
+}
+EOF
+
+
+/usr/share/alsa/alsa.conf
+defaults.ctl.card 0
+defaults.pcm.card 0
+
+
+
+
+
+
+
+
+
 
 https://www.alsa-project.org/alsa-doc/alsa-lib/_2test_2rawmidi_8c-example.html
 

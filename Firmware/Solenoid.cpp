@@ -9,7 +9,7 @@
 IntervalTimer solenoid_timer_thread;
 int           solenoid_duration = (int)((SOLENOID_TIMER_DURATION_SECONDS * 1000000.0 / ((double)SOLENOID_TIMER_THREAD_INTERVAL)) + 0.5);
 int           solenoid_current_solenoid = 0;
-volatile int  solenoid_pins[SOLENOID_NUM_SOLENOIDS]    = {10, 9, 6, 5, 4, 3, 20, 21};
+volatile int  solenoid_pins[SOLENOID_NUM_SOLENOIDS]    = {10, 9, 20, 21, 6, 5, 4, 3};
 volatile int  solenoid_timers[SOLENOID_NUM_SOLENOIDS]  = {0};
 
 void solenoid_timer_thread_run_loop(void);
