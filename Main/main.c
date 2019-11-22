@@ -31,7 +31,7 @@ typedef struct parameter_struct
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  fprintf(stderr, "Version 1.2\r\n");
+  fprintf(stderr, "Version 1.3\r\n");
   fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   int param_index = 0;
@@ -41,6 +41,8 @@ int main(void)
   
   Microphone*  mic = mic_new();
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
+  
+  mic_set_rhythm_generator       (mic, rhythm_random_beat_from_list_new);
   
   BTT* btt = mic_get_btt(mic);
   btt_set_tracking_mode(btt, BTT_COUNT_IN_TRACKING);
