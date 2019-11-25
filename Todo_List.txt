@@ -64,7 +64,9 @@ defaults.pcm.card 0
 
 
 
-
+alsamixer 
+	f4 (caputre)
+	43 (full green, no white)
 
 
 
