@@ -14,7 +14,7 @@
 
 #include <pthread.h>
 
-#define MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL 1000 //usec
+#define MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL 1000 //1000 usec, 1ms
 
 void  mic_onset_detected_callback(void* SELF, unsigned long long sample_time);
 void  mic_beat_detected_callback (void* SELF, unsigned long long sample_time);
@@ -164,7 +164,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
     {
       click_klop(self->click, 0.5);
       robot_send_message(self->robot, robot_cmd_bell, 1.0 /*strength*/);
-      fprintf(stderr, "beat\r\n");
+      //fprintf(stderr, "beat\r\n");
     }
   
   if(btt_get_tracking_mode(self->btt) != BTT_TEMPO_LOCKED_BEAT_TRACKING)
@@ -289,6 +289,10 @@ void* mic_rhythm_thread_run_loop (void* SELF)
         
       ++self->beat_clock; //reset at the begining of each beat
       ++self->thread_clock; //never reset
+    
+      fprintf(stderr, self->thread_clock);
+    
+    
     
       while((timestamp_get_current_time() - start) < (self->thread_clock*MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL - 25))
         usleep(50);

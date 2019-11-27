@@ -22,6 +22,19 @@ timestamp_microsecs_t timestamp_get_current_time()
 /*----------------------------------------------------------*/
 #elif defined __linux__
 #include <sys/time.h>
+
+//-compile with -lrt ?
+timestamp_microsecs_t timestamp_get_current_time()
+{
+  timestamp_microsecs_t result;
+  struct timespec t;
+  clock_gettime(CLOCK_REALTIME /*CLOCK_MONOTONIC_RAW*/, &t);
+  result  = t.tv_sec * 1000000;
+  result += t.tv_nsec / 1000;  //int division, good enough
+  
+  return result;
+}
+/*
 timestamp_microsecs_t timestamp_get_current_time()
 {
   timestamp_microsecs_t result;
@@ -33,5 +46,5 @@ timestamp_microsecs_t timestamp_get_current_time()
   
   return result;
 }
-
+*/
 #endif
