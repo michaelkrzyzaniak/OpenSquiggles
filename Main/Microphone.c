@@ -290,7 +290,7 @@ void* mic_rhythm_thread_run_loop (void* SELF)
       ++self->beat_clock; //reset at the begining of each beat
       ++self->thread_clock; //never reset
     
-      fprintf(stderr, self->thread_clock);
+      fprintf(stderr, "%llu\t%u\r\n", self->thread_clock, self->beat_clock);
     
     
     
