@@ -21,9 +21,10 @@ timestamp_microsecs_t timestamp_get_current_time()
 
 /*----------------------------------------------------------*/
 #elif defined __linux__
-#include <sys/time.h>
+//#include <sys/time.h>
+#include <time.h>
 
-//-compile with -lrt ?
+//-compile with -lrt
 timestamp_microsecs_t timestamp_get_current_time()
 {
   timestamp_microsecs_t result;

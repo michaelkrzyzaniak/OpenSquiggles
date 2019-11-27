@@ -3,7 +3,7 @@
 
 //Linux compile with:
 //sudo apt-get install libasound2-dev
-//gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c -lasound -lm -lpthread -O2
+//gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c -lasound -lm -lpthread -lrt -O2
 
 #include "Microphone.h"
 
