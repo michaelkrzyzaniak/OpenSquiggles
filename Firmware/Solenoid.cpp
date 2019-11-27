@@ -41,7 +41,6 @@ void solenoid_tap (float strength)
 
   while(strength > 0)
     {
-
       solenoid_tap_specific(solenoid_current_solenoid+1, 3.0 * min(decrement, strength));
       strength -= decrement;
       ++solenoid_current_solenoid; solenoid_current_solenoid %= (SOLENOID_NUM_SOLENOIDS-1);

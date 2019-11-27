@@ -5,10 +5,15 @@ Colored yarn on inside of needle
 Eyes in row 21, 6 wide, pins 13 to 18
 chain 1 between each crochet in bind-off row
 
+Bind on with working yarn starting on pin 4 (first white one), dont catch pin 29 or 31, 
+Bind off with waste yarn, crochet off with working yarn
+
 todo: 
 
 2) Fix laser-cut skeleton
-	space for ttl connection to raspi?
+	Hole where dinger cable enters base plate on wrong side of arm
+	Eye slot longer (can this be glue-less)
+	
 	
 4) Main
 	auto boot main in foreground of raspi
@@ -66,7 +71,8 @@ defaults.pcm.card 0
 
 alsamixer 
 	f4 (caputre)
-	43 (full green, no white)
+	#43 (full green, no white)
+        3 (barely green)
 
 
 
@@ -76,6 +82,16 @@ https://www.alsa-project.org/alsa-doc/alsa-lib/_2test_2rawmidi_8c-example.html
 
 
 sudo raspi-config
+
+2 Network Options
+	N2 Wi-fi
+		SSID: Dr_Squiggles
+		Pass: isthebest!
+
+3 Boot Options
+	B1 Desktop / CLI
+		B2 Console Autologin Text console, automatically logged in as 'pi' user 
+
 Start X-server after boot? --> disable
 sudo apt-get purge wolfram-engine
 
