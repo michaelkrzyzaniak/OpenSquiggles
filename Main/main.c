@@ -29,11 +29,9 @@ typedef struct parameter_struct
 }param_t;
 
 /*--------------------------------------------------------------------*/
-#define TEST_INTERVAL 1000  //testing only 
-#include "Timestamp.h" //testing only
 int main(void)
 {
-  fprintf(stderr, "Version 1.5\r\n");
+  fprintf(stderr, "Version 1.6\r\n");
   fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   int param_index = 0;

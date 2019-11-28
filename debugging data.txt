@@ -1,0 +1,231 @@
+9:52
+10:06
+Connection to 192.168.43.35 closed by remote host.
+
+
+Pi on robot
+10:09 - 10:35 showing strange behaviour
+	same behaviour in headphones
+	printf "beat" seems slow
+	2-beat delay -- I tap once on beat, robot taps once on each of next two beats
+	template -- all solenoids strike on all beats
+	count in new tempo works fine
+	2-beat delay onsets detected at correct time, discrepancies appear to have plausible values
+	quitting and restarting makes it work (firmware did not reboot)
+
+Macbook -> Headphones
+	10:54 - 11:54 still working, killed for lack of time...
+
+Pi on robot faster tempo, -lrt timing function
+	8:12 - 9:08 Failure, (56 minutes)
+	Beat clock counting too high, e.g. 55347, 53318, 60905, 51914 (should be about 600 at this tempo)
+	console very slow
+
+
+Pi on robot debug messages
+13:09 - 13:54 return from lunch and strange behaviour (45 minutes)
+Failure at 14.5950333 minutes (875702 cycles)
+Timestamp jumped up by 10 orders of magnitude (1000 times current unix epoch)
+using CLOCK_MONOTONIC_RAW
+
+start: 1272332506	now: 1762961924	uptime:490629418                      
+num_cycles: 490627
+cycle_duration: 3
+beat clock: 571
+
+start: 1272332506	now: 1762962062	uptime:490629556
+num_cycles: 490628
+cycle_duration: 138
+beat clock: 572
+
+start: 1272332506	now: 1762962156	uptime:490629650
+num_cycles: 490629
+cycle_duration: 94
+beat clock: 573
+
+start: 1272332506	now: 1762962509	uptime:490630003
+num_cycles: 490630
+cycle_duration: 353
+beat clock: 574
+
+start: 1272332506	now: 1762969550	uptime:490637044
+num_cycles: 490637
+cycle_duration: 372
+beat clock: 581
+
+start: 1272332506	now: 1810199568	uptime:537867062
+num_cycles: 537867
+cycle_duration: 497
+beat clock: 245
+
+start: 1272332506	now: 2050270567	uptime:777938061
+num_cycles: 777932
+cycle_duration: 3
+beat clock: 343
+
+start: 1272332506	now: 2050270689	uptime:777938183
+num_cycles: 777933
+cycle_duration: 122
+beat clock: 344
+
+start: 1272332506	now: 2050270764	uptime:777938258
+num_cycles: 777934
+cycle_duration: 75
+beat clock: 345
+
+start: 1272332506	now: 2050270833	uptime:777938327
+num_cycles: 777935
+cycle_duration: 69
+beat clock: 346
+
+start: 1272332506	now: 2050270896	uptime:777938390
+num_cycles: 777936
+cycle_duration: 63
+beat clock: 347
+
+start: 1272332506	now: 2050270951	uptime:777938445
+num_cycles: 777937
+cycle_duration: 55
+beat clock: 348
+
+start: 1272332506	now: 2050271009	uptime:777938503
+num_cycles: 777938
+cycle_duration: 58
+beat clock: 349
+
+(uptime just now reached 32 bits)
+
+start: 1272332506	now: 18446744071562617104	uptime:18446744070290284598
+num_cycles: 875702
+cycle_duration: 4
+beat clock: 161
+
+start: 1272332506	now: 18446744071562617226	uptime:18446744070290284720
+num_cycles: 875703
+cycle_duration: 122
+beat clock: 162
+
+start: 1272332506	now: 18446744071562617314	uptime:18446744070290284808
+num_cycles: 875704
+cycle_duration: 88
+beat clock: 163
+
+start: 1272332506	now: 18446744071562617390	uptime:18446744070290284884
+num_cycles: 875705
+cycle_duration: 76
+beat clock: 164
+
+start: 1272332506	now: 18446744071562617452	uptime:18446744070290284946
+num_cycles: 875706
+cycle_duration: 62
+beat clock: 165
+
+start: 1272332506	now: 18446744071562617507	uptime:18446744070290285001
+num_cycles: 875707
+cycle_duration: 55
+beat clock: 166
+
+start: 1272332506	now: 18446744071562617570	uptime:18446744070290285064
+num_cycles: 875708
+cycle_duration: 63
+beat clock: 167
+
+start: 1272332506	now: 18446744071562617633	uptime:18446744070290285127
+num_cycles: 875709
+cycle_duration: 63
+beat clock: 168
+
+start: 1272332506	now: 18446744071562617688	uptime:18446744070290285182
+num_cycles: 875710
+cycle_duration: 55
+beat clock: 169
+
+
+...
+
+start: 1272332506	now: 18446744073403552626	uptime:18446744072131220120
+num_cycles: 5827885
+cycle_duration: 65
+beat clock: 5094
+
+start: 1272332506	now: 18446744073403552665	uptime:18446744072131220159
+num_cycles: 5827886
+cycle_duration: 39
+beat clock: 5095
+
+start: 1272332506	now: 18446744073403552705	uptime:18446744072131220199
+num_cycles: 5827887
+cycle_duration: 40
+beat clock: 5096
+
+start: 1272332506	now: 18446744073403552771	uptime:18446744072131220265
+num_cycles: 5827888
+cycle_duration: 66
+beat clock: 5097
+
+start: 1272332506	now: 18446744073403552835	uptime:18446744072131220329
+num_cycles: 5827889
+cycle_duration: 64
+beat clock: 5098
+
+start: 1272332506	now: 18446744073403552928	uptime:18446744072131220422
+num_cycles: 5827890
+cycle_duration: 93
+beat clock: 5099
+
+
+
+
+
+New test, repeat of previous
+14:26 - 14:35 failure (9 minutes)
+
+start: 1608939496	now: 18446744071562649798	uptime:18446744069953710302
+num_cycles: 539127
+cycle_duration: 3
+beat clock: 497
+
+start: 1608939496	now: 18446744071562649983	uptime:18446744069953710487
+num_cycles: 539128
+cycle_duration: 185
+beat clock: 498
+
+start: 1608939496	now: 18446744071562650325	uptime:18446744069953710829
+num_cycles: 539129
+cycle_duration: 342
+beat clock: 499
+
+start: 1608939496	now: 18446744071562650531	uptime:18446744069953711035
+num_cycles: 539130
+cycle_duration: 206
+beat clock: 500
+
+start: 1608939496	now: 18446744071562650897	uptime:18446744069953711401
+num_cycles: 539131
+cycle_duration: 366
+beat clock: 501
+
+start: 1608939496	now: 18446744071562651173	uptime:18446744069953711677
+num_cycles: 539132
+cycle_duration: 276
+beat clock: 502
+
+start: 1608939496	now: 18446744071562651343	uptime:18446744069953711847
+num_cycles: 539133
+cycle_duration: 170
+beat clock: 503
+
+start: 1608939496	now: 18446744071562651585	uptime:18446744069953712089
+num_cycles: 539134
+cycle_duration: 242
+beat clock: 504
+
+start: 1608939496	now: 18446744071562651798	uptime:18446744069953712302
+num_cycles: 539135
+cycle_duration: 213
+beat clock: 505
+
+start: 1608939496	now: 18446744071562651961	uptime:18446744069953712465
+num_cycles: 539136
+cycle_duration: 163
+beat clock: 506

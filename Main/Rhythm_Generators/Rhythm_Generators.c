@@ -7,7 +7,7 @@
 void rhythm_get_rational_approximation(float onset_time, int n, int* num, int* denom)
 {
   int num_a=0, denom_a=1, num_b=1, denom_b=1, num_c, denom_c, extra;
-  float a,b,c;
+  float a=0,b,c;
   
   extra = floor(onset_time);
   onset_time -= extra;
