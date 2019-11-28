@@ -229,3 +229,7 @@ start: 1608939496	now: 18446744071562651961	uptime:18446744069953712465
 num_cycles: 539136
 cycle_duration: 163
 beat clock: 506
+
+
+Fixed timestamp cast issue, repeat test
+15:16
