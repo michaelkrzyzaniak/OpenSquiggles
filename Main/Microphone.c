@@ -123,7 +123,7 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
         {
           click_click(self->click, 0.5);
           //robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
-          fprintf(stderr, "onset\r\n");
+          //fprintf(stderr, "onset\r\n");
         }
     }
 
@@ -290,7 +290,7 @@ void* mic_rhythm_thread_run_loop (void* SELF)
       ++self->beat_clock; //reset at the begining of each beat
       ++self->thread_clock; //never reset
     
-      fprintf(stderr, "%llu\t%u\r\n", self->thread_clock, self->beat_clock);
+      //fprintf(stderr, "%llu\t%u\r\n", self->thread_clock, self->beat_clock);
     
     
     
