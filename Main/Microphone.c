@@ -146,7 +146,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   int i;
   float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   
-  fprintf(stderr, "[");
+  //fprintf(stderr, "[");
   for(i=0; i<self->num_rhythm_onsets; i++)
     {
       rhythm_onset_t* onset = &self->rhythm_onsets[i];
@@ -158,9 +158,9 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
         onset->beat_time = (float)num / (float)denom;
     
       onset->beat_time *= round(beat_period * (1000000 / (double)MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL));
-      fprintf(stderr, " %i: %f ", i, onset->beat_time);
+      //fprintf(stderr, " %i: %f ", i, onset->beat_time);
     }
-  fprintf(stderr, "]\r\n");
+  //fprintf(stderr, "]\r\n");
   self->beat_clock = 0;
   
   if(self->play_beat_bell)
@@ -280,6 +280,8 @@ void* mic_rhythm_thread_run_loop (void* SELF)
   Microphone* self = (Microphone*)SELF;
   timestamp_microsecs_t start = timestamp_get_current_time();
   
+  unsigned long long test1 = 0, test2 = 0;
+  
   while(self->rhythm_thread_run_loop_running)
     {
       if(self->rhythm_onsets_index < self->num_rhythm_onsets)
@@ -295,10 +297,20 @@ void* mic_rhythm_thread_run_loop (void* SELF)
     
       //fprintf(stderr, "%llu\t%u\r\n", self->thread_clock, self->beat_clock);
     
-    
-    
       while((timestamp_get_current_time() - start) < (self->thread_clock*MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL - 25))
         usleep(50);
+      
+      test1 = timestamp_get_current_time();
+      if(((test1 - start) - test2) < 500)
+        {
+          fprintf(stderr, "start: %llu\tnow: %llu\tuptime:%llu\r\n", start, test1, test1-start);
+          fprintf(stderr, "num_cycles: %llu\r\n", self->thread_clock);
+          fprintf(stderr, "cycle_duration: %llu\r\n", (test1 - start) - test2);
+          fprintf(stderr, "beat clock: %i\r\n", self->beat_clock);
+          fprintf(stderr, "\r\n");
+        
+        }
+      test2 = test1 - start;
     }
   return NULL;
 }
