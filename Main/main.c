@@ -33,21 +33,7 @@ typedef struct parameter_struct
 #include "Timestamp.h" //testing only
 int main(void)
 {
-  fprintf(stderr, "Test*******************\r\n");
-  unsigned long long test_thread_clock=100000001;
-  timestamp_microsecs_t test_start = timestamp_get_current_time() - 100000000000;
-  fprintf(stderr, "a: %llu\r\n", timestamp_get_current_time() - test_start);
-  fprintf(stderr, "b: %llu\r\n", test_thread_clock*TEST_INTERVAL - 25);
-  
-  if((timestamp_get_current_time() - test_start) < (test_thread_clock*TEST_INTERVAL - 25))
-    fprintf(stderr, "a is less than b\r\n");
-  else
-    fprintf(stderr, "a is greater than (or =) b\r\n");
-  
-  //(timestamp_get_current_time() - test_start) < (test_thread_clock*TEST_INTERVAL - 25)
-  fprintf(stderr, "End Test*******************\r\n");
-
-  fprintf(stderr, "Version 1.4 test\r\n");
+  fprintf(stderr, "Version 1.5\r\n");
   fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   int param_index = 0;

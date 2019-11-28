@@ -145,6 +145,8 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   
   int i;
   float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
+  
+  fprintf(stderr, "[");
   for(i=0; i<self->num_rhythm_onsets; i++)
     {
       rhythm_onset_t* onset = &self->rhythm_onsets[i];
@@ -156,8 +158,9 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
         onset->beat_time = (float)num / (float)denom;
     
       onset->beat_time *= round(beat_period * (1000000 / (double)MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL));
+      fprintf(stderr, " %i: %f ", i, onset->beat_time);
     }
-  
+  fprintf(stderr, "]\r\n");
   self->beat_clock = 0;
   
   if(self->play_beat_bell)
