@@ -31,7 +31,7 @@ typedef struct parameter_struct
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  fprintf(stderr, "Version 1.6\r\n");
+  fprintf(stderr, "Version 1.7\r\n");
   fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   int param_index = 0;
@@ -45,6 +45,7 @@ int main(void)
   mic_set_rhythm_generator       (mic, rhythm_random_beat_from_list_new);
   
   BTT* btt = mic_get_btt(mic);
+  btt_set_beat_prediction_adjustment(btt, 0.000000);
   btt_set_tracking_mode(btt, BTT_COUNT_IN_TRACKING);
   
 param_t params[] =
