@@ -103,7 +103,7 @@ int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned lo
   returned_rhythm[0].beat_time    = 0;
   returned_rhythm[0].strength     = 1; //use -1 if you want a default strength to be applied
   returned_rhythm[0].timbre_class = 0;
-
+/*
   returned_rhythm[1].beat_time    = 0.25;
   returned_rhythm[1].strength     = 0.1;
   returned_rhythm[1].timbre_class = 0;
@@ -117,7 +117,8 @@ int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned lo
   returned_rhythm[3].timbre_class = 0;
   
   return 4;
-  
+*/
+  return 1;
   
 }
 
