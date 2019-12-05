@@ -31,7 +31,7 @@ typedef struct parameter_struct
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  fprintf(stderr, "Version 1.7\r\n");
+  fprintf(stderr, "Version 1.8\r\n");
   fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   int param_index = 0;
@@ -58,6 +58,15 @@ param_t params[] =
     .increment = 1,
     .self = mic,
     .name = "mic_set_rhythm_generator_index",
+  },
+  {
+    .set = (funct)mic_set_quantization_order,
+    .get = (funct)mic_get_quantization_order,
+    .type = 'i',
+    .init = 8,
+    .increment = 1,
+    .self = mic,
+    .name = "mic_set_quantization_order",
   },
   {
     .set = (funct)mic_set_should_play_beat_bell,

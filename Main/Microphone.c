@@ -47,6 +47,8 @@ struct OpaqueMicrophoneStruct
   
   pthread_mutex_t rhythm_generator_swap_mutex;
 
+  int      farey_order;
+  
   unsigned beat_clock;
   unsigned long long thread_clock;
   
@@ -99,6 +101,7 @@ Microphone* mic_new()
         return (Microphone*)auDestroy((Audio*)self);
       
       mic_set_should_play_beat_bell   (self, 1);
+      mic_set_quantization_order(self, 8);
     }
   
   //there should be a play callback that I can intercept and do this there.
@@ -151,7 +154,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
     {
       rhythm_onset_t* onset = &self->rhythm_onsets[i];
       int num, denom;
-      rhythm_get_rational_approximation(onset->beat_time, 8, &num, &denom);
+      rhythm_get_rational_approximation(onset->beat_time, self->farey_order, &num, &denom);
       if(onset->strength < 0)
         onset->strength = 1.0 / denom;
       if(1 /*self->should_quantize*/)
@@ -275,12 +278,23 @@ int               mic_get_should_play_beat_bell   (Microphone* self)
 }
 
 /*--------------------------------------------------------------------*/
+void              mic_set_quantization_order(Microphone* self, int order)
+{
+  if(order < 0) order = 0;
+  self->farey_order = order;
+}
+
+/*--------------------------------------------------------------------*/
+int               mic_get_quantization_order(Microphone* self)
+{
+  return self->farey_order;
+}
+
+/*--------------------------------------------------------------------*/
 void* mic_rhythm_thread_run_loop (void* SELF)
 {
   Microphone* self = (Microphone*)SELF;
   timestamp_microsecs_t start = timestamp_get_current_time();
-  
-  unsigned long long test1 = 0, test2 = 0;
   
   while(self->rhythm_thread_run_loop_running)
     {
@@ -291,26 +305,22 @@ void* mic_rhythm_thread_run_loop (void* SELF)
             robot_send_message(self->robot, robot_cmd_tap, self->rhythm_onsets[self->rhythm_onsets_index].strength);
             ++self->rhythm_onsets_index;
           }
+      //ignore any other (duplicate) onsets that are supposed to happen right now
+      while(self->rhythm_onsets_index < self->num_rhythm_onsets)
+        {
+          if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
+            ++self->rhythm_onsets_index;
+          else break;
+        }
         
       ++self->beat_clock; //reset at the begining of each beat
       ++self->thread_clock; //never reset
     
+      
       //fprintf(stderr, "%llu\t%u\r\n", self->thread_clock, self->beat_clock);
     
-      while((timestamp_get_current_time() - start) < (self->thread_clock*MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL - 25))
+      while((timestamp_get_current_time() - start) < self->thread_clock*MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL)
         usleep(50);
-      
-      test1 = timestamp_get_current_time();
-      if(((test1 - start) - test2) < 500)
-        {
-          fprintf(stderr, "start: %llu\tnow: %llu\tuptime:%llu\r\n", start, test1, test1-start);
-          fprintf(stderr, "num_cycles: %llu\r\n", self->thread_clock);
-          fprintf(stderr, "cycle_duration: %llu\r\n", (test1 - start) - test2);
-          fprintf(stderr, "beat clock: %i\r\n", self->beat_clock);
-          fprintf(stderr, "\r\n");
-        
-        }
-      test2 = test1 - start;
     }
   return NULL;
 }
