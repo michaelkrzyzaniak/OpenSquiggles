@@ -1,3 +1,10 @@
+new changes
+update Teensy firmware 
+update
+	os.system('echo shutdown button pressed | wall')
+sudo nano /usr/local/bin/listen-for-shutdown.py
+
+
 ************************************************
 ************************************************
 ************************************************
@@ -12,13 +19,30 @@ sudo nano listen-for-shutdown.py
 
 import RPi.GPIO as GPIO
 import subprocess
-
+import os
+import time
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.wait_for_edge(3, GPIO.FALLING)
 
-subprocess.call(['shutdown', '-h', 'now'], shell=False)
+while True:
+	GPIO.wait_for_edge(3, GPIO.FALLING)
+	#os.system('echo falling | wall')
+	can_shutdown = True;
+
+	for x in range(0, 10):
+		time.sleep(0.1)
+		if(GPIO.input(3) != 0):
+        		#os.system('echo didnt stay pressed long enough | wall')
+			can_shutdown = False;
+			break;
+
+	if(can_shutdown):
+		os.system('echo shutdown button pressed | wall')
+		subprocess.call(['shutdown', '-h', 'now'], shell=False)	
+
+
+
 ------------------------------------------------
 
 sudo mv listen-for-shutdown.py /usr/local/bin/

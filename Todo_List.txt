@@ -1,3 +1,5 @@
+/opt/vc/bin/vcgencmd measure_temp
+
 Knitting Notes:
 Stopper between pins 32 and 33
 Colored yarn on inside of needle
