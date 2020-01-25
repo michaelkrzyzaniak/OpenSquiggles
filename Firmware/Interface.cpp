@@ -86,6 +86,13 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
             interface_send_aok();
           }
          break;
+      case robot_hash_tap_specific:
+        if(num_args == 2)
+          {
+            solenoid_tap_specific(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[1]));
+            interface_send_aok();
+          }
+         break;
       case robot_hash_bell:
         if(num_args == 1)
           {

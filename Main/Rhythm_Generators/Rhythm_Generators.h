@@ -15,7 +15,8 @@ extern "C"{
 #endif   //(__cplusplus)
 
 #include "../../Beat-and-Tempo-Tracking/BTT.h"
-#include "stdio.h" //NULL
+#include <stdio.h> //NULL
+#include <stdlib.h> //calloc
 
 //Public
 typedef struct rhythm_onset_struct
@@ -46,6 +47,8 @@ typedef Rhythm* (*rhythm_new_funct)(BTT*);
 Rhythm* rhythm_template_new(BTT* btt);
 Rhythm* rhythm_random_beat_from_list_new(BTT* btt);
 Rhythm* rhythm_two_beat_delay_new(BTT* btt);
+Rhythm* rhythm_OSC_new(BTT* btt);
+Rhythm* rhythm_inverse_histogram_new(BTT* btt);
 
 static const rhythm_new_funct rhythm_constructors[] =
 {
@@ -53,6 +56,8 @@ static const rhythm_new_funct rhythm_constructors[] =
   rhythm_random_beat_from_list_new,
   rhythm_two_beat_delay_new,
   rhythm_template_new,
+  rhythm_OSC_new,
+  rhythm_inverse_histogram_new, 
 };
 
 static const int   rhythm_num_constructors = sizeof(rhythm_constructors) / sizeof(*rhythm_constructors);

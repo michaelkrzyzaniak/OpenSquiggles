@@ -15,7 +15,6 @@
  */
 
 #include "Rhythm_Generators.h"
-#include <stdlib.h> //calloc
 
 /*--------------------------------------------------------------------*/
 void*        rhythm_random_beat_from_list_destroy (void*);
@@ -120,7 +119,7 @@ int          rhythm_random_beat_from_list_beat    (void* SELF, BTT* beat_tracker
     {
       returned_rhythm[i].beat_time = rhythm_random_beat_from_list_list[r][i+1];
       returned_rhythm[i].strength = -1;
-      returned_rhythm[i].timbre_class = 1;
+      returned_rhythm[i].timbre_class = -1;
     }
   return len;
 }

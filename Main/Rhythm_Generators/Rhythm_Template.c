@@ -15,7 +15,6 @@
  */
 
 #include "Rhythm_Generators.h"
-#include <stdlib.h> //calloc
 
 /*--------------------------------------------------------------------*/
 void*        rhythm_template_destroy (void*);
@@ -101,8 +100,8 @@ int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned lo
   Rhythm_Template* self = (Rhythm_Template*)SELF;
   
   returned_rhythm[0].beat_time    = 0;
-  returned_rhythm[0].strength     = 1; //use -1 if you want a default strength to be applied
-  returned_rhythm[0].timbre_class = 0;
+  returned_rhythm[0].strength     = -1; //use -1 if you want a default strength to be applied
+  returned_rhythm[0].timbre_class = -1; //use -1 to have the robot choose the solenoid, or 0 to 7 to use a specific one
 /*
   returned_rhythm[1].beat_time    = 0.25;
   returned_rhythm[1].strength     = 0.1;

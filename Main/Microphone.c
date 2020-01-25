@@ -301,8 +301,13 @@ void* mic_rhythm_thread_run_loop (void* SELF)
       if(self->rhythm_onsets_index < self->num_rhythm_onsets)
         if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
           {
+            int timbre = self->rhythm_onsets[self->rhythm_onsets_index].timbre_class;
             click_click(self->click, self->rhythm_onsets[self->rhythm_onsets_index].strength);
-            robot_send_message(self->robot, robot_cmd_tap, self->rhythm_onsets[self->rhythm_onsets_index].strength);
+            if(timbre < 0)
+              robot_send_message(self->robot, robot_cmd_tap, self->rhythm_onsets[self->rhythm_onsets_index].strength);
+            else
+              robot_send_message(self->robot, robot_cmd_tap, timbre, self->rhythm_onsets[self->rhythm_onsets_index].strength);
+          
             ++self->rhythm_onsets_index;
           }
       //ignore any other (duplicate) onsets that are supposed to happen right now
@@ -315,9 +320,6 @@ void* mic_rhythm_thread_run_loop (void* SELF)
         
       ++self->beat_clock; //reset at the begining of each beat
       ++self->thread_clock; //never reset
-    
-      
-      //fprintf(stderr, "%llu\t%u\r\n", self->thread_clock, self->beat_clock);
     
       while((timestamp_get_current_time() - start) < self->thread_clock*MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL)
         usleep(50);

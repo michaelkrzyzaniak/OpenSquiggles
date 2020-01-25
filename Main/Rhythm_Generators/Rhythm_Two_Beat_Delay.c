@@ -15,7 +15,6 @@
  */
 
 #include "Rhythm_Generators.h"
-#include <stdlib.h> //calloc
 
 /*--------------------------------------------------------------------*/
 void*        rhythm_two_beat_delay_destroy (void*);
@@ -159,7 +158,7 @@ int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsig
         {
           returned_rhythm[n].beat_time    = (self->onset_times[self->onsets_head_index] - self->beat_times[start_beats_index]) / (float)beat_duration;
           returned_rhythm[n].strength     = 1;
-          returned_rhythm[n].timbre_class = 0;
+          returned_rhythm[n].timbre_class = -1;
           ++n;
         }
       else //the onset is older than the start beat, so just ignore it and let it get shifted out
