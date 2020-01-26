@@ -171,7 +171,7 @@ int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long lo
     {
       returned_rhythm[i].beat_time    = self->onsets[i].beat_time;
       returned_rhythm[i].strength     = self->onsets[i].strength;
-      returned_rhythm[i].timbre_class = 0;//self->onsets[i].timbre_class;;
+      returned_rhythm[i].timbre_class = self->onsets[i].timbre_class;
     }
   self->num_onsets = 0;
   pthread_mutex_unlock(&self->onset_buffer_mutex);
@@ -182,6 +182,7 @@ int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long lo
   if(num_bytes > 0)
     net_udp_send(self->net, self->osc_send_buffer, num_bytes, "255.255.255.255", OSC_SEND_PORT);
   
+  fprintf(stderr, "num_onsets: %i\r\n", i);
   return i;
   
 }
@@ -196,12 +197,10 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
   for(;;)
   {
     int num_valid_bytes = net_udp_receive (self->net, self->osc_recv_buffer, OSC_BUFFER_SIZE, senders_address);
-    fprintf(stderr, "HERE  1\r\n");
     if(num_valid_bytes < 0)
       continue; //return NULL ?
   
     int num_osc_values = oscParse(self->osc_recv_buffer, num_valid_bytes, &osc_address, &osc_type_tag, self->osc_values_buffer, OSC_VALUES_BUFFER_SIZE);
-    fprintf(stderr, "HERE  2\r\n");
     if(num_osc_values < 0)
         continue;
   
@@ -209,18 +208,14 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
     if(address_hash == 3170568888) // '/rhythm'
       {
         // /rhythm <int>robot_id <int>beat_id <float 0~1>time_1 <int 0~127>midi_note_number_1 <float 0~1>strength_1 <float 0~1>time_2 <int 0~127>midi_note_number_2 <float 0~1>strength_2 ...
-      fprintf(stderr, "HERE  3\r\n");
+      
         if(num_osc_values < 2)     continue; //must have robot_id and beat_id
-        fprintf(stderr, "HERE  4\r\n");
         if((num_osc_values-2) % 3) continue; //after that, must have onset triplets
-        fprintf(stderr, "HERE  5\r\n");
         int robot_id = oscValueAsInt(self->osc_values_buffer[0], osc_type_tag[0]);
         int beat_id  = oscValueAsInt(self->osc_values_buffer[1], osc_type_tag[1]);
       
         if((robot_id != self->robot_id) || (beat_id != self->beat_id))
           continue;
-      
-      fprintf(stderr, "HERE  6\r\n");
       
         int i, j=0;
         pthread_mutex_lock(&self->onset_buffer_mutex);
@@ -233,10 +228,7 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
           }
         self->num_onsets = j;
         pthread_mutex_unlock(&self->onset_buffer_mutex);
-      
-        fprintf(stderr, "num_onsets  %i\r\n\r\n\r\n", j);
       }
   }
-  
 }
 
