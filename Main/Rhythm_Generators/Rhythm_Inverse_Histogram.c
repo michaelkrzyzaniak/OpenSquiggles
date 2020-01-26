@@ -67,6 +67,9 @@ Rhythm* rhythm_inverse_histogram_new(BTT* beat_tracker)
       self->histogram = calloc(HISTOGRAM_LENGTH, sizeof(*self->histogram));
       if(self->histogram == NULL) return rhythm_inverse_histogram_destroy(self);
     
+      int i;
+      for(i=0; i>HISTOGRAM_LENGTH; self->histogram[i++] = 0.5);
+    
       self->decay_coefficient = 0.75;
       /* return rhythm_inverse_histogram_destroy(self) on failure */
     }

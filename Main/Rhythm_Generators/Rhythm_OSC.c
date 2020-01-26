@@ -16,6 +16,7 @@
 
 #include "Rhythm_Generators.h"
 #include <pthread.h>
+#include <math.h>
 
 #include "../extras/Network.h" //calloc
 #include "../extras/OSC.h" //calloc
@@ -96,6 +97,14 @@ Rhythm* rhythm_OSC_new(BTT* beat_tracker)
 }
 
 /*--------------------------------------------------------------------*/
+uint32_t rhythm_OSC_sample_time_to_millis(BTT* beat_tracker, unsigned long long sample_time)
+{
+  //overflows after about 50 days
+  double  sample_rate = btt_get_sample_rate(beat_tracker);
+  return (uint32_t) round(1000.0 * (sample_time / (long double) sample_rate));
+}
+
+/*--------------------------------------------------------------------*/
 void*      rhythm_OSC_destroy (void* SELF)
 {
   Rhythm_OSC* self = (Rhythm_OSC*)SELF;
@@ -134,9 +143,8 @@ void         rhythm_OSC_onset   (void* SELF, BTT* beat_tracker, unsigned long lo
      you can do whatever you want with this information, or ignore it.
   */
   Rhythm_OSC* self = (Rhythm_OSC*)SELF;
-  unsigned high = sample_time >> 32;
-  unsigned low  = sample_time & 0xFFFFFFFF;
-  int num_bytes = oscConstruct(self->osc_send_buffer, OSC_BUFFER_SIZE, "/onset", "ii", high, low);
+  unsigned millis = rhythm_OSC_sample_time_to_millis(beat_tracker, sample_time);
+  int num_bytes = oscConstruct(self->osc_send_buffer, OSC_BUFFER_SIZE, "/onset", "i", millis);
   if(num_bytes > 0)
     net_udp_send(self->net, self->osc_send_buffer, num_bytes, "255.255.255.255", OSC_SEND_PORT);
 }
@@ -169,9 +177,8 @@ int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long lo
   pthread_mutex_unlock(&self->onset_buffer_mutex);
 
   ++self->beat_id;
-  unsigned high = sample_time >> 32;
-  unsigned low  = sample_time & 0xFFFFFFFF;
-  int num_bytes = oscConstruct(self->osc_send_buffer, OSC_BUFFER_SIZE, "/beat", "iiii", high, low, self->robot_id, self->beat_id);
+  unsigned millis = rhythm_OSC_sample_time_to_millis(beat_tracker, sample_time);
+  int num_bytes = oscConstruct(self->osc_send_buffer, OSC_BUFFER_SIZE, "/beat", "iii", millis, self->robot_id, self->beat_id);
   if(num_bytes > 0)
     net_udp_send(self->net, self->osc_send_buffer, num_bytes, "255.255.255.255", OSC_SEND_PORT);
   
