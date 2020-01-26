@@ -182,9 +182,7 @@ int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long lo
   if(num_bytes > 0)
     net_udp_send(self->net, self->osc_send_buffer, num_bytes, "255.255.255.255", OSC_SEND_PORT);
   
-  fprintf(stderr, "num_onsets: %i\r\n", i);
   return i;
-  
 }
 
 /*--------------------------------------------------------------------*/
