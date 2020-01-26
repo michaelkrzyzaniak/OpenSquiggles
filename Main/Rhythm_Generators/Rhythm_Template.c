@@ -118,7 +118,7 @@ int          rhythm_template_beat    (void* SELF, BTT* beat_tracker, unsigned lo
   
   return 4;
 */
-  return 1;
+  return 2;
   
 }
 
