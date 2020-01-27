@@ -45,6 +45,8 @@ typedef struct opaque_rhythm_inverse_histogram_struct
   float*              histogram;
   float               decay_coefficient;
   
+  int                 is_inverse;
+  
   
 }Rhythm_Inverse_Histogram;
 
@@ -68,9 +70,12 @@ Rhythm* rhythm_inverse_histogram_new(BTT* beat_tracker)
       if(self->histogram == NULL) return rhythm_inverse_histogram_destroy(self);
     
       int i;
-      for(i=0; i>HISTOGRAM_LENGTH; self->histogram[i++] = 0.5);
+      //for(i=0; i<HISTOGRAM_LENGTH; self->histogram[i++] = 0.5);      // all 0.5
+      for(i=0; i<HISTOGRAM_LENGTH; self->histogram[i++] = random()%2); // 0 or 1 with 50% probability
     
       self->decay_coefficient = 0.75;
+    
+      self->is_inverse = 1;
       /* return rhythm_inverse_histogram_destroy(self) on failure */
     }
   
@@ -92,6 +97,15 @@ void*      rhythm_inverse_histogram_destroy (void* SELF)
     }
   return (Rhythm*) NULL;
 }
+
+/*--------------------------------------------------------------------*/
+void  rhythm_inverse_histogram_set_is_inverse    (void* SELF, int is_inverse)
+{
+  /* just return the name of the module for display */
+  Rhythm_Inverse_Histogram* self = (Rhythm_Inverse_Histogram*)SELF;
+  self->is_inverse = is_inverse;
+}
+
 
 /*--------------------------------------------------------------------*/
 const char*  rhythm_inverse_histogram_name    (void* SELF)
@@ -155,16 +169,15 @@ int          rhythm_inverse_histogram_beat    (void* SELF, BTT* beat_tracker, un
       --self->num_onsets;
     }
 
-  
-  
   //update and decay the histogram
   for(i=0; i<SUBDIVIDIONS_PER_BEAT; i++)
     {
       self->histogram[self->histogram_index + i] *= self->decay_coefficient;
       self->histogram[self->histogram_index + i] += onset_mask[i] * (1.0-self->decay_coefficient);
-      //fprintf(stderr, "%f\t", self->histogram[self->histogram_index + i]);
+      fprintf(stderr, "%f\t", self->histogram[self->histogram_index + i]);
     }
-    //fprintf(stderr, "\r\n");
+  fprintf(stderr, "\r\n");
+  
   self->histogram_index += SUBDIVIDIONS_PER_BEAT;
   self->histogram_index %= HISTOGRAM_LENGTH;
 
@@ -172,9 +185,8 @@ int          rhythm_inverse_histogram_beat    (void* SELF, BTT* beat_tracker, un
   for(i=0; i<SUBDIVIDIONS_PER_BEAT; i++)
     {
       float r = random() / (double)(RAND_MAX);
-      //use 'less than' for a normal histogram
-    
-      if(r > self->histogram[self->histogram_index + i])
+      int onset = (self->is_inverse) ? (r >= self->histogram[self->histogram_index + i]) : (r < self->histogram[self->histogram_index + i]);
+      if(onset)
         {
           returned_rhythm[n].beat_time    = i/(float)SUBDIVIDIONS_PER_BEAT;
           returned_rhythm[n].strength     = -1;
