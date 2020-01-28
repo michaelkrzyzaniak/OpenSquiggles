@@ -135,6 +135,48 @@ void         rhythm_inverse_histogram_onset   (void* SELF, BTT* beat_tracker, un
 }
 
 /*--------------------------------------------------------------------*/
+float        rhythm_inverse_histogram_get_note_density   (Rhythm_Inverse_Histogram* self)
+{
+  float density = 0;
+  int i;
+  for(i=0; i<HISTOGRAM_LENGTH; density += self->histogram[i++]);
+  
+  density /= (double)HISTOGRAM_LENGTH;
+  
+  return (self->is_inverse) ? 1.0-density : density;
+}
+
+/*--------------------------------------------------------------------*/
+//try to maximize this value
+float        rhythm_inverse_histogram_get_convergence_score   (Rhythm_Inverse_Histogram* self)
+{
+  float result;
+  
+  float minimax = 2;
+  float maximin = -1;
+  int i;
+  for(i=0; i<HISTOGRAM_LENGTH; i++)
+    {
+      if(self->histogram[i] >= 0.5)
+        {
+          if(self->histogram[i] < minimax)
+            minimax = self->histogram[i];
+        }
+      else
+        {
+          if(self->histogram[i] > maximin)
+            maximin = self->histogram[i];
+        }
+    }
+  
+  if((minimax == 2)|| (maximin == -1))
+    result = 0;
+  else
+    result = minimax - maximin;
+  return result;
+}
+
+/*--------------------------------------------------------------------*/
 int          rhythm_inverse_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
 {
   Rhythm_Inverse_Histogram* self = (Rhythm_Inverse_Histogram*)SELF;
@@ -174,9 +216,11 @@ int          rhythm_inverse_histogram_beat    (void* SELF, BTT* beat_tracker, un
     {
       self->histogram[self->histogram_index + i] *= self->decay_coefficient;
       self->histogram[self->histogram_index + i] += onset_mask[i] * (1.0-self->decay_coefficient);
-      fprintf(stderr, "%f\t", self->histogram[self->histogram_index + i]);
+      //fprintf(stderr, "%f\t", self->histogram[self->histogram_index + i]);
     }
-  fprintf(stderr, "\r\n");
+  //fprintf(stderr, "\r\n");
+  
+  fprintf(stderr, "Note Density: %f Convergence: %f\r\n", rhythm_inverse_histogram_get_note_density(self), rhythm_inverse_histogram_get_convergence_score(self));
   
   self->histogram_index += SUBDIVIDIONS_PER_BEAT;
   self->histogram_index %= HISTOGRAM_LENGTH;
