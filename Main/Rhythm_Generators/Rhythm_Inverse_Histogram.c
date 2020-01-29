@@ -24,7 +24,7 @@ void         rhythm_inverse_histogram_onset   (void*, BTT*, unsigned long long);
 int          rhythm_inverse_histogram_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
 #define NUM_ONSET_TIMES 128
-#define SUBDIVIDIONS_PER_BEAT 4
+#define SUBDIVIDIONS_PER_BEAT 6
 #define NUM_BEATS 4
 #define HISTOGRAM_LENGTH (SUBDIVIDIONS_PER_BEAT * NUM_BEATS)
 
