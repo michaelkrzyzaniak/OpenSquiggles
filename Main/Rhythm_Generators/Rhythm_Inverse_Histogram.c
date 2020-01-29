@@ -24,7 +24,7 @@ void         rhythm_inverse_histogram_onset   (void*, BTT*, unsigned long long);
 int          rhythm_inverse_histogram_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
 #define NUM_ONSET_TIMES 128
-#define SUBDIVIDIONS_PER_BEAT 6
+#define SUBDIVIDIONS_PER_BEAT 4
 #define NUM_BEATS 4
 #define HISTOGRAM_LENGTH (SUBDIVIDIONS_PER_BEAT * NUM_BEATS)
 
@@ -228,7 +228,10 @@ int          rhythm_inverse_histogram_beat    (void* SELF, BTT* beat_tracker, un
   //generate a rhythm
   for(i=0; i<SUBDIVIDIONS_PER_BEAT; i++)
     {
-      float r = random() / (double)(RAND_MAX);
+      //float r = random() / (double)(RAND_MAX);
+    
+      float r = (self->histogram[self->histogram_index + i] >= 0.5) ? 0 : 1;
+    
       int onset = (self->is_inverse) ? (r >= self->histogram[self->histogram_index + i]) : (r < self->histogram[self->histogram_index + i]);
       if(onset)
         {
