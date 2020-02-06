@@ -44,6 +44,7 @@ typedef struct rhythm_dummy_cast_struct
 //constructor here and to the constructor array below.
 typedef Rhythm* (*rhythm_new_funct)(BTT*);
 
+Rhythm* rhythm_silence_new(BTT* btt);
 Rhythm* rhythm_template_new(BTT* btt);
 Rhythm* rhythm_random_beat_from_list_new(BTT* btt);
 Rhythm* rhythm_two_beat_delay_new(BTT* btt);
@@ -55,6 +56,7 @@ Rhythm* rhythm_4_4_loop_new(BTT* btt);
 static const rhythm_new_funct rhythm_constructors[] =
 {
   NULL,
+  rhythm_silence_new,
   rhythm_random_beat_from_list_new,
   rhythm_two_beat_delay_new,
   rhythm_template_new,
