@@ -5,7 +5,10 @@
 //sudo apt-get install libasound2-dev
 //gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2
 
+//also defined in microphone.c
+//#define  ICLI_MODE 1
 #include "Microphone.h"
+
 
 void i_hate_canonical_input_processing(void);
 void make_stdin_cannonical_again();
@@ -279,8 +282,9 @@ param_t params[] =
 
 int num_params = sizeof(params) / sizeof(params[0]);
 
+#ifndef ICLI_MODE
   auPlay((Audio*)mic);
-  
+#endif
   i_hate_canonical_input_processing();
   
   for(;;)
@@ -325,14 +329,14 @@ int num_params = sizeof(params) / sizeof(params[0]);
           case 'c': /* cascade */
           case 'C':
             btt_set_tracking_mode(btt, BTT_COUNT_IN_TRACKING);
-            break;
+            continue;
 
           case 'l':
             btt_set_tracking_mode(btt, BTT_TEMPO_LOCKED_BEAT_TRACKING);
-            break;
+            continue;
           case 'L':
             btt_set_tracking_mode(btt, BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING);
-            break;
+            continue;
             
           case 'q': /* cascade */
           case 'Q':
