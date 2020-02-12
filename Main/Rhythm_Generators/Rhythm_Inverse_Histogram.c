@@ -220,7 +220,7 @@ int          rhythm_inverse_histogram_beat    (void* SELF, BTT* beat_tracker, un
     }
   //fprintf(stderr, "\r\n");
   
-  fprintf(stderr, "Note Density: %f Convergence: %f\r\n", rhythm_inverse_histogram_get_note_density(self), rhythm_inverse_histogram_get_convergence_score(self));
+  //fprintf(stderr, "Note Density: %f Convergence: %f\r\n", rhythm_inverse_histogram_get_note_density(self), rhythm_inverse_histogram_get_convergence_score(self));
   
   self->histogram_index += SUBDIVIDIONS_PER_BEAT;
   self->histogram_index %= HISTOGRAM_LENGTH;

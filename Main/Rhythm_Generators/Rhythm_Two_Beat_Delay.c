@@ -100,7 +100,7 @@ void         rhythm_two_beat_delay_onset   (void* SELF, BTT* beat_tracker, unsig
   Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
   int adjustment = btt_get_beat_prediction_adjustment_audio_samples(beat_tracker);
   if(sample_time > adjustment) sample_time -= adjustment;// sample_time -= 64;
-  fprintf(stderr, "discrepancy %lli\r\n", (signed long long)sample_time - (signed long long)prev_beat_test);
+  //fprintf(stderr, "discrepancy %lli\r\n", (signed long long)sample_time - (signed long long)prev_beat_test);
   self->onset_times[self->onsets_index] = sample_time;
   ++self->onsets_index; self->onsets_index %= NUM_ONSET_TIMES;
   ++self->num_onsets;
