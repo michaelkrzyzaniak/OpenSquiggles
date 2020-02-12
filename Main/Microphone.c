@@ -238,7 +238,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
       //fprintf(stderr, "beat\r\n");
     }
   
-  if(btt_get_tracking_mode(self->btt) != BTT_TEMPO_LOCKED_BEAT_TRACKING)
+  //if(btt_get_tracking_mode(self->btt) != BTT_TEMPO_LOCKED_BEAT_TRACKING)
     {
       ++self->silent_beat_count;
       if(self->silent_beat_count > self->max_silent_beats)

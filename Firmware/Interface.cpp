@@ -76,7 +76,7 @@ void interface_note_off_callback(midi_channel_t chan, midi_pitch_t pitch, midi_v
 /*-----------------------------------------------------*/
 void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_args)
 { 
-  switch(robot_hash_message(message))
+  switch(robot_hash_message(message)) 
     {
       /*---------------------------------------------------*/  
       case robot_hash_tap:

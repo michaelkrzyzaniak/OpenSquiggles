@@ -458,7 +458,9 @@ void eye_animate_run_loop(void)
       else
         {
           //if should_loop, loop, damnit!
+          noInterrupts();
           list_remove_data(queues, queue, YES);
+          interrupts();
         }
   }
 

@@ -217,6 +217,10 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
       
         int i, j=0;
         pthread_mutex_lock(&self->onset_buffer_mutex);
+      
+      //CHECK SELF ONSETS [J]
+      //multiple midi notes on 0.0;
+      //sort by onset time
         for(i=2; i<num_osc_values; i+=3)
           {
             self->onsets[j].beat_time    = oscValueAsFloat(self->osc_values_buffer[i+0], osc_type_tag[i+0]);
