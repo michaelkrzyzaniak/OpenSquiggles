@@ -366,7 +366,7 @@ void robot_send_message(const char *fmt, ...)
     }
     
 #else   //MIDI CLIENT
-      usb_midi_send_sysex(buffer, b-buffer);
+      usb_midi_send_sysex_buffer_has_term(buffer, b-buffer);
 
 #endif //SHARED CODE
 }
@@ -382,7 +382,7 @@ void robot_sysex_handler(midi_sysex_mfr_t mfr, char* message)
   
   while(1)
     {
-      if((a-args) <= MAX_NUM_ARGS)
+      if((a-args) < MAX_NUM_ARGS)
         {
           int contains_period = 0;
           int should_break    = 0;

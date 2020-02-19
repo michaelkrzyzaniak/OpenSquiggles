@@ -134,7 +134,7 @@ float eye_random()
 }
 
 /* -------------------------------------------------------------- */
-float eye_draw_pixel(int x, int  y, float val, unsigned char pixel_buffer[])
+void eye_draw_pixel(int x, int  y, float val, unsigned char pixel_buffer[])
 {
   if((x >= 0) && (x < 16))
     if((y >= 0) && (y < 9))
@@ -193,7 +193,7 @@ void eye_setup_IS31FL3731()
   Wire.write((byte) 0x00);
   Wire.endTransmission();
 
-  //turn all leds on in all frames
+  //enable all leds on in all frames and set PWM to 0
   int frame, reg;
   for (frame=0; frame<8; frame++)
     {

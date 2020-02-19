@@ -21,9 +21,13 @@ void interface_init()
 /*---------------------------------------------------*/
 void interface_run_loop()
 {
-  /* robot_communication depends on this too */
-  while(usbMIDI.available())
-    midi_parse(usbMIDI.read_raw());
+  uint32_t ui;
+  while((ui = usb_midi_read_message()) != 0)
+    {
+      midi_parse((ui >>  8) & 0xFF);
+      midi_parse((ui >> 16) & 0xFF);
+      midi_parse((ui >> 24) & 0xFF);
+    }
 }
 
 /*---------------------------------------------------*/
@@ -42,7 +46,6 @@ void interface_send_error(const char* error)
 void interface_note_on_callback(midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel)
 {
   //robot_send_message("here:%i %i %i", chan, pitch, vel);
-  //uint8_t* midi_channel = (uint8_t*) (MMAP_ADDR_CACHE_START + MMAP_ADDR_MIDI_CHANNEL);
   
   //if(chan == (*midi_channel) - 1)
     {

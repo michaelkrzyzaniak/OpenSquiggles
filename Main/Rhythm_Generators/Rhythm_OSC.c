@@ -196,7 +196,7 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
   {
     int num_valid_bytes = net_udp_receive (self->net, self->osc_recv_buffer, OSC_BUFFER_SIZE, senders_address);
     if(num_valid_bytes < 0)
-      continue; //return NULL ?
+      continue; //return NULL ? 
   
     int num_osc_values = oscParse(self->osc_recv_buffer, num_valid_bytes, &osc_address, &osc_type_tag, self->osc_values_buffer, OSC_VALUES_BUFFER_SIZE);
     if(num_osc_values < 0)
@@ -217,7 +217,6 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
       
         int i, j=0;
         pthread_mutex_lock(&self->onset_buffer_mutex);
-      
       //CHECK SELF ONSETS [J]
       //multiple midi notes on 0.0;
       //sort by onset time

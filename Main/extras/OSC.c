@@ -203,7 +203,7 @@ int oscParse(char* buffer, int numValidCharsInBuffer, char** returnedAddress, ch
   
   if(numReturnedValues > returnedValuesLen)
     {
-      *returnedTypeTag[returnedValuesLen] = '\0';
+      (*returnedTypeTag)[returnedValuesLen] = '\0';
       numReturnedValues = returnedValuesLen;
     }
   
@@ -219,7 +219,6 @@ int oscParse(char* buffer, int numValidCharsInBuffer, char** returnedAddress, ch
             break;
           case 's':
             returnedValues[i].s = oscParseSymbol(&buffer, &numValidCharsInBuffer);
-            //printf("here: %s\n", returnedValues[i].s);
             if(*(returnedValues[i].s) == '\0')
               {
                 numReturnedValues = 0;
