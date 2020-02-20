@@ -27,6 +27,8 @@ typedef enum robot_message_hash_enum
   robot_hash_tap                         = 2085486991,
   robot_hash_tap_specific                = 642191216,
   robot_hash_bell                        = 100947277,
+  robot_hash_get_firmware_version        = 1616850098,
+  robot_hash_reply_firmware_version      = 857564406,
   robot_hash_aok                         = 2085472399,
   robot_hash_error                       = 3342388946,
     
@@ -36,8 +38,10 @@ typedef enum robot_message_hash_enum
 #define robot_cmd_tap                         "/tap %f"             //strength, 0.0~1.0
 #define robot_cmd_tap_specific                "/tap_specific %i %f" //index 0-7 strength, 0.0~1.0
 #define robot_cmd_bell                        "/bell %f"            //strength, 0.0~1.0
+#define robot_cmd_get_firmware_version        "/get_firmware"
 #define robot_reply_aok                       "/aok"
 #define robot_reply_error                     "/error %s"
+#define robot_reply_firmware_version          "/reply_firmware %i %i"
 
 /*---------------------------------------------------*/
 typedef void  (*robot_message_received_callback)(void* self, char* message, robot_arg_t args[], int num_args);

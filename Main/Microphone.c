@@ -71,6 +71,7 @@ struct OpaqueMicrophoneStruct
   int     rhythm_thread_run_loop_running;
   
   pthread_mutex_t rhythm_generator_swap_mutex;
+  pthread_mutex_t rhythm_mutex;
 
   int      farey_order;
   
@@ -104,9 +105,6 @@ Microphone* mic_new()
       if(self->robot == NULL)
         return (Microphone*)auDestroy((Audio*)self);
  
- BTT*      btt_new                                (int spectral_flux_stft_len, int spectral_flux_stft_overlap,
-                                                  int oss_filter_order      , int oss_length,
-                                                  int cbss_length           , int onset_threshold_len, double sample_rate);
  #ifndef   ICLI_MODE
       self->btt = btt_new_default();
       btt_set_log_gaussian_tempo_weight_width(self->btt, 10000);
@@ -140,7 +138,10 @@ Microphone* mic_new()
     
       if(pthread_mutex_init(&self->rhythm_generator_swap_mutex, NULL) != 0)
         return (Microphone*)auDestroy((Audio*)self);
-    
+
+      if(pthread_mutex_init(&self->rhythm_mutex, NULL) != 0)
+        return (Microphone*)auDestroy((Audio*)self);
+
       //should happen after mutex init
       self->rhythm = mic_set_rhythm_generator_index(self, 0);
     
@@ -170,6 +171,8 @@ Microphone* mic_new()
     }
   
   //there should be a play callback that I can intercept and do this there.
+  sleep(1);
+  robot_send_message(self->robot, robot_cmd_get_firmware_version);
   auPlay((Audio*)self->click);
   return self;
 }
@@ -204,15 +207,17 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   Microphone* self = (Microphone*) SELF;
   
   //mutex lock
-  self->rhythm_onsets_index = 0;
   
+  pthread_mutex_lock(&self->rhythm_mutex);
+  self->rhythm_onsets_index = 0;
+  int i;
+  float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   pthread_mutex_lock(&self->rhythm_generator_swap_mutex);
+  self->rhythm_onsets_index = 0;
   if(self->rhythm != NULL)
     self->num_rhythm_onsets = rhythm_beat(self->rhythm, self->btt, sample_time, self->rhythm_onsets, self->rhythm_onsets_len);
   pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
   
-  int i;
-  float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   
   //fprintf(stderr, "[");
   for(i=0; i<self->num_rhythm_onsets; i++)
@@ -230,6 +235,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
     }
   //fprintf(stderr, "]\r\n");
   self->beat_clock = 0;
+  pthread_mutex_unlock(&self->rhythm_mutex);
   
   if(self->play_beat_bell)
     {
@@ -287,17 +293,15 @@ BTT*           mic_get_btt        (Microphone* self)
 void mic_message_recd_from_robot(void* self, char* message, robot_arg_t args[], int num_args)
 {
   //robot_debug_print_message(message, args, num_args);
-  
-  /*
-  switch(kiki_hash_message(message))
+  switch(robot_hash_message(message))
     {
-      case kiki_hash_mmap_addr:
-        fprintf(stderr, "kiki just replied to a mmap request\r\n");
+      case robot_hash_reply_firmware_version:
+        if(num_args == 2)
+          fprintf(stderr, "Teensy is running firmware version %i.%i\r\n", robot_arg_to_int(&args[0]), robot_arg_to_int(&args[1]));
         break;
       
       default: break;
     }
-  */
 }
 
 /*--------------------------------------------------------------------*/
@@ -375,7 +379,8 @@ void* mic_rhythm_thread_run_loop (void* SELF)
   
   while(self->rhythm_thread_run_loop_running)
     {
-      while(self->rhythm_onsets_index < self->num_rhythm_onsets)
+      pthread_mutex_lock(&self->rhythm_mutex);
+      while(self->rhythm_onsets_index < self->num_rhythm_onsets)  
         if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
           {
             int timbre = self->rhythm_onsets[self->rhythm_onsets_index].timbre_class;
@@ -383,8 +388,10 @@ void* mic_rhythm_thread_run_loop (void* SELF)
             if(timbre < 0)
               robot_send_message(self->robot, robot_cmd_tap, self->rhythm_onsets[self->rhythm_onsets_index].strength);
             else
-              robot_send_message(self->robot, robot_cmd_tap_specific, timbre, self->rhythm_onsets[self->rhythm_onsets_index].strength);
-          
+              {
+                robot_send_message(self->robot, robot_cmd_tap_specific, timbre, self->rhythm_onsets[self->rhythm_onsets_index].strength);
+                fprintf(stderr, "\tbeat_clock: %i\r\n", self->beat_clock);
+              }
             ++self->rhythm_onsets_index;
           }
         else
@@ -402,6 +409,7 @@ void* mic_rhythm_thread_run_loop (void* SELF)
       */
       ++self->beat_clock; //reset at the begining of each beat
       ++self->thread_clock; //never reset
+      pthread_mutex_unlock(&self->rhythm_mutex);
     
       while((timestamp_get_current_time() - start) < self->thread_clock*MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL)
         usleep(50);

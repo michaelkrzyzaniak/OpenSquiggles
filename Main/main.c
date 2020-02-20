@@ -34,9 +34,6 @@ typedef struct parameter_struct
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  fprintf(stderr, "Version 1.14\r\n");
-  fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
-  
   int param_index = 0;
   double increment;
   double val;
@@ -44,6 +41,9 @@ int main(void)
   
   Microphone*  mic = mic_new();
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
+ 
+  fprintf(stderr, "Raspi is running software version 1.15\r\n");
+  fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   mic_set_rhythm_generator       (mic, rhythm_random_beat_from_list_new);
   

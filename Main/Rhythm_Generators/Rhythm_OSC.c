@@ -149,6 +149,17 @@ void         rhythm_OSC_onset   (void* SELF, BTT* beat_tracker, unsigned long lo
     net_udp_send(self->net, self->osc_send_buffer, num_bytes, "255.255.255.255", OSC_SEND_PORT);
 }
 
+/*----------------------------------------------------------*/
+void debug_print(rhythm_onset_t* rhythm, int N)
+{
+  int i;
+  for(i=0; i<N; i++)
+    fprintf(stderr, "rhythm[%i] = {time: %0.2f\tstrength: %0.2f\tclass:%i}\r\n",
+        i, rhythm[i].beat_time, rhythm[i].strength, rhythm[i].timbre_class);
+  fprintf(stderr, "\r\n");
+}
+
+
 /*--------------------------------------------------------------------*/
 int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
 {
@@ -213,13 +224,13 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
         int robot_id = oscValueAsInt(self->osc_values_buffer[0], osc_type_tag[0]);
         int beat_id  = oscValueAsInt(self->osc_values_buffer[1], osc_type_tag[1]);
       
+        //fprintf(stderr, "requested_beat: %i\treceived_beat: %i\r\n", self->beat_id, beat_id);
+      
         if((robot_id != self->robot_id) || (beat_id != self->beat_id))
           continue;
       
         int i, j=0;
         pthread_mutex_lock(&self->onset_buffer_mutex);
-      //CHECK SELF ONSETS [J]
-      //multiple midi notes on 0.0;
         for(i=2; i<num_osc_values; i+=3)
           {
             self->onsets[j].beat_time    = oscValueAsFloat(self->osc_values_buffer[i+0], osc_type_tag[i+0]);

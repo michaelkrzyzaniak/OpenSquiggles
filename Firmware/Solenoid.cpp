@@ -45,7 +45,6 @@ void solenoid_tap (float strength)
       strength -= decrement;
       ++solenoid_current_solenoid; solenoid_current_solenoid %= (SOLENOID_NUM_SOLENOIDS-1);
     }
-  
 }
 
 /*----------------------------------------------------*/

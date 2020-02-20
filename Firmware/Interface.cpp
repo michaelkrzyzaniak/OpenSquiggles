@@ -4,11 +4,12 @@
 #include "Solenoid.h"
 #include "Eye.h"
 
+#define FIRMWARE_MAJOR_VERSION 1
+#define FIRMWARE_MINOR_VERSION 2
+
 void interface_dispatch          (void* self, char* message, robot_arg_t args[], int num_args);
 void interface_note_on_callback  (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
 void interface_note_off_callback (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
-void interface_send_aok          ();
-void interface_send_error        (const char* error);
 
 /*---------------------------------------------------*/
 void interface_init()
@@ -28,18 +29,6 @@ void interface_run_loop()
       midi_parse((ui >> 16) & 0xFF);
       midi_parse((ui >> 24) & 0xFF);
     }
-}
-
-/*---------------------------------------------------*/
-void interface_send_aok()
-{ 
-  robot_send_message(robot_reply_aok);
-}
-
-/*---------------------------------------------------*/
-void interface_send_error(const char* error)
-{ 
-  robot_send_message(robot_reply_error, error);
 }
 
 /*---------------------------------------------------*/
@@ -86,14 +75,14 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
         if(num_args == 1)
           {
             solenoid_tap(robot_arg_to_float(&args[0]));
-            interface_send_aok();
+            robot_send_message(robot_reply_aok);
           }
          break;
       case robot_hash_tap_specific:
         if(num_args == 2)
           {
             solenoid_tap_specific(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[1]));
-            interface_send_aok();
+            robot_send_message(robot_reply_aok);
           }
          break;
       case robot_hash_bell:
@@ -101,8 +90,12 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
           {
             solenoid_ding(robot_arg_to_float(&args[0]));
             eye_animate_blink();
-            interface_send_aok();
+            robot_send_message(robot_reply_aok);
           }
+        break;
+      case robot_hash_get_firmware_version:
+        if(num_args == 0)
+          robot_send_message(robot_reply_firmware_version, FIRMWARE_MAJOR_VERSION, FIRMWARE_MINOR_VERSION);
         break;
         
       /*---------------------------------------------------*/
