@@ -1,0 +1,36 @@
+#include "Rhythm_Generators.h"
+#include <math.h>
+#include <stdio.h>
+#include <time.h>
+
+/*----------------------------------------------------------*/
+void debug_print(rhythm_onset_t* rhythm, int N)
+{
+  int i;
+  for(i=0; i<N; i++)
+    fprintf(stderr, "rhythm[%i] = {time: %0.2f\tstrength: %0.2f\tclass:%i}\r\n",
+        i, rhythm[i].beat_time, rhythm[i].strength, rhythm[i].timbre_class);
+  fprintf(stderr, "\r\n");
+}
+
+/*----------------------------------------------------------*/
+int main(void)
+{
+  int i, N = 10;
+  rhythm_onset_t rhythm[N];
+
+  srandom(time(NULL));
+
+  for(i=0; i<N; i++)
+    {
+      rhythm[i].beat_time    = random() / (long double)RAND_MAX;
+      rhythm[i].strength     = random() / (long double)RAND_MAX;
+      rhythm[i].timbre_class = random() % 100;
+    }
+  
+  debug_print(rhythm, N);
+  
+  rhythm_sort_by_onset_time(rhythm, N);
+  
+  debug_print(rhythm, N);
+}

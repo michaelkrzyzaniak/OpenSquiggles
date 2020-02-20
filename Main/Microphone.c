@@ -375,7 +375,7 @@ void* mic_rhythm_thread_run_loop (void* SELF)
   
   while(self->rhythm_thread_run_loop_running)
     {
-      if(self->rhythm_onsets_index < self->num_rhythm_onsets)
+      while(self->rhythm_onsets_index < self->num_rhythm_onsets)
         if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
           {
             int timbre = self->rhythm_onsets[self->rhythm_onsets_index].timbre_class;
@@ -387,14 +387,19 @@ void* mic_rhythm_thread_run_loop (void* SELF)
           
             ++self->rhythm_onsets_index;
           }
+        else
+          break;
       //ignore any other (duplicate) onsets that are supposed to happen right now
+      //jk, allow multiple simulataneous onsets. todo -- only allow multiple tap-specific messages
+      //stable-sort by timbre class then by onset time, ignore multiple tap-specific for same solenoid, etc
+      /*
       while(self->rhythm_onsets_index < self->num_rhythm_onsets)
         {
           if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
             ++self->rhythm_onsets_index;
           else break;
         }
-        
+      */
       ++self->beat_clock; //reset at the begining of each beat
       ++self->thread_clock; //never reset
     

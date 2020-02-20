@@ -76,6 +76,7 @@ int          rhythm_beat    (Rhythm* self, BTT* beat_tracker, unsigned long long
 //utilities
 void  rhythm_get_rational_approximation(float onset_time, int n, int* num, int* denom);
 float rhythm_get_default_onset_strength(float onset_time, int n);
+void  rhythm_sort_by_onset_time(rhythm_onset_t* rhythm, int n);
 
 //Private
 #define rhythm_destroy(s)          ((Rhythm*)(s))->destroy ((s));

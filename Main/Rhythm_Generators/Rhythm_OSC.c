@@ -167,7 +167,8 @@ int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long lo
   int i;
   
   pthread_mutex_lock(&self->onset_buffer_mutex);
-  for(i=0; i<self->num_onsets; i++)
+  int n = (returned_rhythm_maxlen < self->num_onsets) ? returned_rhythm_maxlen : self->num_onsets;
+  for(i=0; i<n; i++)
     {
       returned_rhythm[i].beat_time    = self->onsets[i].beat_time;
       returned_rhythm[i].strength     = self->onsets[i].strength;
@@ -219,7 +220,6 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
         pthread_mutex_lock(&self->onset_buffer_mutex);
       //CHECK SELF ONSETS [J]
       //multiple midi notes on 0.0;
-      //sort by onset time
         for(i=2; i<num_osc_values; i+=3)
           {
             self->onsets[j].beat_time    = oscValueAsFloat(self->osc_values_buffer[i+0], osc_type_tag[i+0]);
@@ -228,6 +228,7 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
             ++j;
           }
         self->num_onsets = j;
+        rhythm_sort_by_onset_time(self->onsets, self->num_onsets);
         pthread_mutex_unlock(&self->onset_buffer_mutex);
       }
   }

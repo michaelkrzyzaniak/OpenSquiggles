@@ -1,6 +1,7 @@
 #include "Rhythm_Generators.h"
 #include <stdlib.h> //calloc
 #include <math.h>
+#include <string.h> //memcpy
 
 
 /*--------------------------------------------------------------------*/
@@ -47,3 +48,61 @@ float rhythm_get_default_onset_strength(float onset_time, int n)
   
   return 1.0 / denom;
 }
+
+/*-------------------------------------------------------------------------------------*/
+void rhythm_quicksort_swap_entry_content_private(rhythm_onset_t* onset_a, rhythm_onset_t* onset_b)
+{
+  rhythm_onset_t temp;
+  size_t n = sizeof(temp);
+  memcpy(&temp, onset_a, n);
+  memcpy(onset_a, onset_b, n);
+  memcpy(onset_b, &temp, n);
+}
+
+/*-------------------------------------------------------------------------------------*/
+unsigned rhythm_quicksort_partition_private(rhythm_onset_t* rhythm, unsigned low_index, unsigned high_index)
+{
+  unsigned i, result=low_index;
+  unsigned pivot_index = low_index + ((high_index - low_index) / 2);
+  
+  rhythm_onset_t* pivot_entry   = rhythm + pivot_index;
+  rhythm_onset_t* high_entry    = rhythm + high_index;
+  rhythm_onset_t* store_entry   = rhythm + low_index;
+  rhythm_onset_t* current_entry = store_entry;
+  
+  rhythm_quicksort_swap_entry_content_private(pivot_entry, high_entry);
+  
+  for(i=low_index; i<high_index; i++)
+    {
+      if(high_entry->beat_time > current_entry->beat_time)
+        {
+          rhythm_quicksort_swap_entry_content_private(current_entry, store_entry);
+          ++store_entry;
+          ++result;
+        }
+      ++current_entry;
+    }
+  
+  rhythm_quicksort_swap_entry_content_private(store_entry, high_entry);
+  
+  return result;
+}
+
+/*-------------------------------------------------------------------------------------*/
+void rhythm_quicksort_private(rhythm_onset_t* rhythm, unsigned low_index, unsigned high_index)
+{
+  if(low_index < high_index)
+    {
+      unsigned p = rhythm_quicksort_partition_private(rhythm, low_index, high_index);
+      if(p > 0) rhythm_quicksort_private(rhythm, low_index, p-1);
+      rhythm_quicksort_private(rhythm, p+1, high_index);
+    }
+}
+
+/*--------------------------------------------------------------------*/
+void rhythm_sort_by_onset_time(rhythm_onset_t* rhythm, int n)
+{
+  if(n < 2) return;
+  rhythm_quicksort_private(rhythm, 0, n-1);
+}
+
