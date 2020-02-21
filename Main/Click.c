@@ -33,10 +33,15 @@ Click* click_new()
 {
   Click* self = (Click*) auAlloc(sizeof(*self), click_audio_callback, YES, 1);
   
+  fprintf(stderr, "alloced  click_new");
+  
   if(self != NULL)
     {
+      fprintf(stderr, "alloced  click_new was NOT NULL\r\n");
       self->destroy = (Audio* (*)(Audio*))click_destroy;
     }
+  else
+    fprintf(stderr, "alloced  click_new was NULL\r\n");
   return self;
 }
 

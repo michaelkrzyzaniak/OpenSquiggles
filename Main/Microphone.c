@@ -96,8 +96,9 @@ Microphone* mic_new()
 #else
       self->destroy = mic_destroy;
 #endif
-
+      fprintf(stderr, "about to create click\r\n");
       self->click = click_new();
+      fprintf(stderr, "did create click\r\n");
       if(self->click == NULL)
         {
           fprintf(stderr, "click IS null\r\n");
