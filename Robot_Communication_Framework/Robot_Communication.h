@@ -56,7 +56,9 @@ typedef void  (*robot_message_received_callback)(void* self, char* message, robo
 #define ROBOT_MIDI_DEVICE_NAME "Dr Squiggles"
 
 #elif defined  __linux__
-#define ROBOT_MIDI_DEVICE_NAME "hw:1,0,0"
+//cat /proc/asound/cards for a list of cards
+ //I guess  Linux dosen't like the space in the name?s
+#define ROBOT_MIDI_DEVICE_NAME "hw:Squiggles"
 #endif
 
 #if defined __ROBOT_MIDI_HOST__

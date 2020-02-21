@@ -116,8 +116,9 @@ Robot* robot_new(robot_message_received_callback callback, void* callback_self)
       if(!robot_setup_midi_client(self))
         return robot_destroy(self);
 #elif defined __linux__
-      if(snd_rawmidi_open(&self->in_port, &self->out_port, ROBOT_MIDI_DEVICE_NAME, 0))
+      if(snd_rawmidi_open(&self->in_port, &self->out_port, ROBOT_MIDI_DEVICE_NAME, SND_RAWMIDI_SYNC))
         return robot_destroy(self);
+      snd_rawmidi_read(self->in_port, NULL, 0); //trigger read
       if(!robot_setup_midi_read_thread(self))
         return robot_destroy(self);
 #endif
@@ -150,15 +151,12 @@ void* robot_read_thread_run_loop(void* SELF)
   uint8_t data;
   self->read_thread_should_continue_running = 1;
   
-  fprintf(stderr, "enter robot_read_thread_run_loop\r\n");
-  
   while(self->read_thread_should_continue_running)
     {
-      fprintf(stderr, "enter read_thread_should_continue_running\r\n");
       snd_rawmidi_read(self->in_port, &data, 1);
-      fprintf(stderr, "read some data\r\n");
       midi_parse(data);
     }
+  return NULL;
 }
 #endif //__linux__
 
@@ -329,7 +327,7 @@ void robot_send_raw_midi(Robot* self, uint8_t* midi_bytes, int num_bytes)
   
 #elif defined __linux__
   snd_rawmidi_write(self->out_port, midi_bytes, num_bytes);
-  snd_rawmidi_drain(self->out_port);
+  //snd_rawmidi_drain(self->out_port);
 
 #endif
 }
