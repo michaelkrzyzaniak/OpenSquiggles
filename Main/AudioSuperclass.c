@@ -38,6 +38,8 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
 {
   Audio* self = (Audio*)calloc(1, sizeofstarself);
 
+  fprintf(stderr, "alloc\r\n");
+
   if(self != NULL)
     {
       self->isOutput                     = isOutput;
@@ -162,7 +164,10 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
               perror("Audio.c: Unable to allocate audio buffers \n");
            }
        }
+       
       if (error < 0) self = auDestroy(self);
+    
+      fprintf(stderr, "error: %i\r\n", error);
 #endif
     }
   else perror("Audio.c: Unable to create new Audio object");
@@ -175,6 +180,7 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
 /*auDestroy-----------------------------------------------*/
 Audio* auDestroy(Audio* self)
 {
+  fprintf(stderr, "destroy\r\n");
   if(self != NULL)
     {
       if(self->isPlaying) auPause(self);
