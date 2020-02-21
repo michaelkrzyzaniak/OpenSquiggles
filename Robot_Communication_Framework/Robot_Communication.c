@@ -150,9 +150,13 @@ void* robot_read_thread_run_loop(void* SELF)
   uint8_t data;
   self->read_thread_should_continue_running = 1;
   
+  fprintf(stderr, "enter robot_read_thread_run_loop\r\n");
+  
   while(self->read_thread_should_continue_running)
     {
+      fprintf(stderr, "enter read_thread_should_continue_running\r\n");
       snd_rawmidi_read(self->in_port, &data, 1);
+      fprintf(stderr, "read some data\r\n");
       midi_parse(data);
     }
 }
