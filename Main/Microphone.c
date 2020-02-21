@@ -96,16 +96,9 @@ Microphone* mic_new()
 #else
       self->destroy = mic_destroy;
 #endif
-      fprintf(stderr, "about to create click\r\n");
       self->click = click_new();
-      fprintf(stderr, "did create click\r\n");
       if(self->click == NULL)
-        {
-          fprintf(stderr, "click IS null\r\n");
-          return (Microphone*)auDestroy((Audio*)self);
-        }
-      else
-        fprintf(stderr, "click IS NOT null\r\n");
+        return (Microphone*)auDestroy((Audio*)self);
     
       self->robot = robot_new(mic_message_recd_from_robot, self);
       if(self->robot == NULL)
@@ -174,12 +167,12 @@ Microphone* mic_new()
       if(error != 0)
         return (Microphone*)auDestroy((Audio*)self);
 #endif
-    }
-  
+
   //there should be a play callback that I can intercept and do this there.
-  sleep(1);
-  robot_send_message(self->robot, robot_cmd_get_firmware_version);
-  auPlay((Audio*)self->click);
+      sleep(1);
+      robot_send_message(self->robot, robot_cmd_get_firmware_version);
+      auPlay((Audio*)self->click);
+    }
   return self;
 }
 
