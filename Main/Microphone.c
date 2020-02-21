@@ -99,7 +99,12 @@ Microphone* mic_new()
 
       self->click = click_new();
       if(self->click == NULL)
-        return (Microphone*)auDestroy((Audio*)self);
+        {
+          fprintf(stderr, "click IS null\r\n");
+          return (Microphone*)auDestroy((Audio*)self);
+        }
+      else
+        fprintf(stderr, "click IS NOT null\r\n");
     
       self->robot = robot_new(mic_message_recd_from_robot, self);
       if(self->robot == NULL)
