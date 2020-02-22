@@ -11,7 +11,7 @@ void  robot_sysex_handler(midi_sysex_mfr_t mfr, char* message);
 
 /*--------------------------------------------------------*/
 #define ROBOT_SYSEX_BUFFER_SIZE 127
-#define ROBOT_MIDI_MFR MIDI_MFR_NON_COMMERCIAL
+#define ROBOT_MIDI_MFR MIDI_MFR_OTHER
 
 //Apple includes
 #ifdef __APPLE__
@@ -353,7 +353,7 @@ void robot_send_message(const char *fmt, ...)
       va_start(args, fmt);
 
       *b++ = MIDI_STATUS_SYSTEM_EXCLUSIVE;
-      *b++ = MIDI_MFR_NON_COMMERCIAL;
+      *b++ = ROBOT_MIDI_MFR;
 
       b += vsnprintf((char*)b, ROBOT_SYSEX_BUFFER_SIZE-2, fmt, args);
 

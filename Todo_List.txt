@@ -96,6 +96,6 @@ sudo raspi-config
 
 Start X-server after boot? --> disable
 sudo apt-get purge wolfram-engine
-
+sudo apt autoremove
 
 

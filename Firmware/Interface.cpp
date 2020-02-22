@@ -95,7 +95,10 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
         break;
       case robot_hash_get_firmware_version:
         if(num_args == 0)
+        {
           robot_send_message(robot_reply_firmware_version, FIRMWARE_MAJOR_VERSION, FIRMWARE_MINOR_VERSION);
+          usbMIDI.sendNoteOn(69, 100, 1);
+        }
         break;
         
       /*---------------------------------------------------*/
