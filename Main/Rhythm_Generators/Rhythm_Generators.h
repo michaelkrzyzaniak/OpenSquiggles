@@ -52,6 +52,7 @@ Rhythm* rhythm_OSC_new(BTT* btt);
 Rhythm* rhythm_inverse_histogram_new(BTT* btt);
 Rhythm* rhythm_histogram_new(BTT* btt);
 Rhythm* rhythm_4_4_loop_new(BTT* btt);
+Rhythm* rhythm_mali_new(BTT* btt);
 
 static const rhythm_new_funct rhythm_constructors[] =
 {
@@ -64,6 +65,7 @@ static const rhythm_new_funct rhythm_constructors[] =
   rhythm_inverse_histogram_new,
   rhythm_histogram_new,
   rhythm_4_4_loop_new,
+  rhythm_mali_new,
 };
 
 static const int   rhythm_num_constructors = sizeof(rhythm_constructors) / sizeof(*rhythm_constructors);

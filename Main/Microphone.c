@@ -387,10 +387,7 @@ void* mic_rhythm_thread_run_loop (void* SELF)
             if(timbre < 0)
               robot_send_message(self->robot, robot_cmd_tap, self->rhythm_onsets[self->rhythm_onsets_index].strength);
             else
-              {
-                robot_send_message(self->robot, robot_cmd_tap_specific, timbre, self->rhythm_onsets[self->rhythm_onsets_index].strength);
-                fprintf(stderr, "\tbeat_clock: %i\r\n", self->beat_clock);
-              }
+              robot_send_message(self->robot, robot_cmd_tap_specific, timbre, self->rhythm_onsets[self->rhythm_onsets_index].strength);
             ++self->rhythm_onsets_index;
           }
         else
