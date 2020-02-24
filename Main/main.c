@@ -48,7 +48,8 @@ int main(void)
   mic_set_rhythm_generator       (mic, rhythm_random_beat_from_list_new);
   
   BTT* btt = mic_get_btt(mic);
-  btt_set_beat_prediction_adjustment(btt, 0.000000);
+  /* about 18 for OSX, 6 for robot */
+  btt_set_beat_prediction_adjustment(btt, 6.000000);
   btt_set_tracking_mode(btt, BTT_COUNT_IN_TRACKING);
   
 param_t params[] =
