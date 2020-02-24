@@ -1,0 +1,47 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf400
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red46\green111\blue253;\red46\green111\blue253;}
+{\*\expandedcolortbl;;\cssrgb\c22750\c53231\c99501;\cssrgb\c22750\c53231\c99501;}
+\margl1440\margr1440\vieww26260\viewh13420\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Hi Frank,\
+\
+I worked out an OSC thing for Dr Squiggles.\
+\
+At each beat, Dr Squiggles broadcasts the following OSC message on UDP port 9000\
+\
+\cf2 /beat\cf0  <int>\cf3 timestamp\cf0  <int>\cf2 robot_id\cf0  <int>\cf2 beat_id\cf0 \
+\
+	\'93\cf2 /beat\cf0 \'94 is the message address \'97 Dr. Squiggles will send other messages, so you must filter by address.\
+	\cf2 timestamp\cf0  is the approximate number of milliseconds into the audio stream where beat occurred, which you can ignore\
+	\cf2 robot_id\cf0  is a positive random integer that uniquely identifies the robot\
+	\cf2 beat_id\cf0  is an integer that identifies the beat\
+\
+	
+\b example: 
+\b0 \
+		\cf2 /beat 9870 1222790037 2\cf0 \
+		This beat occurred 9870 milliseconds into the audio stream, was sent by robot whose id is 1222790037, and is the second beat this robot has sent you.\
+\
+You should respond by broadcasting (255.255.255.255) on UDP port 9001 the following OSC message:\
+\
+\cf2 /rhythm\cf0  <int>\cf2 robot_id\cf0  <int>\cf2 beat_id\cf0  <float>\cf2 time_1\cf0  <int>\cf2 solenoid_1\cf0  <float>\cf2 strength_1\cf0  <float>\cf2 time_2\cf0  <int>\cf2 solenoid_2\cf0  <float>\cf2 strength_2\cf0  \'85\
+	\
+	\'93\cf2 /rhythm\cf0 \'94 is the message address\
+	\cf2 robot_id\cf0  is the id of the robot \'97 you should echo back whatever the robot sent you in the /beat message\
+	\cf2 beat_id\cf0  is the id of the beat \'97 you should echo back whatever the robot sent you in the /beat message\
+	\cf2 time_1\cf0  is the beat time where you want the first onset to occur. 0 indicates the downbeat, 0.5 is halfway through the beat, 0.25 is the first sixteenth note, etc. Should be less than one, which would indicate the next downbeat\
+	\cf2 solenoid_1\cf0  is the solenoid number of onset 1, with 0 being the bell, and 1-7 being the other solenoids. -1 means the robot will choose and possibly use multiple solenoids per onset\
+	\cf2 strength_1\cf0  is the striking strength of onset 1, ranging from 0 to 1. A value of -1 causes a default onset strength to be applied using Fairy sequence.\
+	\cf2 time_2\cf0 , \cf2 solenoid_2\cf0 , \cf2 strength_2\cf0  are the values for the second onset in the beat, if there is one. You can have as many of these triplets as there are onsets in the beat, and they must be sent ascending order of time.\
+\
+	
+\b example:
+\b0  \
+		\cf2 /rhythm 1222790037 2 0.5 -1 1\cf0 \
+		Respond to robot id 1222790037, beat 2, play on the upbeat using a default solenoid with maximum strength\
+\
+This rhythm will be played on the beat following the one when the /beat message was sent. If it takes longer than a beat for you to respond, the rhythm will be dropped. If you respond multiple times to the same beat, only your most recent response will be kept.\
+\
+Mike}

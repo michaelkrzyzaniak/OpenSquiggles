@@ -5,7 +5,7 @@
 #include "Eye.h"
 
 #define FIRMWARE_MAJOR_VERSION 1
-#define FIRMWARE_MINOR_VERSION 2
+#define FIRMWARE_MINOR_VERSION 3
 
 void interface_dispatch          (void* self, char* message, robot_arg_t args[], int num_args);
 void interface_note_on_callback  (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
@@ -95,10 +95,7 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
         break;
       case robot_hash_get_firmware_version:
         if(num_args == 0)
-        {
           robot_send_message(robot_reply_firmware_version, FIRMWARE_MAJOR_VERSION, FIRMWARE_MINOR_VERSION);
-          usbMIDI.sendNoteOn(69, 100, 1);
-        }
         break;
         
       /*---------------------------------------------------*/
