@@ -186,16 +186,15 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
     rhythm_onset(self->rhythm, self->btt, sample_time);
   pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
   
-  
-  if(btt_get_tracking_mode(self->btt) <= BTT_ONSET_TRACKING)
-    {
-      if(self->play_beat_bell)
-        {
-          click_click(self->click, 0.5);
+  //if(btt_get_tracking_mode(self->btt) <= BTT_ONSET_TRACKING)
+    //{
+      //if(self->play_beat_bell)
+        //{
+          //click_click(self->click, 0.5);
           //robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
           //fprintf(stderr, "onset\r\n");
-        }
-    }
+        //}
+    //}
 
   self->silent_beat_count = 0;
 }
@@ -210,11 +209,11 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   pthread_mutex_lock(&self->rhythm_mutex);
   self->rhythm_onsets_index = 0;
   int i;
-  float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   pthread_mutex_lock(&self->rhythm_generator_swap_mutex);
   self->rhythm_onsets_index = 0;
   if(self->rhythm != NULL)
     self->num_rhythm_onsets = rhythm_beat(self->rhythm, self->btt, sample_time, self->rhythm_onsets, self->rhythm_onsets_len);
+  float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
   
   

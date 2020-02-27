@@ -64,15 +64,6 @@ param_t params[] =
     .name = "mic_set_rhythm_generator_index",
   },
   {
-    .set = (funct)mic_set_quantization_order,
-    .get = (funct)mic_get_quantization_order,
-    .type = 'i',
-    .init = 8,
-    .increment = 1,
-    .self = mic,
-    .name = "mic_set_quantization_order",
-  },
-  {
     .set = (funct)mic_set_should_play_beat_bell,
     .get = (funct)mic_get_should_play_beat_bell,
     .type = 'i',
@@ -80,6 +71,24 @@ param_t params[] =
     .increment = 1,
     .self = mic,
     .name = "mic_set_should_play_beat_bell",
+  },
+  {
+    .set = (funct)btt_set_metronome_bpm,
+    .get = (funct)btt_get_tempo_bpm,
+    .type = 'd',
+    .init = BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN,
+    .increment = 4,
+    .self = btt,
+    .name = "btt_set_metronome_bpm",
+  },
+  {
+    .set = (funct)mic_set_quantization_order,
+    .get = (funct)mic_get_quantization_order,
+    .type = 'i',
+    .init = 8,
+    .increment = 1,
+    .self = mic,
+    .name = "mic_set_quantization_order",
   },
   {
     .set = (funct)btt_set_tracking_mode,
@@ -291,12 +300,18 @@ int num_params = sizeof(params) / sizeof(params[0]);
   for(;;)
     {
       c = getchar();
+      //fprintf(stderr, "%02X\r\n", c);
+      //if(c == 'A') fprintf(stderr, "HERE\r\n");
+      //if(c == 'q') goto out;
+      //continue;
+    
       increment = 0;
       param_t p = params[param_index];
       switch(c)
         {
           case '.': /* cascade */
           case '>':
+          case 'C':
             ++param_index;
             if(param_index >= num_params) param_index = num_params - 1;
             p = params[param_index];
@@ -304,6 +319,7 @@ int num_params = sizeof(params) / sizeof(params[0]);
           
           case ',': /* cascade */
           case '<':
+          case 'D':
             --param_index;
             if(param_index < 0) param_index = 0;
             p = params[param_index];
@@ -311,16 +327,18 @@ int num_params = sizeof(params) / sizeof(params[0]);
 
           case '-': /* cascade */
           case '_':
+          case 'B':
             increment = -p.increment;
             break;
           
           case '=': /* cascade */
           case '+':
+          case 'A':
             increment = p.increment;
             break;
 
           case 'd': /* cascade */
-          case 'D':
+          //case 'D':
             if(p.type == 'i')
               ((int_setter) p.set)(btt, p.init);
             else if(p.type == 'd')
@@ -328,7 +346,7 @@ int num_params = sizeof(params) / sizeof(params[0]);
             break;
 
           case 'c': /* cascade */
-          case 'C':
+          //case 'C':
             btt_set_tracking_mode(btt, BTT_COUNT_IN_TRACKING);
             continue;
 
@@ -345,7 +363,7 @@ int num_params = sizeof(params) / sizeof(params[0]);
             break;
 
 
-          default: break;
+          default: continue; /*break*/;
         }
 
       if(p.type == 'i')
@@ -353,14 +371,14 @@ int num_params = sizeof(params) / sizeof(params[0]);
           val = ((int_getter) p.get)(p.self);
           ((int_setter) p.set)(p.self, val + increment);
           val = ((int_getter) p.get)(p.self);
-          fprintf(stderr, " %s(btt, %lf);                       \r", p.name, val);
+          fprintf(stderr, " \033[F\r\033[2K%s(btt, %lf);\r\n", p.name, val);
         }
       else if(p.type == 'd')
         {
           val = ((double_getter) p.get)(p.self);
           ((double_setter) p.set)(p.self, val + increment);
           val = ((double_getter) p.get)(p.self);
-          fprintf(stderr, " %s(btt, %lf);                       \r", p.name, val);
+          fprintf(stderr, " \033[F\r\033[2K%s(btt, %lf);\r\n", p.name, val);
         }
       else if(p.type == 'o')
         {
@@ -368,7 +386,7 @@ int num_params = sizeof(params) / sizeof(params[0]);
           Rhythm* r = ((int_setter_o) p.set)(p.self, val + increment);
           const char* name = "NULL";
           if(r !=  NULL) name = rhythm_get_name(r);
-          fprintf(stderr, " %s(mic, %s);                       \r", p.name, name);
+          fprintf(stderr, " \033[F\r\033[2K%s(mic, %s);\r\n", p.name, name);
         }
     }
   

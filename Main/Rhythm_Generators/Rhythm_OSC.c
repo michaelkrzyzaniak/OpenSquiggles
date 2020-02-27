@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include <math.h>
 
+#include "../../Beat-and-Tempo-Tracking/BTT.h"
 #include "../extras/Network.h" //calloc
 #include "../extras/OSC.h" //calloc
 
@@ -41,6 +42,8 @@ typedef struct opaque_rhythm_OSC_struct
   
   /* add instance variables below here */
   Network* net;
+  double metronome_tempo;
+  BTT* btt;
   char* osc_send_buffer;
   char* osc_recv_buffer;
   oscValue_t* osc_values_buffer;
@@ -65,6 +68,8 @@ Rhythm* rhythm_OSC_new(BTT* beat_tracker)
       self->name    = rhythm_OSC_name;
       self->onset   = rhythm_OSC_onset;
       self->beat    = rhythm_OSC_beat;
+    
+      self->btt = beat_tracker;
     
       /* initalize instance variables below here */
       /* return rhythm_OSC_destroy(self) on failure */
@@ -194,6 +199,8 @@ int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long lo
   if(num_bytes > 0)
     net_udp_send(self->net, self->osc_send_buffer, num_bytes, "255.255.255.255", OSC_SEND_PORT);
   
+  btt_set_metronome_bpm(self->btt, self->metronome_tempo);
+  
   return i;
 }
 
@@ -241,6 +248,14 @@ void* rhythm_OSC_recv_thread_run_loop(void* SELF)
         self->num_onsets = j;
         rhythm_sort_by_onset_time(self->onsets, self->num_onsets);
         pthread_mutex_unlock(&self->onset_buffer_mutex);
+      }
+    else if(address_hash == 3352467465) // '/tempo'
+      {
+        //this only has any effect in btt metronome mode
+        if(num_osc_values == 1)
+          self->metronome_tempo = oscValueAsFloat(self->osc_values_buffer[0], osc_type_tag[0]);
+          //there really isn't any sense in setting it more than once per beat
+          //btt_set_metronome_bpm(self->btt, oscValueAsFloat(self->osc_values_buffer[0], osc_type_tag[0]));
       }
   }
 }
