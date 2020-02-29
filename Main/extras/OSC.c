@@ -11,13 +11,13 @@
  */
 /*-----------------------------------------------------*/
 
+#define _GNU_SOURCE //asprintf
+
 #include "OSC.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> //strlen
 #include <arpa/inet.h> //htonl
-
-#define _GNU_SOURCE //asprintf
 
 void   oscConstructSymbol    (char*     value, char** buffer, int* bufferSize);
 void   oscConstructTypeTag   (char*     value, char** buffer, int* bufferSize);
