@@ -5,7 +5,7 @@
 #include "Eye.h"
 
 #define FIRMWARE_MAJOR_VERSION 1
-#define FIRMWARE_MINOR_VERSION 3
+#define FIRMWARE_MINOR_VERSION 4
 
 void interface_dispatch          (void* self, char* message, robot_arg_t args[], int num_args);
 void interface_note_on_callback  (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
@@ -70,7 +70,7 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
 { 
   switch(robot_hash_message(message)) 
     {
-      /*---------------------------------------------------*/  
+      /******************************/
       case robot_hash_tap:
         if(num_args == 1)
           {
@@ -78,6 +78,8 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
             robot_send_message(robot_reply_aok);
           }
          break;
+      
+      /******************************/
       case robot_hash_tap_specific:
         if(num_args == 2)
           {
@@ -85,20 +87,104 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
             robot_send_message(robot_reply_aok);
           }
          break;
+      
+      /******************************/
       case robot_hash_bell:
         if(num_args == 1)
           {
             solenoid_ding(robot_arg_to_float(&args[0]));
-            eye_animate_blink();
             robot_send_message(robot_reply_aok);
           }
         break;
+      
+      /******************************/
       case robot_hash_get_firmware_version:
         if(num_args == 0)
           robot_send_message(robot_reply_firmware_version, FIRMWARE_MAJOR_VERSION, FIRMWARE_MINOR_VERSION);
         break;
-        
-      /*---------------------------------------------------*/
+
+      /******************************/
+      case robot_hash_eye_blink:
+        if(num_args == 0)
+          {
+            eye_animate_blink();
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+
+      /******************************/
+      case robot_hash_eye_roll:
+        if(num_args == 1)
+          {
+            eye_animate_roll(robot_arg_to_int(&args[0]));
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+
+      /******************************/
+      case robot_hash_eye_no:
+        if(num_args == 2)
+          {
+            eye_animate_no(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[0]));
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+      
+      /******************************/
+      case robot_hash_eye_yes:
+        if(num_args == 2)
+          {
+            eye_animate_yes(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[0]));
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+
+      /******************************/
+      case robot_hash_eye_inquisitive:
+        if(num_args == 0)
+          {
+            eye_animate_inquisitive();
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+
+      /******************************/
+      case robot_hash_eye_focused:
+        if(num_args == 0)
+          {
+            eye_animate_focused();
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+      
+      /******************************/
+      case robot_hash_eye_surprised:
+        if(num_args == 0)
+          {
+            eye_animate_surprised();
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+
+      /******************************/
+      case robot_hash_eye_neutral_size:
+        if(num_args == 0)
+          {
+            eye_animate_neutral_size();
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+
+      /******************************/
+      case robot_hash_eye_neutral_pos:
+        if(num_args == 0)
+          {
+            eye_animate_neutral_position();
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+      
+      /******************************/
       default: break;
     }
 }

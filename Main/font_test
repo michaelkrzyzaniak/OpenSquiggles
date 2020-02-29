@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for f in /usr/local/Cellar/figlet/2.2.5/share/figlet/fonts/*.flf
+do
+ echo "$(basename $f .flf)"
+ figlet -f $(basename $f .flf) Dr. Squiggles
+done

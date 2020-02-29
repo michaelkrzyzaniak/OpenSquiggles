@@ -642,6 +642,9 @@ void eye_animate_blink()
   target_eye->c[EYE_IRIS_WIDTH]  = 0;
   target_eye->c[EYE_POSITION_Y]  = eye_global_eye->c[EYE_POSITION_Y]+2;
 
+  if(eye_global_saccade_resume_timer <= 0)
+    eye_animate_neutral_position();
+
   eye_go_to_pose_stay_and_return(eye_global_eye, eye_global_queues, target_eye, 66, 0, 66);
 
   eye_global_saccade_resume_timer = EYE_SACCADE_TIMER_DURATION;
@@ -676,7 +679,7 @@ void eye_animate_focused()
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_suprised()
+void eye_animate_surprised()
 {
   Eye* target_eye = eye_new(EYE_NULL_VALUE);
   if(target_eye == NULL) return;
@@ -774,7 +777,7 @@ void eye_animate_roll(int depth)
 }
 
 /* -------------------------------------------------------------- */
-void eye_animate_shifty(int depth, float speed)
+void eye_animate_no(int depth, float speed)
 {
   Eye* target_eye_1 = eye_new(EYE_NULL_VALUE);
   Eye* target_eye_2 = eye_new(EYE_NULL_VALUE);

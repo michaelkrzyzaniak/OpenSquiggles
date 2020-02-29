@@ -8,7 +8,6 @@
  */
 
 #include "Microphone.h"
-#include "../Robot_Communication_Framework/Robot_Communication.h"
 #include "Click.h"
 #include "Timestamp.h"
 
@@ -55,7 +54,7 @@ struct OpaqueMicrophoneStruct
   Click*  click            ;
   Robot*  robot            ;
   int     silent_beat_count;
-  int     max_silent_beats ;
+  int      count_out_n;
   
   int     play_beat_bell   ;
   
@@ -125,8 +124,6 @@ Microphone* mic_new()
       if(self->btt == NULL)
         return (Microphone*)auDestroy((Audio*)self);
     
-      self->max_silent_beats = 8;
-    
       self->rhythm_onsets_len = 128;
       self->rhythm_onsets = calloc(self->rhythm_onsets_len, sizeof(*self->rhythm_onsets));
       if(self->rhythm_onsets == NULL)
@@ -151,6 +148,7 @@ Microphone* mic_new()
       
       mic_set_should_play_beat_bell   (self, 1);
       mic_set_quantization_order(self, 8);
+      mic_set_count_out_n(self, 8);
     
 #ifdef   ICLI_MODE
       self->osc_send_buffer = calloc(1, OSC_BUFFER_SIZE);
@@ -242,12 +240,14 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
       //fprintf(stderr, "beat\r\n");
     }
   
-  //if(btt_get_tracking_mode(self->btt) != BTT_TEMPO_LOCKED_BEAT_TRACKING)
+  if(self->count_out_n > 1)
     {
       ++self->silent_beat_count;
-      if(self->silent_beat_count > self->max_silent_beats)
+      if(self->silent_beat_count > self->count_out_n)
         btt_set_tracking_mode(self->btt, BTT_COUNT_IN_TRACKING);
     }
+  
+  robot_send_message(self->robot, robot_cmd_eye_blink);
 }
 
 /*--------------------------------------------------------------------*/
@@ -285,6 +285,12 @@ Microphone* mic_destroy(Microphone* self)
 BTT*           mic_get_btt        (Microphone* self)
 {
   return self->btt;
+}
+
+/*--------------------------------------------------------------------*/
+Robot*            mic_get_robot                  (Microphone* self)
+{
+  return self->robot;
 }
 
 /*--------------------------------------------------------*/
@@ -367,6 +373,19 @@ void              mic_set_quantization_order(Microphone* self, int order)
 int               mic_get_quantization_order(Microphone* self)
 {
   return self->farey_order;
+}
+
+/*--------------------------------------------------------------------*/
+void              mic_set_count_out_n            (Microphone* self, int n)
+{
+  if(n < 0) n = 0;
+  self->count_out_n = n;
+}
+
+/*--------------------------------------------------------------------*/
+int               mic_get_count_out_n            (Microphone* self)
+{
+  return self->count_out_n;
 }
 
 /*--------------------------------------------------------------------*/
