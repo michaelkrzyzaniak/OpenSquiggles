@@ -1,6 +1,5 @@
 #! /bin/sh
 
-mkdir /home/pi/Dr_Squiggles/
 cd /home/pi/Dr_Squiggles/
 git pull
 mkdir /home/pi/Dr_Squiggles/Beat-and-Tempo-Tracking/

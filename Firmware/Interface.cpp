@@ -125,7 +125,7 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
       case robot_hash_eye_no:
         if(num_args == 2)
           {
-            eye_animate_no(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[0]));
+            eye_animate_no(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[1]));
             robot_send_message(robot_reply_aok);
           }
         break;
@@ -134,7 +134,7 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
       case robot_hash_eye_yes:
         if(num_args == 2)
           {
-            eye_animate_yes(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[0]));
+            eye_animate_yes(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[1]));
             robot_send_message(robot_reply_aok);
           }
         break;

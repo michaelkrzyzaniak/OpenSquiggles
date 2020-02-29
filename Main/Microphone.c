@@ -167,7 +167,7 @@ Microphone* mic_new()
 #endif
 
   //there should be a play callback that I can intercept and do this there.
-      sleep(1);
+      sleep(2);
       robot_send_message(self->robot, robot_cmd_get_firmware_version);
       auPlay((Audio*)self->click);
     }

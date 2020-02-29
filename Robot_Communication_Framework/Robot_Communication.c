@@ -154,6 +154,7 @@ void* robot_read_thread_run_loop(void* SELF)
   while(self->read_thread_should_continue_running)
     {
       snd_rawmidi_read(self->in_port, &data, 1);
+      //fprintf(stderr, "%02X\t%c\r\n", data);
       midi_parse(data);
     }
   return NULL;

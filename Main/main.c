@@ -734,13 +734,13 @@ int main(void)
   //fprintf(stderr, "|____/|_|(_) |____/ \\__, |\\__,_|_|\\__, |\\__, |_|\\___||___/\r\n");
   //fprintf(stderr, "                       |_|        |___/ |___/\r\n");
 
-    fprintf(stderr, "o-o              o-o                        o\r\n");
-    fprintf(stderr, "|  \\            |               o           |\r\n");
-    fprintf(stderr, "|   O o-o        o-o   o-o o  o   o--o o--o | o-o o-o\r\n");
-    fprintf(stderr, "|  /  |             | |  | |  | | |  | |  | | |-'  \\\r\n");
-    fprintf(stderr, "o-o   o   O     o--o   o-O o--o | o--O o--O o o-o o-o\r\n");
-    fprintf(stderr, "                         |           |    |\r\n");
-    fprintf(stderr, "                         o        o--o o--o\r\n");
+  fprintf(stderr, "o-o              o-o                        o\r\n");
+  fprintf(stderr, "|  \\            |               o           |\r\n");
+  fprintf(stderr, "|   O o-o        o-o   o-o o  o   o--o o--o | o-o o-o\r\n");
+  fprintf(stderr, "|  /  |             | |  | |  | | |  | |  | | |-'  \\\r\n");
+  fprintf(stderr, "o-o   o   O     o--o   o-O o--o | o--O o--O o o-o o-o\r\n");
+  fprintf(stderr, "                         |           |    |\r\n");
+  fprintf(stderr, "                         o        o--o o--o\r\n");
   
   Microphone*  mic = mic_new();
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
