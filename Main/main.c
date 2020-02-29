@@ -700,7 +700,7 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level)
             .self = rhythm,
             .type = 'd',
             .init = 1,
-            .increment = 0.1,
+            .increment = 0.01,
             .name = "rhythm_histogram_set_nonlinear_exponent",
           },
           {

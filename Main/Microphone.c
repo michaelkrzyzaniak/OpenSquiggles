@@ -167,7 +167,7 @@ Microphone* mic_new()
 #endif
 
   //there should be a play callback that I can intercept and do this there.
-      sleep(2);
+      sleep(1);
       robot_send_message(self->robot, robot_cmd_get_firmware_version);
       auPlay((Audio*)self->click);
     }
@@ -311,19 +311,21 @@ void mic_message_recd_from_robot(void* self, char* message, robot_arg_t args[], 
 /*--------------------------------------------------------------------*/
 Rhythm* mic_set_rhythm_generator       (Microphone* self, rhythm_new_funct constructor)
 {
-  int i;
-  self->rhythm_constructor_index = -1;
-  for(i=0; i<rhythm_num_constructors; i++)
-    if(constructor == rhythm_constructors[i])
-      {self->rhythm_constructor_index = i; break;}
+  if(constructor != rhythm_constructors[self->rhythm_constructor_index])
+    {
+      int i;
+      self->rhythm_constructor_index = -1;
+      for(i=0; i<rhythm_num_constructors; i++)
+        if(constructor == rhythm_constructors[i])
+          {self->rhythm_constructor_index = i; break;}
   
-  pthread_mutex_lock(&self->rhythm_generator_swap_mutex);
-  if(self->rhythm != NULL)
-    self->rhythm = rhythm_destroy(self->rhythm);
-  self->rhythm = (constructor == NULL) ? NULL : constructor(self->btt);
-  self->num_rhythm_onsets = 0;
-  pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
-  
+      pthread_mutex_lock(&self->rhythm_generator_swap_mutex);
+      if(self->rhythm != NULL)
+        self->rhythm = rhythm_destroy(self->rhythm);
+      self->rhythm = (constructor == NULL) ? NULL : constructor(self->btt);
+      self->num_rhythm_onsets = 0;
+      pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
+    }
   return self->rhythm;
 }
 

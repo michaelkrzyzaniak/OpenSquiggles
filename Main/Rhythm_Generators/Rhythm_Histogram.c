@@ -31,21 +31,6 @@ int          rhythm_histogram_beat    (void*, BTT*, unsigned long long, rhythm_o
 #define HISTOGRAM_MAX_LENGTH (MAX_SUBDIVISIONS_PER_BEAT * MAX_NUM_BEATS)
 #define DEFAULT_DECAY_COEFFICIENT 0.75
 
-void  rhythm_histogram_set_is_inverse   (void* SELF, int is_inverse);
-int   rhythm_histogram_get_is_inverse   (void* SELF);
-
-void  rhythm_histogram_set_num_beats  (void* SELF, int num_beats);
-int   rhythm_histogram_get_num_beats  (void* SELF);
-
-void  rhythm_histogram_set_subdivisions_per_beat(void* SELF, int subdivisions);
-int   rhythm_histogram_get_subdivisions_per_beat(void* SELF);
-
-void   rhythm_histogram_set_nonlinear_exponent(void* SELF, double exponent);
-double rhythm_histogram_get_nonlinear_exponent(void* SELF);
-
-void   rhythm_histogram_set_decay_coefficient(void* SELF, double coeff);
-double rhythm_histogram_get_decay_coefficient(void* SELF);
-
 /*--------------------------------------------------------------------*/
 typedef struct opaque_rhythm_histogram_struct
 {
@@ -170,8 +155,9 @@ int   rhythm_histogram_get_subdivisions_per_beat(void* SELF)
 /*--------------------------------------------------------------------*/
 void   rhythm_histogram_set_nonlinear_exponent(void* SELF, double k)
 {
-  //x >  0.5: (  1 + abs((2x-1))^(1/k)  ) / 2
-  //x <= 0.5: (  1 - abs((2x-1))^(1/k)  ) / 2
+  //x >  0.5: (  1 + abs((2x-1))^k  ) / 2
+  //x <= 0.5: (  1 - abs((2x-1))^k  ) / 2
+  //switch plus and minus for inverse mode
   Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
   if(k < 0) k = 0;
   self->nonlinear_exponent = k;
@@ -323,12 +309,16 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
   //generate a rhythm
   for(i=0; i<self->subdivisions_per_beat; i++)
     {
-      //float r = random() / (double)(RAND_MAX);
-    
-      float r = (self->histogram[self->histogram_index + i] >= 0.5) ? 0 : 1;
-    
-      int onset = (self->is_inverse) ? (r >= self->histogram[self->histogram_index + i]) : (r < self->histogram[self->histogram_index + i]);
-      if(onset)
+      float r = random() / (double)(RAND_MAX);
+      float x = self->histogram[self->histogram_index + i];
+      float nonliniarity = fabs(2*x-1);
+      nonliniarity = pow(nonliniarity, self->nonlinear_exponent);
+      nonliniarity += self->is_inverse;
+      if(x < 0.5) nonliniarity *= -1;
+      nonliniarity += 1;
+      nonliniarity /= 2.0;
+
+      if(nonliniarity > r)
         {
           returned_rhythm[n].beat_time    = i/(float)self->subdivisions_per_beat;
           returned_rhythm[n].strength     = -1;
@@ -336,7 +326,6 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
           ++n;
         }
     }
-
   return n;
 }
 
