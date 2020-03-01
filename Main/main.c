@@ -1,3 +1,14 @@
+/*----------------------------------------------------------------------
+     ,'""`.      ,'""`.      ,'""`.      ,'""`.      ,'""`.
+    / _  _ \    / _  _ \    / _  _ \    / _  _ \    / _  _ \
+    |(@)(@)|    |(@)(@)|    |(@)(@)|    |(@)(@)|    |(@)(@)|
+    )  __  (    )  __  (    )  __  (    )  __  (    )  __  (
+   /,'))((`.\  /,'))((`.\  /,'))((`.\  /,'))((`.\  /,'))((`.\
+  (( ((  )) ))(( ((  )) ))(( ((  )) ))(( ((  )) ))(( ((  )) ))
+   `\ `)(' /'  `\ `)(' /'  `\ `)(' /'  `\ `)(' /'  `\ `)(' /'
+
+----------------------------------------------------------------------*/
+
 //OSX compile with:
 //gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2
 
@@ -5,8 +16,6 @@
 //sudo apt-get install libasound2-dev
 //gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2
 
-//also defined in microphone.c
-//#define  ICLI_MODE 1
 #include "Microphone.h"
 #include <string.h> //strcmp
 
@@ -713,9 +722,47 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level)
             .increment = 0.01,
             .name = "rhythm_histogram_set_decay_coefficient",
           },
+          {
+            .set = (funct)rhythm_histogram_set_robot_osc_id,
+            .get = (funct)rhythm_histogram_get_robot_osc_id,
+            .enter = NULL,
+            .self = rhythm,
+            .type = 'i',
+            .init = 0,
+            .increment = 1,
+            .name = "rhythm_histogram_set_robot_osc_id",
+          },
+          {
+            .set = (funct)rhythm_histogram_set_osc_send_port,
+            .get = (funct)rhythm_histogram_get_osc_send_port,
+            .enter = NULL,
+            .self = rhythm,
+            .type = 'i',
+            .init = 9000,
+            .increment = 1,
+            .name = "rhythm_histogram_set_osc_send_port",
+          },
         };
       int num_params = sizeof(params) / sizeof(params[0]);
       return cycle_through_paramaters_and_take_get_input("rhythm", params, num_params, "HISTOGRAM RHYTHM SUBMENU", indent_level);
+    }
+  else if(strcmp(name, "Two_Beat_Delay") == 0)
+    {
+      param_t params[] =
+        {
+          {
+            .set = (funct)rhythm_two_beat_delay_set_beats_delay,
+            .get = (funct)rhythm_two_beat_delay_get_beats_delay,
+            .enter = NULL,
+            .self = rhythm,
+            .type = 'd',
+            .init = 2,
+            .increment = 1,
+            .name = "rhythm_two_beat_delay_set_beats_delay",
+          },
+        };
+      int num_params = sizeof(params) / sizeof(params[0]);
+      return cycle_through_paramaters_and_take_get_input("rhythm", params, num_params, "TWO BEAT DELAY RHYTHM SUBMENU", indent_level);
     }
   else
     {
@@ -763,8 +810,11 @@ int main(void)
   
   global_beat_tracker  = mic_get_btt(mic);
   Robot* robot = mic_get_robot(mic);
-  /* about 18 for OSX, 6 for robot */
+#if defined __linux__
   btt_set_beat_prediction_adjustment(global_beat_tracker, 6.000000);
+#elif defined __APPLE__
+  btt_set_beat_prediction_adjustment(global_beat_tracker, 18.000000);
+#endif
   btt_set_tracking_mode(global_beat_tracker, BTT_COUNT_IN_TRACKING);
   
   auPlay((Audio*)mic);

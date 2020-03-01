@@ -18,7 +18,6 @@
 #include <pthread.h>
 #include <math.h>
 
-#include "../../Beat-and-Tempo-Tracking/BTT.h"
 #include "../extras/Network.h" //calloc
 #include "../extras/OSC.h" //calloc
 

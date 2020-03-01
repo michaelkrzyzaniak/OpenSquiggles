@@ -83,6 +83,13 @@ void   rhythm_histogram_set_nonlinear_exponent   (void* SELF, double exponent);
 double rhythm_histogram_get_nonlinear_exponent   (void* SELF);
 void   rhythm_histogram_set_decay_coefficient    (void* SELF, double coeff);
 double rhythm_histogram_get_decay_coefficient    (void* SELF);
+void   rhythm_histogram_set_robot_osc_id         (void* SELF, int id);
+int    rhythm_histogram_get_robot_osc_id         (void* SELF);
+void   rhythm_histogram_set_osc_send_port        (void* SELF, int port);
+int    rhythm_histogram_get_osc_send_port        (void* SELF);
+
+void   rhythm_two_beat_delay_set_beats_delay     (void* SELF, double beats_delay);
+double rhythm_two_beat_delay_get_beats_delay     (void* SELF);
 
 //public utilities
 void  rhythm_get_rational_approximation(float onset_time, int n, int* num, int* denom);

@@ -17,6 +17,9 @@
 #include "Rhythm_Generators.h"
 #include <math.h>
 
+#include "../extras/Network.h" //calloc
+#include "../extras/OSC.h" //calloc
+
 /*--------------------------------------------------------------------*/
 void*        rhythm_histogram_destroy (void*);
 const char*  rhythm_histogram_name    (void*);
@@ -30,6 +33,7 @@ int          rhythm_histogram_beat    (void*, BTT*, unsigned long long, rhythm_o
 #define DEFAULT_NUM_BEATS             4
 #define HISTOGRAM_MAX_LENGTH (MAX_SUBDIVISIONS_PER_BEAT * MAX_NUM_BEATS)
 #define DEFAULT_DECAY_COEFFICIENT 0.75
+#define DEFAULT_OSC_SEND_PORT     9000
 
 /*--------------------------------------------------------------------*/
 typedef struct opaque_rhythm_histogram_struct
@@ -53,6 +57,9 @@ typedef struct opaque_rhythm_histogram_struct
   int                 is_inverse;
   double              nonlinear_exponent;
   
+  int                 robot_osc_id;
+  unsigned short      osc_send_port;
+  Network*            net;
   
 }Rhythm_Histogram;
 
@@ -79,6 +86,13 @@ Rhythm* rhythm_histogram_new(BTT* beat_tracker)
       //for(i=0; i<HISTOGRAM_MAX_LENGTH; self->histogram[i++] = 0.5);      // all 0.5
       for(i=0; i<HISTOGRAM_MAX_LENGTH; self->histogram[i++] = random()%2); // 0 or 1 with 50% probability
     
+      self->net = net_new();
+      if(!self->net) return rhythm_histogram_destroy(self);
+      if(!net_udp_connect(self->net, 65500 /* some random ignored port */))
+        return rhythm_histogram_destroy(self);
+    
+      self->osc_send_port = DEFAULT_OSC_SEND_PORT;
+    
       rhythm_histogram_set_is_inverse(self, 0);
       rhythm_histogram_set_num_beats  (self, DEFAULT_NUM_BEATS);
       rhythm_histogram_set_subdivisions_per_beat(self, DEFAULT_SUBDIVISIONS_PER_BEAT);
@@ -100,6 +114,7 @@ void*      rhythm_histogram_destroy (void* SELF)
         free(self->onset_times);
       if(self->histogram != NULL)
         free(self->histogram);
+      net_destroy(self->net);
       free(self);
     }
   return (Rhythm*) NULL;
@@ -187,6 +202,34 @@ double rhythm_histogram_get_decay_coefficient(void* SELF)
 }
 
 /*--------------------------------------------------------------------*/
+void   rhythm_histogram_set_robot_osc_id(void* SELF, int id)
+{
+  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
+  self->robot_osc_id = id;
+}
+
+/*--------------------------------------------------------------------*/
+int rhythm_histogram_get_robot_osc_id(void* SELF)
+{
+  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
+  return self->robot_osc_id;
+}
+
+/*--------------------------------------------------------------------*/
+void   rhythm_histogram_set_osc_send_port(void* SELF, int port)
+{
+  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
+  self->osc_send_port = port;
+}
+
+/*--------------------------------------------------------------------*/
+int rhythm_histogram_get_osc_send_port(void* SELF)
+{
+  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
+  return self->osc_send_port;
+}
+
+/*--------------------------------------------------------------------*/
 const char*  rhythm_histogram_name    (void* SELF)
 {
   /* just return the name of the module for display */
@@ -220,15 +263,14 @@ float        rhythm_histogram_get_note_density   (Rhythm_Histogram* self)
   int i;
   int length = self->num_beats *  self->subdivisions_per_beat;
   for(i=0; i<length; density += self->histogram[i++]);
-  
   density /= (double)length;
   
-  return (self->is_inverse) ? 1.0-density : density;
+  return (self->is_inverse == -1) ? 1.0-density : density;
 }
 
 /*--------------------------------------------------------------------*/
 //try to maximize this value
-float        rhythm_histogram_get_convergence_score   (Rhythm_Histogram* self)
+float        rhythm_histogram_get_convergence_score   (Rhythm_Histogram* self, float note_density)
 {
   float result;
   
@@ -238,7 +280,7 @@ float        rhythm_histogram_get_convergence_score   (Rhythm_Histogram* self)
   int i;
   for(i=0; i<length; i++)
     {
-      if(self->histogram[i] >= 0.5)
+      if(self->histogram[i] >= note_density)
         {
           if(self->histogram[i] < minimax)
             minimax = self->histogram[i];
@@ -250,12 +292,27 @@ float        rhythm_histogram_get_convergence_score   (Rhythm_Histogram* self)
         }
     }
   
-  if((minimax == 2)|| (maximin == -1))
+  if((minimax == 2) || (maximin == -1))
     result = 0;
   else
     result = minimax - maximin;
+  
   return result;
 }
+
+/*--------------------------------------------------------------------*/
+void rhythm_histogram_send_osc_convergence_and_density(Rhythm_Histogram* self)
+{
+  float density     =  rhythm_histogram_get_note_density(self);
+  float convergence =  rhythm_histogram_get_convergence_score(self, density);
+  
+  int  buffer_n = 32;
+  char buffer[buffer_n];
+  int  num_bytes = oscConstruct(buffer, 127, "/convergence", "iff", self->robot_osc_id, convergence, density);
+  if(num_bytes > 0)
+    net_udp_send(self->net, buffer, num_bytes, "255.255.255.255", self->osc_send_port);
+}
+
 
 /*--------------------------------------------------------------------*/
 int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
@@ -277,8 +334,6 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
   //get the onset mask
   while(self->num_onsets > 0)
     {
-      //fprintf(stderr, "%llu, %llu, %i\t", self->onset_times[self->onsets_head_index], prev_beat_time, beat_duration);
-    
       float beat_time = (int)(self->onset_times[self->onsets_head_index] - prev_beat_time) / (double)beat_duration;
       beat_time = round(beat_time * self->subdivisions_per_beat);
     
@@ -286,7 +341,6 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
         break;
       else if(beat_time >= 0)
         onset_mask[(int)beat_time] = 1;
-      //else it is too old so let it get shifted out
   
       ++self->onsets_head_index; self->onsets_head_index %= NUM_ONSET_TIMES;
       --self->num_onsets;
@@ -297,11 +351,9 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
     {
       self->histogram[self->histogram_index + i] *= self->decay_coefficient;
       self->histogram[self->histogram_index + i] += onset_mask[i] * (1.0-self->decay_coefficient);
-      //fprintf(stderr, "%f\t", self->histogram[self->histogram_index + i]);
     }
-  //fprintf(stderr, "\r\n");
   
-  //fprintf(stderr, "Note Density: %f Convergence: %f\r\n", rhythm_histogram_get_note_density(self), rhythm_histogram_get_convergence_score(self));
+  rhythm_histogram_send_osc_convergence_and_density(self);
   
   self->histogram_index += self->subdivisions_per_beat;
   self->histogram_index %= self->subdivisions_per_beat * self->num_beats;
@@ -326,6 +378,7 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
           ++n;
         }
     }
+  
   return n;
 }
 

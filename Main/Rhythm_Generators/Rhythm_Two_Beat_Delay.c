@@ -22,8 +22,9 @@ const char*  rhythm_two_beat_delay_name    (void*);
 void         rhythm_two_beat_delay_onset   (void*, BTT*, unsigned long long);
 int          rhythm_two_beat_delay_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
-#define NUM_ONSET_TIMES 128
-#define NUM_BEAT_TIMES  8
+#define NUM_ONSET_TIMES  128
+#define MAX_DELAY_BEATS  8
+#define NUM_BEAT_TIMES   (MAX_DELAY_BEATS + 1)
 
 /*--------------------------------------------------------------------*/
 typedef struct opaque_rhythm_two_beat_delay_struct
@@ -114,9 +115,28 @@ void         rhythm_two_beat_delay_onset   (void* SELF, BTT* beat_tracker, unsig
 }
 
 /*--------------------------------------------------------------------*/
-void rhythm_two_beat_delay_clear()
+void rhythm_two_beat_delay_clear(void* SELF)
 {
+  Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
+}
 
+/*--------------------------------------------------------------------*/
+void rhythm_two_beat_delay_set_beats_delay(void* SELF, double beats_delay)
+{
+  Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
+  
+  if(beats_delay < 1)
+    beats_delay = 1;
+  if(beats_delay > MAX_DELAY_BEATS)
+    beats_delay = MAX_DELAY_BEATS;
+  self->beats_delay = beats_delay;
+}
+
+/*--------------------------------------------------------------------*/
+double rhythm_two_beat_delay_get_beats_delay(void* SELF)
+{
+  Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
+  return self->beats_delay;
 }
 
 /*--------------------------------------------------------------------*/
