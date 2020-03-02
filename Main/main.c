@@ -772,8 +772,6 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level)
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  i_hate_canonical_input_processing();
-  
   //fprintf(stderr, " ____         ____              _             _\r\n");
   //fprintf(stderr, "|  _ \\ _ __  / ___|  __ _ _   _(_) __ _  __ _| | ___  ___\r\n");
   //fprintf(stderr, "| | | | '__| \\___ \\ / _` | | | | |/ _` |/ _` | |/ _ \\/ __|\r\n");
@@ -863,10 +861,8 @@ int main(void)
       },
     };
   
-    cycle_through_paramaters_and_take_get_input("null", params, sizeof(params) / sizeof(params[0]), "MAIN MENU", 0);
-
-  
- out:
+  i_hate_canonical_input_processing();
+  cycle_through_paramaters_and_take_get_input("null", params, sizeof(params) / sizeof(params[0]), "MAIN MENU", 0);
   make_stdin_cannonical_again();
 }
 
