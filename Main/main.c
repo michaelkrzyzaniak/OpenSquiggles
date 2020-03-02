@@ -772,8 +772,6 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level)
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  i_hate_canonical_input_processing();
-  
   //fprintf(stderr, " ____         ____              _             _\r\n");
   //fprintf(stderr, "|  _ \\ _ __  / ___|  __ _ _   _(_) __ _  __ _| | ___  ___\r\n");
   //fprintf(stderr, "| | | | '__| \\___ \\ / _` | | | | |/ _` |/ _` | |/ _ \\/ __|\r\n");
@@ -793,7 +791,7 @@ int main(void)
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
   /* mic_new might print Arduino firmware version */
  
-  fprintf(stderr, "Raspi is running software version 1.16\r\n\r\n");
+  fprintf(stderr, "Raspi is running software version 1.17\r\n\r\n");
   fprintf(stderr, " -- 'Q' to quit\r\n");
   fprintf(stderr, " -- [ENTER] to enter submenu\r\n");
   fprintf(stderr, " -- 'q' to exit submenu\r\n");
@@ -863,10 +861,8 @@ int main(void)
       },
     };
   
-    cycle_through_paramaters_and_take_get_input("null", params, sizeof(params) / sizeof(params[0]), "MAIN MENU", 0);
-
-  
- out:
+  i_hate_canonical_input_processing();
+  cycle_through_paramaters_and_take_get_input("null", params, sizeof(params) / sizeof(params[0]), "MAIN MENU", 0);
   make_stdin_cannonical_again();
 }
 
