@@ -47,7 +47,7 @@ typedef Rhythm* (*rhythm_new_funct)(BTT*);
 Rhythm* rhythm_template_new(BTT* btt);
 Rhythm* rhythm_random_beat_from_list_new(BTT* btt);
 Rhythm* rhythm_two_beat_delay_new(BTT* btt);
-Rhythm* rhythm_OSC_new(BTT* btt);
+Rhythm* rhythm_osc_new(BTT* btt);
 Rhythm* rhythm_histogram_new(BTT* btt);
 Rhythm* rhythm_4_4_loop_new(BTT* btt);
 Rhythm* rhythm_mali_new(BTT* btt);
@@ -58,7 +58,7 @@ static const rhythm_new_funct rhythm_constructors[] =
   rhythm_random_beat_from_list_new,
   rhythm_two_beat_delay_new,
   rhythm_template_new,
-  rhythm_OSC_new,
+  rhythm_osc_new,
   rhythm_histogram_new,
   rhythm_4_4_loop_new,
   rhythm_mali_new,
@@ -90,6 +90,9 @@ int    rhythm_histogram_get_osc_send_port        (void* SELF);
 
 void   rhythm_two_beat_delay_set_beats_delay     (void* SELF, double beats_delay);
 double rhythm_two_beat_delay_get_beats_delay     (void* SELF);
+
+void   rhythm_osc_set_robot_osc_id               (void* SELF, int id);
+int    rhythm_osc_get_robot_osc_id               (void* SELF);
 
 //public utilities
 void  rhythm_get_rational_approximation(float onset_time, int n, int* num, int* denom);

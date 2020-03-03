@@ -1,5 +1,0 @@
-for f /usr/local/Cellar/figlet/2.2.5/share/figlet/fonts/*.flf
-do
- echo "Processing $f"
- # do something on $f
-done

@@ -764,6 +764,24 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level)
       int num_params = sizeof(params) / sizeof(params[0]);
       return cycle_through_paramaters_and_take_get_input("rhythm", params, num_params, "TWO BEAT DELAY RHYTHM SUBMENU", indent_level);
     }
+  else if(strcmp(name, "OSC") == 0)
+    {
+      param_t params[] =
+        {
+          {
+            .set = (funct)rhythm_osc_set_robot_osc_id,
+            .get = (funct)rhythm_osc_get_robot_osc_id,
+            .enter = NULL,
+            .self = rhythm,
+            .type = 'i',
+            .init = 0,
+            .increment = 1,
+            .name = "rhythm_osc_set_robot_osc_id",
+          },
+        };
+      int num_params = sizeof(params) / sizeof(params[0]);
+      return cycle_through_paramaters_and_take_get_input("rhythm", params, num_params, "OSC RHYTHM SUBMENU", indent_level);
+    }
   else
     {
       return 1;
@@ -804,7 +822,8 @@ int main(void)
   fprintf(stderr, "\t -- 'L' for unlocked (regular) beat-tracking mode \r\n");
   fprintf(stderr, "\r\n");
 
-  mic_set_rhythm_generator       (mic, rhythm_random_beat_from_list_new);
+  //mic_set_rhythm_generator       (mic, rhythm_random_beat_from_list_new);
+  mic_set_rhythm_generator       (mic, rhythm_osc_new);
   
   global_beat_tracker  = mic_get_btt(mic);
   Robot* robot = mic_get_robot(mic);

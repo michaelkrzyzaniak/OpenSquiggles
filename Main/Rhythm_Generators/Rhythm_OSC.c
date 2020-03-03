@@ -28,14 +28,14 @@
 #define  OSC_ONSET_BUFFER_SIZE 64 //no bigger than OSC_VALUES_BUFFER_SIZE
 
 /*--------------------------------------------------------------------*/
-void*        rhythm_OSC_destroy (void*);
-const char*  rhythm_OSC_name    (void*);
-void         rhythm_OSC_onset   (void*, BTT*, unsigned long long);
-int          rhythm_OSC_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
+void*        rhythm_osc_destroy (void*);
+const char*  rhythm_osc_name    (void*);
+void         rhythm_osc_onset   (void*, BTT*, unsigned long long);
+int          rhythm_osc_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
-void*        rhythm_OSC_recv_thread_run_loop(void* SELF);
+void*        rhythm_osc_recv_thread_run_loop(void* SELF);
 /*--------------------------------------------------------------------*/
-typedef struct opaque_rhythm_OSC_struct
+typedef struct opaque_rhythm_osc_struct
 {
   RHYTHM_GENERATOR_SUBCLASS_GUTS ;
   
@@ -57,51 +57,52 @@ typedef struct opaque_rhythm_OSC_struct
 }Rhythm_OSC;
 
 /*--------------------------------------------------------------------*/
-Rhythm* rhythm_OSC_new(BTT* beat_tracker)
+Rhythm* rhythm_osc_new(BTT* beat_tracker)
 {
   Rhythm_OSC* self = (Rhythm_OSC*) calloc(1, sizeof(*self));
   
   if(self != NULL)
     {
-      self->destroy = rhythm_OSC_destroy;
-      self->name    = rhythm_OSC_name;
-      self->onset   = rhythm_OSC_onset;
-      self->beat    = rhythm_OSC_beat;
+      self->destroy = rhythm_osc_destroy;
+      self->name    = rhythm_osc_name;
+      self->onset   = rhythm_osc_onset;
+      self->beat    = rhythm_osc_beat;
     
       self->btt = beat_tracker;
     
       /* initalize instance variables below here */
-      /* return rhythm_OSC_destroy(self) on failure */
+      /* return rhythm_osc_destroy(self) on failure */
       self->osc_send_buffer = calloc(1, OSC_BUFFER_SIZE);
-      if(!self->osc_send_buffer) return rhythm_OSC_destroy(self);
+      if(!self->osc_send_buffer) return rhythm_osc_destroy(self);
       self->osc_recv_buffer = calloc(1, OSC_BUFFER_SIZE);
-      if(!self->osc_recv_buffer) return rhythm_OSC_destroy(self);
+      if(!self->osc_recv_buffer) return rhythm_osc_destroy(self);
       self->osc_values_buffer = calloc(sizeof(*self->osc_values_buffer), OSC_VALUES_BUFFER_SIZE);
-      if(!self->osc_values_buffer) return rhythm_OSC_destroy(self);
+      if(!self->osc_values_buffer) return rhythm_osc_destroy(self);
       self->onsets = calloc(sizeof(*self->onsets), OSC_ONSET_BUFFER_SIZE);
-      if(!self->onsets) return rhythm_OSC_destroy(self);
+      if(!self->onsets) return rhythm_osc_destroy(self);
 
       self->net  = net_new();
-      if(!self->net) return rhythm_OSC_destroy(self);
+      if(!self->net) return rhythm_osc_destroy(self);
       if(!net_udp_connect (self->net, OSC_RECV_PORT))
-        return rhythm_OSC_destroy(self);
+        return rhythm_osc_destroy(self);
     
-      self->robot_id = random() & 0x7FFFFFFF; //keep the first bit clear to avoid sign confusion
+      //self->robot_id = random() & 0x7FFFFFFF; //keep the first bit clear to avoid sign confusion
+      rhythm_osc_set_robot_osc_id(self, 0);
       self->beat_id = 0;
 
       if(pthread_mutex_init(&self->onset_buffer_mutex, NULL) != 0)
-        return rhythm_OSC_destroy(self);
+        return rhythm_osc_destroy(self);
     
-      int error = pthread_create(&self->osc_recv_thread, NULL, rhythm_OSC_recv_thread_run_loop, self);
+      int error = pthread_create(&self->osc_recv_thread, NULL, rhythm_osc_recv_thread_run_loop, self);
       if(error != 0)
-        return rhythm_OSC_destroy(self);
+        return rhythm_osc_destroy(self);
     }
   
   return (Rhythm*)self;
 }
 
 /*--------------------------------------------------------------------*/
-uint32_t rhythm_OSC_sample_time_to_millis(BTT* beat_tracker, unsigned long long sample_time)
+uint32_t rhythm_osc_sample_time_to_millis(BTT* beat_tracker, unsigned long long sample_time)
 {
   //overflows after about 50 days
   double  sample_rate = btt_get_sample_rate(beat_tracker);
@@ -109,7 +110,7 @@ uint32_t rhythm_OSC_sample_time_to_millis(BTT* beat_tracker, unsigned long long 
 }
 
 /*--------------------------------------------------------------------*/
-void*      rhythm_OSC_destroy (void* SELF)
+void*      rhythm_osc_destroy (void* SELF)
 {
   Rhythm_OSC* self = (Rhythm_OSC*)SELF;
   if(self != NULL)
@@ -131,7 +132,21 @@ void*      rhythm_OSC_destroy (void* SELF)
 }
 
 /*--------------------------------------------------------------------*/
-const char*  rhythm_OSC_name    (void* SELF)
+void   rhythm_osc_set_robot_osc_id               (void* SELF, int id)
+{
+  Rhythm_OSC* self = (Rhythm_OSC*)SELF;
+  self->robot_id = id;
+}
+
+/*--------------------------------------------------------------------*/
+int    rhythm_osc_get_robot_osc_id               (void* SELF)
+{
+  Rhythm_OSC* self = (Rhythm_OSC*)SELF;
+  return  self->robot_id;
+}
+
+/*--------------------------------------------------------------------*/
+const char*  rhythm_osc_name    (void* SELF)
 {
   /* just return the name of the module for display */
   static const char* name = "OSC";
@@ -139,7 +154,7 @@ const char*  rhythm_OSC_name    (void* SELF)
 }
 
 /*--------------------------------------------------------------------*/
-void         rhythm_OSC_onset   (void* SELF, BTT* beat_tracker, unsigned long long sample_time)
+void         rhythm_osc_onset   (void* SELF, BTT* beat_tracker, unsigned long long sample_time)
 {
   /* This will be called whenever an onset is detected
      sample_time tells you how many samples into the audio stream the
@@ -147,7 +162,7 @@ void         rhythm_OSC_onset   (void* SELF, BTT* beat_tracker, unsigned long lo
      you can do whatever you want with this information, or ignore it.
   */
   Rhythm_OSC* self = (Rhythm_OSC*)SELF;
-  unsigned millis = rhythm_OSC_sample_time_to_millis(beat_tracker, sample_time);
+  unsigned millis = rhythm_osc_sample_time_to_millis(beat_tracker, sample_time);
   int num_bytes = oscConstruct(self->osc_send_buffer, OSC_BUFFER_SIZE, "/onset", "i", millis);
   if(num_bytes > 0)
     net_udp_send(self->net, self->osc_send_buffer, num_bytes, "255.255.255.255", OSC_SEND_PORT);
@@ -165,7 +180,7 @@ void debug_print(rhythm_onset_t* rhythm, int N)
 
 
 /*--------------------------------------------------------------------*/
-int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
+int          rhythm_osc_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
 {
   /* This will be called whenever a beat is detected.
      You should generate one beat of rhythm and write it into returned_rhythm.
@@ -193,7 +208,7 @@ int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long lo
   pthread_mutex_unlock(&self->onset_buffer_mutex);
 
   ++self->beat_id;
-  unsigned millis = rhythm_OSC_sample_time_to_millis(beat_tracker, sample_time);
+  unsigned millis = rhythm_osc_sample_time_to_millis(beat_tracker, sample_time);
   int num_bytes = oscConstruct(self->osc_send_buffer, OSC_BUFFER_SIZE, "/beat", "iii", millis, self->robot_id, self->beat_id);
   if(num_bytes > 0)
     net_udp_send(self->net, self->osc_send_buffer, num_bytes, "255.255.255.255", OSC_SEND_PORT);
@@ -204,7 +219,7 @@ int          rhythm_OSC_beat    (void* SELF, BTT* beat_tracker, unsigned long lo
 }
 
 /*--------------------------------------------------------------------*/
-void* rhythm_OSC_recv_thread_run_loop(void* SELF)
+void* rhythm_osc_recv_thread_run_loop(void* SELF)
 {
   Rhythm_OSC* self = (Rhythm_OSC*)SELF;
   char senders_address[16];
