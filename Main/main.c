@@ -809,7 +809,7 @@ int main(void)
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
   /* mic_new might print Arduino firmware version */
  
-  fprintf(stderr, "Raspi is running software version 1.17\r\n\r\n");
+  fprintf(stderr, "Raspi is running software version 1.18\r\n\r\n");
   fprintf(stderr, " -- 'Q' to quit\r\n");
   fprintf(stderr, " -- [ENTER] to enter submenu\r\n");
   fprintf(stderr, " -- 'q' to exit submenu\r\n");
