@@ -20,7 +20,7 @@
 #ifdef   ICLI_MODE
 #include "extras/OSC.h"
 #include "extras/Network.h"
-#define  OSC_BUFFER_SIZE 4096
+#define  OSC_BUFFER_SIZE 1024
 #define  OSC_VALUES_BUFFER_SIZE 64
 #define  OSC_SEND_PORT   9100
 #define  OSC_RECV_PORT   9101
