@@ -91,7 +91,7 @@ int net_udp_send(Network* self, char* data, int num_bytes, char* ip_address, int
   int error = sendto(self->file_descriptor, data, num_bytes, 0, 
                     (struct sockaddr *)&(self->remote_address), 
                      self->remote_address_length);
-  if(error == -1) perror("unable to send");
+  if(error == -1) perror("unable to send\r\n");
   return error;
 }
 
@@ -191,7 +191,7 @@ BOOL  net_tcp_receive_connections (Network* self, int port)
 
   error = self->file_descriptor = accept(self->local_file_descriptor, (struct sockaddr*)&(self->remote_address), &len);
   if(error < 0)
-    perror("unable to recieve a connection from a client");
+    perror("unable to recieve a connection from a client\r");
  
  out:
   return (error < 0) ? 0 : 1;
@@ -207,7 +207,7 @@ BOOL net_udp_connect(Network* self, int receive_port)
   error = self->file_descriptor = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if(error == -1)
     {
-      perror("unable to create a UDP socket\n"); 
+      perror("unable to create a UDP socket\r\n");
       goto out;
     }
 
@@ -215,7 +215,7 @@ BOOL net_udp_connect(Network* self, int receive_port)
   error = net_bind_port(self->file_descriptor, (char*)"0.0.0.0", receive_port);
   if(error == -1)
     { 
-      perror("unable to bind UDP socket\n");
+      perror("unable to bind UDP socket\r\n");
       goto out;
     }
     

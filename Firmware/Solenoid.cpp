@@ -45,7 +45,6 @@ void solenoid_tap (float strength)
       strength -= decrement;
       ++solenoid_current_solenoid; solenoid_current_solenoid %= (SOLENOID_NUM_SOLENOIDS-1);
     }
-  
 }
 
 /*----------------------------------------------------*/
@@ -62,12 +61,12 @@ void solenoid_tap_specific(int index, float strength)
   if(index >= SOLENOID_NUM_SOLENOIDS) index = SOLENOID_NUM_SOLENOIDS-1;
   if(index < 0) index = 0;
    
-  noInterrupts();
+  //noInterrupts();
   solenoid_timers[index] = solenoid_duration;
   //analogWrite(solenoid_pins[index], strength*255);
   //analogWrite(solenoid_pins[index], 127 + strength*128);
   analogWrite(solenoid_pins[index], 205 + strength*50);
-  interrupts(); 
+  //interrupts(); 
 }
 
 /*----------------------------------------------------*/

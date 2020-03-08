@@ -17,20 +17,23 @@ extern "C"{
 #include "AudioSuperclass.h"
 #include "Rhythm_Generators/Rhythm_Generators.h"
 #include "../Beat-and-Tempo-Tracking/BTT.h"
+#include "../Robot_Communication_Framework/Robot_Communication.h"
 
 typedef struct OpaqueMicrophoneStruct Microphone;
 
 Microphone*       mic_new                        ();
 BTT*              mic_get_btt                    (Microphone* self);
+Robot*            mic_get_robot                  (Microphone* self);
 Rhythm*           mic_set_rhythm_generator       (Microphone* self, rhythm_new_funct constructor);
 Rhythm*           mic_set_rhythm_generator_index (Microphone* self, int index);
 int               mic_get_rhythm_generator_index (Microphone* self);
 Rhythm*           mic_get_rhythm_generator       (Microphone* self);
-
 void              mic_set_should_play_beat_bell  (Microphone* self, int should);
 int               mic_get_should_play_beat_bell  (Microphone* self);
 void              mic_set_quantization_order     (Microphone* self, int order);
 int               mic_get_quantization_order     (Microphone* self);
+void              mic_set_count_out_n            (Microphone* self, int n);
+int               mic_get_count_out_n            (Microphone* self);
 
 int               mic_audio_callback             (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
 

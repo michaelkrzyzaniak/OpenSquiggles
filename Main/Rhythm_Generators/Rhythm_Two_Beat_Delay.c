@@ -22,8 +22,9 @@ const char*  rhythm_two_beat_delay_name    (void*);
 void         rhythm_two_beat_delay_onset   (void*, BTT*, unsigned long long);
 int          rhythm_two_beat_delay_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
-#define NUM_ONSET_TIMES 128
-#define NUM_BEAT_TIMES  8
+#define NUM_ONSET_TIMES  128
+#define MAX_DELAY_BEATS  8
+#define NUM_BEAT_TIMES   (MAX_DELAY_BEATS + 1)
 
 /*--------------------------------------------------------------------*/
 typedef struct opaque_rhythm_two_beat_delay_struct
@@ -92,19 +93,17 @@ const char*  rhythm_two_beat_delay_name    (void* SELF)
   return name;
 }
 //TESTING ONLY!!!!!!!!!!!!!
-unsigned long long prev_beat_test = 0;
+//unsigned long long prev_beat_test = 0;
 
 /*--------------------------------------------------------------------*/
 void         rhythm_two_beat_delay_onset   (void* SELF, BTT* beat_tracker, unsigned long long sample_time)
 {
   Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
-  int adjustment = btt_get_beat_prediction_adjustment_audio_samples(beat_tracker);
-  if(sample_time > adjustment) sample_time -= adjustment;// sample_time -= 64;
-  fprintf(stderr, "discrepancy %lli\r\n", (signed long long)sample_time - (signed long long)prev_beat_test);
+
+  //fprintf(stderr, "onset_time: %lli\tdiscrepancy %lli\r\n", sample_time, (signed long long)sample_time - (signed long long)prev_beat_test);
   self->onset_times[self->onsets_index] = sample_time;
   ++self->onsets_index; self->onsets_index %= NUM_ONSET_TIMES;
   ++self->num_onsets;
-  
   
   /* if buffer is full, shift out the oldest samples */
   if(self->num_onsets > NUM_ONSET_TIMES)
@@ -116,9 +115,28 @@ void         rhythm_two_beat_delay_onset   (void* SELF, BTT* beat_tracker, unsig
 }
 
 /*--------------------------------------------------------------------*/
-void rhythm_two_beat_delay_clear()
+void rhythm_two_beat_delay_clear(void* SELF)
 {
+  Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
+}
 
+/*--------------------------------------------------------------------*/
+void rhythm_two_beat_delay_set_beats_delay(void* SELF, double beats_delay)
+{
+  Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
+  
+  if(beats_delay < 1)
+    beats_delay = 1;
+  if(beats_delay > MAX_DELAY_BEATS)
+    beats_delay = MAX_DELAY_BEATS;
+  self->beats_delay = beats_delay;
+}
+
+/*--------------------------------------------------------------------*/
+double rhythm_two_beat_delay_get_beats_delay(void* SELF)
+{
+  Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
+  return self->beats_delay;
 }
 
 /*--------------------------------------------------------------------*/
@@ -126,9 +144,8 @@ int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsig
 {
   Rhythm_Two_Beat_Delay* self = (Rhythm_Two_Beat_Delay*)SELF;
   
-  //fprintf(stderr, "beat_time %llu\r\n", sample_time);
-  
-  prev_beat_test = sample_time;
+  //fprintf(stderr, "beat interval %llu\r\n", sample_time - prev_beat_test);
+  //prev_beat_test = sample_time;
   
   self->beat_times[self->beats_index] = sample_time;
   int start_beats_index = (self->beats_index + NUM_BEAT_TIMES - (int)self->beats_delay    ) % NUM_BEAT_TIMES;
@@ -136,7 +153,6 @@ int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsig
   ++self->beats_index; self->beats_index %= NUM_BEAT_TIMES;
   
   int beat_duration = self->beat_times[end_beats_index] - self->beat_times[start_beats_index];
-  
   if(beat_duration < 0) return 0;
   
   /*-----------------------------------*/
@@ -147,6 +163,8 @@ int          rhythm_two_beat_delay_beat    (void* SELF, BTT* beat_tracker, unsig
   returned_rhythm[0].timbre_class = 0;
   return 1;
   */
+  
+  //return 0;
   /*-----------------------------------*/
 
   int n=0;

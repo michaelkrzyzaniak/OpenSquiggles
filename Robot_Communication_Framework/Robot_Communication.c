@@ -11,7 +11,7 @@ void  robot_sysex_handler(midi_sysex_mfr_t mfr, char* message);
 
 /*--------------------------------------------------------*/
 #define ROBOT_SYSEX_BUFFER_SIZE 127
-#define ROBOT_MIDI_MFR MIDI_MFR_NON_COMMERCIAL
+#define ROBOT_MIDI_MFR MIDI_MFR_OTHER
 
 //Apple includes
 #ifdef __APPLE__
@@ -116,8 +116,9 @@ Robot* robot_new(robot_message_received_callback callback, void* callback_self)
       if(!robot_setup_midi_client(self))
         return robot_destroy(self);
 #elif defined __linux__
-      if(snd_rawmidi_open(&self->in_port, &self->out_port, ROBOT_MIDI_DEVICE_NAME, 0))
+      if(snd_rawmidi_open(&self->in_port, &self->out_port, ROBOT_MIDI_DEVICE_NAME, SND_RAWMIDI_SYNC))
         return robot_destroy(self);
+      snd_rawmidi_read(self->in_port, NULL, 0); //trigger read
       if(!robot_setup_midi_read_thread(self))
         return robot_destroy(self);
 #endif
@@ -153,8 +154,10 @@ void* robot_read_thread_run_loop(void* SELF)
   while(self->read_thread_should_continue_running)
     {
       snd_rawmidi_read(self->in_port, &data, 1);
+      //fprintf(stderr, "%02X\t%c\r\n", data);
       midi_parse(data);
     }
+  return NULL;
 }
 #endif //__linux__
 
@@ -325,7 +328,7 @@ void robot_send_raw_midi(Robot* self, uint8_t* midi_bytes, int num_bytes)
   
 #elif defined __linux__
   snd_rawmidi_write(self->out_port, midi_bytes, num_bytes);
-  snd_rawmidi_drain(self->out_port);
+  //snd_rawmidi_drain(self->out_port);
 
 #endif
 }
@@ -351,7 +354,7 @@ void robot_send_message(const char *fmt, ...)
       va_start(args, fmt);
 
       *b++ = MIDI_STATUS_SYSTEM_EXCLUSIVE;
-      *b++ = MIDI_MFR_NON_COMMERCIAL;
+      *b++ = ROBOT_MIDI_MFR;
 
       b += vsnprintf((char*)b, ROBOT_SYSEX_BUFFER_SIZE-2, fmt, args);
 
@@ -366,7 +369,7 @@ void robot_send_message(const char *fmt, ...)
     }
     
 #else   //MIDI CLIENT
-      usb_midi_send_sysex(buffer, b-buffer);
+      usb_midi_send_sysex_buffer_has_term(buffer, b-buffer);
 
 #endif //SHARED CODE
 }
@@ -382,7 +385,7 @@ void robot_sysex_handler(midi_sysex_mfr_t mfr, char* message)
   
   while(1)
     {
-      if((a-args) <= MAX_NUM_ARGS)
+      if((a-args) < MAX_NUM_ARGS)
         {
           int contains_period = 0;
           int should_break    = 0;

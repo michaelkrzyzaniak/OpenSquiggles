@@ -8,11 +8,24 @@
  */
 
 #include "Microphone.h"
-#include "../Robot_Communication_Framework/Robot_Communication.h"
 #include "Click.h"
 #include "Timestamp.h"
 
 #include <pthread.h>
+
+
+//also defined in main.c
+//#define  ICLI_MODE 1
+
+#ifdef   ICLI_MODE
+#include "extras/OSC.h"
+#include "extras/Network.h"
+#define  OSC_BUFFER_SIZE 1024
+#define  OSC_VALUES_BUFFER_SIZE 64
+#define  OSC_SEND_PORT   9100
+#define  OSC_RECV_PORT   9101
+void*    mic_OSC_recv_thread_run_loop(void* SELF);
+#endif
 
 #define MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL 1000 //1000 usec, 1ms
 
@@ -21,16 +34,27 @@ void  mic_beat_detected_callback (void* SELF, unsigned long long sample_time);
 void  mic_message_recd_from_robot(void* self, char* message, robot_arg_t args[], int num_args);
 
 void* mic_rhythm_thread_run_loop (void* SELF);
+Microphone* mic_destroy         (Microphone* self);
 
 /*--------------------------------------------------------------------*/
 struct OpaqueMicrophoneStruct
 {
+#ifndef ICLI_MODE
   AUDIO_GUTS               ;
+#else
+  Network* net;
+  char* osc_send_buffer;
+  char* osc_recv_buffer;
+  oscValue_t* osc_values_buffer;
+  pthread_t osc_recv_thread;
+  Microphone* (*destroy)(Microphone*);
+#endif
+
   BTT* btt                 ;
   Click*  click            ;
   Robot*  robot            ;
   int     silent_beat_count;
-  int     max_silent_beats ;
+  int      count_out_n;
   
   int     play_beat_bell   ;
   
@@ -46,6 +70,7 @@ struct OpaqueMicrophoneStruct
   int     rhythm_thread_run_loop_running;
   
   pthread_mutex_t rhythm_generator_swap_mutex;
+  pthread_mutex_t rhythm_mutex;
 
   int      farey_order;
   
@@ -55,18 +80,21 @@ struct OpaqueMicrophoneStruct
 };
 
 /*--------------------------------------------------------------------*/
-//int         mic_audio_callback  (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
-Microphone* mic_destroy         (Microphone* self);
-
-/*--------------------------------------------------------------------*/
 Microphone* mic_new()
 {
+#ifndef   ICLI_MODE
   Microphone* self = (Microphone*) auAlloc(sizeof(*self), mic_audio_callback, NO, 2);
-  
+#else
+  Microphone* self = (Microphone*) calloc(1, sizeof(*self));
+#endif
+
   if(self != NULL)
     {
+#ifndef   ICLI_MODE
       self->destroy = (Audio* (*)(Audio*))mic_destroy;
-
+#else
+      self->destroy = mic_destroy;
+#endif
       self->click = click_new();
       if(self->click == NULL)
         return (Microphone*)auDestroy((Audio*)self);
@@ -74,12 +102,27 @@ Microphone* mic_new()
       self->robot = robot_new(mic_message_recd_from_robot, self);
       if(self->robot == NULL)
         return (Microphone*)auDestroy((Audio*)self);
-    
+ 
+ #ifndef   ICLI_MODE
       self->btt = btt_new_default();
+      btt_set_log_gaussian_tempo_weight_width(self->btt, 10000);
+#else
+      //self->btt = btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss_filter_order, int oss_length, int cbss_length, int onset_threshold_len, double sample_rate);
+      self->btt = btt_new(32 /*BTT_SUGGESTED_SPECTRAL_FLUX_STFT_LEN*/,
+                          2   /*BTT_SUGGESTED_SPECTRAL_FLUX_STFT_OVERLAP*/,
+                          9   /*BTT_SUGGESTED_OSS_FILTER_ORDER*/,
+                          40  /*BTT_SUGGESTED_OSS_LENGTH*/,
+                          40  /*BTT_SUGGESTED_CBSS_LENGTH*/,
+                          40 /*BTT_SUGGESTED_ONSET_THRESHOLD_N*/,
+                          200 /*BTT_SUGGESTED_SAMPLE_RATE*/);
+      btt_set_onset_threshold_min(self->btt, 0.150000);
+      btt_set_num_tempo_candidates(self->btt, 5);
+      btt_set_gaussian_tempo_histogram_width(self->btt, 0.5);
+      btt_set_gaussian_tempo_histogram_decay(self->btt, 0.995);
+      btt_set_log_gaussian_tempo_weight_width(self->btt, 10000);
+#endif
       if(self->btt == NULL)
         return (Microphone*)auDestroy((Audio*)self);
-    
-      self->max_silent_beats = 8;
     
       self->rhythm_onsets_len = 128;
       self->rhythm_onsets = calloc(self->rhythm_onsets_len, sizeof(*self->rhythm_onsets));
@@ -91,7 +134,10 @@ Microphone* mic_new()
     
       if(pthread_mutex_init(&self->rhythm_generator_swap_mutex, NULL) != 0)
         return (Microphone*)auDestroy((Audio*)self);
-    
+
+      if(pthread_mutex_init(&self->rhythm_mutex, NULL) != 0)
+        return (Microphone*)auDestroy((Audio*)self);
+
       //should happen after mutex init
       self->rhythm = mic_set_rhythm_generator_index(self, 0);
     
@@ -102,10 +148,29 @@ Microphone* mic_new()
       
       mic_set_should_play_beat_bell   (self, 1);
       mic_set_quantization_order(self, 8);
-    }
-  
+      mic_set_count_out_n(self, 8);
+    
+#ifdef   ICLI_MODE
+      self->osc_send_buffer = calloc(1, OSC_BUFFER_SIZE);
+      if(!self->osc_send_buffer) return (Microphone*)auDestroy((Audio*)self);
+      self->osc_recv_buffer = calloc(1, OSC_BUFFER_SIZE);
+      if(!self->osc_recv_buffer) return (Microphone*)auDestroy((Audio*)self);
+      self->osc_values_buffer = calloc(sizeof(*self->osc_values_buffer), OSC_VALUES_BUFFER_SIZE);
+      if(!self->osc_values_buffer) return (Microphone*)auDestroy((Audio*)self);
+      self->net  = net_new();
+      if(!self->net) return (Microphone*)auDestroy((Audio*)self);
+      if(!net_udp_connect (self->net, OSC_RECV_PORT))
+        return (Microphone*)auDestroy((Audio*)self);
+      error = pthread_create(&self->osc_recv_thread, NULL, mic_OSC_recv_thread_run_loop, self);
+      if(error != 0)
+        return (Microphone*)auDestroy((Audio*)self);
+#endif
+
   //there should be a play callback that I can intercept and do this there.
-  auPlay((Audio*)self->click);
+      sleep(1);
+      robot_send_message(self->robot, robot_cmd_get_firmware_version);
+      auPlay((Audio*)self->click);
+    }
   return self;
 }
 
@@ -119,16 +184,15 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
     rhythm_onset(self->rhythm, self->btt, sample_time);
   pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
   
-  
-  if(btt_get_tracking_mode(self->btt) <= BTT_ONSET_TRACKING)
-    {
-      if(self->play_beat_bell)
-        {
-          click_click(self->click, 0.5);
+  //if(btt_get_tracking_mode(self->btt) <= BTT_ONSET_TRACKING)
+    //{
+      //if(self->play_beat_bell)
+        //{
+          //click_click(self->click, 0.5);
           //robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
           //fprintf(stderr, "onset\r\n");
-        }
-    }
+        //}
+    //}
 
   self->silent_beat_count = 0;
 }
@@ -139,15 +203,17 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   Microphone* self = (Microphone*) SELF;
   
   //mutex lock
-  self->rhythm_onsets_index = 0;
   
+  pthread_mutex_lock(&self->rhythm_mutex);
+  self->rhythm_onsets_index = 0;
+  int i;
   pthread_mutex_lock(&self->rhythm_generator_swap_mutex);
+  self->rhythm_onsets_index = 0;
   if(self->rhythm != NULL)
     self->num_rhythm_onsets = rhythm_beat(self->rhythm, self->btt, sample_time, self->rhythm_onsets, self->rhythm_onsets_len);
+  float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
   
-  int i;
-  float beat_period = btt_get_beat_period_audio_samples(self->btt) / (float)btt_get_sample_rate(self->btt);
   
   //fprintf(stderr, "[");
   for(i=0; i<self->num_rhythm_onsets; i++)
@@ -165,6 +231,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
     }
   //fprintf(stderr, "]\r\n");
   self->beat_clock = 0;
+  pthread_mutex_unlock(&self->rhythm_mutex);
   
   if(self->play_beat_bell)
     {
@@ -173,12 +240,14 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
       //fprintf(stderr, "beat\r\n");
     }
   
-  if(btt_get_tracking_mode(self->btt) != BTT_TEMPO_LOCKED_BEAT_TRACKING)
+  if(self->count_out_n > 1)
     {
       ++self->silent_beat_count;
-      if(self->silent_beat_count > self->max_silent_beats)
+      if(self->silent_beat_count > self->count_out_n)
         btt_set_tracking_mode(self->btt, BTT_COUNT_IN_TRACKING);
     }
+  
+  robot_send_message(self->robot, robot_cmd_eye_blink);
 }
 
 /*--------------------------------------------------------------------*/
@@ -190,6 +259,18 @@ Microphone* mic_destroy(Microphone* self)
         {
           self->rhythm_thread_run_loop_running = 0;
           pthread_join(self->rhythm_thread, NULL);
+        
+#ifdef ICLI_MODE
+          pthread_cancel(self->osc_recv_thread);
+          pthread_join(self->osc_recv_thread, NULL);
+          self->net = net_destroy(self->net);
+          if(self->osc_recv_buffer != NULL)
+            free(self->osc_recv_buffer);
+          if(self->osc_send_buffer != NULL)
+            free(self->osc_send_buffer);
+          if(self->osc_values_buffer != NULL)
+            free(self->osc_values_buffer);
+#endif
         }
     
       btt_destroy(self->btt);
@@ -206,39 +287,45 @@ BTT*           mic_get_btt        (Microphone* self)
   return self->btt;
 }
 
+/*--------------------------------------------------------------------*/
+Robot*            mic_get_robot                  (Microphone* self)
+{
+  return self->robot;
+}
+
 /*--------------------------------------------------------*/
 void mic_message_recd_from_robot(void* self, char* message, robot_arg_t args[], int num_args)
 {
   //robot_debug_print_message(message, args, num_args);
-  
-  /*
-  switch(kiki_hash_message(message))
+  switch(robot_hash_message(message))
     {
-      case kiki_hash_mmap_addr:
-        fprintf(stderr, "kiki just replied to a mmap request\r\n");
+      case robot_hash_reply_firmware_version:
+        if(num_args == 2)
+          fprintf(stderr, "Teensy is running firmware version %i.%i\r\n", robot_arg_to_int(&args[0]), robot_arg_to_int(&args[1]));
         break;
       
       default: break;
     }
-  */
 }
 
 /*--------------------------------------------------------------------*/
 Rhythm* mic_set_rhythm_generator       (Microphone* self, rhythm_new_funct constructor)
 {
-  int i;
-  self->rhythm_constructor_index = -1;
-  for(i=0; i<rhythm_num_constructors; i++)
-    if(constructor == rhythm_constructors[i])
-      {self->rhythm_constructor_index = i; break;}
+  if(constructor != rhythm_constructors[self->rhythm_constructor_index])
+    {
+      int i;
+      self->rhythm_constructor_index = -1;
+      for(i=0; i<rhythm_num_constructors; i++)
+        if(constructor == rhythm_constructors[i])
+          {self->rhythm_constructor_index = i; break;}
   
-  pthread_mutex_lock(&self->rhythm_generator_swap_mutex);
-  if(self->rhythm != NULL)
-    self->rhythm = rhythm_destroy(self->rhythm);
-  self->rhythm = (constructor == NULL) ? NULL : constructor(self->btt);
-  self->num_rhythm_onsets = 0;
-  pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
-  
+      pthread_mutex_lock(&self->rhythm_generator_swap_mutex);
+      if(self->rhythm != NULL)
+        self->rhythm = rhythm_destroy(self->rhythm);
+      self->rhythm = (constructor == NULL) ? NULL : constructor(self->btt);
+      self->num_rhythm_onsets = 0;
+      pthread_mutex_unlock(&self->rhythm_generator_swap_mutex);
+    }
   return self->rhythm;
 }
 
@@ -291,6 +378,19 @@ int               mic_get_quantization_order(Microphone* self)
 }
 
 /*--------------------------------------------------------------------*/
+void              mic_set_count_out_n            (Microphone* self, int n)
+{
+  if(n < 0) n = 0;
+  self->count_out_n = n;
+}
+
+/*--------------------------------------------------------------------*/
+int               mic_get_count_out_n            (Microphone* self)
+{
+  return self->count_out_n;
+}
+
+/*--------------------------------------------------------------------*/
 void* mic_rhythm_thread_run_loop (void* SELF)
 {
   Microphone* self = (Microphone*)SELF;
@@ -298,7 +398,8 @@ void* mic_rhythm_thread_run_loop (void* SELF)
   
   while(self->rhythm_thread_run_loop_running)
     {
-      if(self->rhythm_onsets_index < self->num_rhythm_onsets)
+      pthread_mutex_lock(&self->rhythm_mutex);
+      while(self->rhythm_onsets_index < self->num_rhythm_onsets)  
         if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
           {
             int timbre = self->rhythm_onsets[self->rhythm_onsets_index].timbre_class;
@@ -307,19 +408,24 @@ void* mic_rhythm_thread_run_loop (void* SELF)
               robot_send_message(self->robot, robot_cmd_tap, self->rhythm_onsets[self->rhythm_onsets_index].strength);
             else
               robot_send_message(self->robot, robot_cmd_tap_specific, timbre, self->rhythm_onsets[self->rhythm_onsets_index].strength);
-          
             ++self->rhythm_onsets_index;
           }
+        else
+          break;
       //ignore any other (duplicate) onsets that are supposed to happen right now
+      //jk, allow multiple simulataneous onsets. todo -- only allow multiple tap-specific messages
+      //stable-sort by timbre class then by onset time, ignore multiple tap-specific for same solenoid, etc
+      /*
       while(self->rhythm_onsets_index < self->num_rhythm_onsets)
         {
           if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
             ++self->rhythm_onsets_index;
           else break;
         }
-        
+      */
       ++self->beat_clock; //reset at the begining of each beat
       ++self->thread_clock; //never reset
+      pthread_mutex_unlock(&self->rhythm_mutex);
     
       while((timestamp_get_current_time() - start) < self->thread_clock*MIC_RHYTHM_THREAD_RUN_LOOP_INTERVAL)
         usleep(50);
@@ -327,6 +433,41 @@ void* mic_rhythm_thread_run_loop (void* SELF)
   return NULL;
 }
 
+#ifdef ICLI_MODE
+/*--------------------------------------------------------------------*/
+void* mic_OSC_recv_thread_run_loop(void* SELF)
+{
+  Microphone* self = (Microphone*)SELF;
+  char senders_address[16];
+  char *osc_address, *osc_type_tag;
+  
+  for(;;)
+  {
+    int num_valid_bytes = net_udp_receive (self->net, self->osc_recv_buffer, OSC_BUFFER_SIZE, senders_address);
+    if(num_valid_bytes < 0)
+      continue; //return NULL ?
+  
+    int num_osc_values = oscParse(self->osc_recv_buffer, num_valid_bytes, &osc_address, &osc_type_tag, self->osc_values_buffer, OSC_VALUES_BUFFER_SIZE);
+    if(num_osc_values < 1)
+        continue;
+  
+    uint32_t address_hash = oscHash((unsigned char*)osc_address);
+    if(address_hash == 2085476677) // '/emg'
+      {
+        // /emg <float> <float> <float> ...
+        //fprintf(stderr, "num_values: %i\r\n", num_osc_values);
+      
+        dft_sample_t buffer[num_osc_values];
+        int i;
+        for(i=0; i<num_osc_values; i++)
+          buffer[i] = oscValueAsFloat(self->osc_values_buffer[i], osc_type_tag[i]);
+      
+        btt_process(self->btt, buffer, num_osc_values);
+      }
+  }
+}
+
+#else  //!ICLI_MODE
 /*--------------------------------------------------------------------*/
 int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_channels)
 {
@@ -348,4 +489,5 @@ int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_c
 
   return  num_frames;
 }
+#endif //ICLI_MODE
 

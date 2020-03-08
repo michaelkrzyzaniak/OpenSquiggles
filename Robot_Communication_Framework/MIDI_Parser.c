@@ -80,7 +80,7 @@ void midi_parse(uint8_t stream)
     }
 
   // (MIDI_PARSING_SYSEX or MIDI_AWAITING_ARGUMENTS)
-  else if((b - midi_buffer) <= MIDI_BUFFER_SIZE)
+  else if((b - midi_buffer) < MIDI_BUFFER_SIZE)
       {
         *b++ = stream;
         if(state == MIDI_AWAITING_ARGUMENTS)

@@ -339,12 +339,12 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   #define ENDPOINT6_CONFIG	ENDPOINT_TRANSMIT_ONLY
 
 #elif defined(USB_MIDI)
-  //#define VENDOR_ID		0x16C0
-  //#define PRODUCT_ID		0x0485
-  //#define MANUFACTURER_NAME	{'T','e','e','n','s','y','d','u','i','n','o'}
-  //#define MANUFACTURER_NAME_LEN	11
-  //#define PRODUCT_NAME		{'T','e','e','n','s','y',' ','M','I','D','I'}
-  //#define PRODUCT_NAME_LEN	11
+  //#define VENDOR_ID    0x16C0
+  //#define PRODUCT_ID    0x0485
+  //#define MANUFACTURER_NAME  {'T','e','e','n','s','y','d','u','i','n','o'}
+  //#define MANUFACTURER_NAME_LEN  11
+  //#define PRODUCT_NAME    {'T','e','e','n','s','y',' ','M','I','D','I'}
+  //#define PRODUCT_NAME_LEN  11
   #define VENDOR_ID        0x0451
   #define PRODUCT_ID        0x3200
   #define MANUFACTURER_NAME    {'M','i','c','h','a','e','l',' ','K','r','z','y','z','a','n','i','a','k'}
