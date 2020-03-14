@@ -28,13 +28,14 @@ void       quantizer_realtime_stop                  (Quantizer* self);
 int        quantizer_reatime_is_running             (Quantizer* self);
 unsigned   quantizer_realtime_get_update_interval   (Quantizer* self);
 void       quantizer_realtime_set_update_interval   (Quantizer* self, unsigned update_interval_usecs);
-void       quantizer_realtime_push                  (Quantizer* self, double IOI);
+double     quantizer_realtime_push                  (Quantizer* self, double IOI);
 void       quantizer_realtime_flush                 (Quantizer* self);
 double     quantizer_realtime_get_network_error     (Quantizer* self);
 //double     quantizer_realtime_get_min_network_error (Quantizer* self);
 //double     quantizer_realtime_set_min_network_error (Quantizer* self, double);
 
 //return network error after max_num_reps or max_network_error is surpassed. Pass <0 for either if no care
+double*    quantizer_offline_get_quantized_IOIs     (Quantizer* self);
 double     quantizer_offline_get_expectancy_at_time (double* IOIs, unsigned num_IOIs, double time);
 double     quantizer_offline_quantize               (Quantizer* self, 
                                                      double* IOIs,
@@ -51,7 +52,7 @@ void       quantizer_set_default_interaction_function_decay_parameter(Quantizer*
 double     quantizer_get_default_interaction_function_decay_parameter(Quantizer* self);
 
 void       quantizer_snap_to_grid(double* IOIs, int n, double grid_duration);
-void       quantizer_intervals_to_times(double* IOIs, int n, double start, double divisor);
+void       quantizer_intervals_to_times(double* IOIs, int n, double start, double scale);
 
 /*----------------------------------------------------------*/
 #if defined(__cplusplus)

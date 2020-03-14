@@ -47,6 +47,7 @@ typedef Rhythm* (*rhythm_new_funct)(BTT*);
 Rhythm* rhythm_template_new(BTT* btt);
 Rhythm* rhythm_random_beat_from_list_new(BTT* btt);
 Rhythm* rhythm_two_beat_delay_new(BTT* btt);
+Rhythm* rhythm_quantized_delay_new(BTT* btt);
 Rhythm* rhythm_osc_new(BTT* btt);
 Rhythm* rhythm_histogram_new(BTT* btt);
 Rhythm* rhythm_4_4_loop_new(BTT* btt);
@@ -57,6 +58,7 @@ static const rhythm_new_funct rhythm_constructors[] =
   NULL,
   rhythm_random_beat_from_list_new,
   rhythm_two_beat_delay_new,
+  rhythm_quantized_delay_new,
   rhythm_template_new,
   rhythm_osc_new,
   rhythm_histogram_new,

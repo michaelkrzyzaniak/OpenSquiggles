@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <math.h>
 #include <unistd.h> //usleep
+#include <string.h> //memmove
 
 /*----------------------------------------------------------*/
 struct opaque_quantizer_strcut
@@ -80,14 +81,11 @@ unsigned   quantizer_realtime_get_num_IOIs          (Quantizer* self)
 /*----------------------------------------------------------*/
 void       quantizer_realtime_get_quantized_IOIs    (Quantizer* self, double* IOIs)
 {
-  unsigned i = self->num_network_nodes;
-  double*  p = self->network_nodes;
-  
-  //should check error, but how should it be handled?
   pthread_mutex_lock(&self->realtime_mutex);
-  while(i--) *IOIs++ = *p++;
+  memcpy(IOIs, self->network_nodes, self->num_network_nodes * sizeof(*self->network_nodes));
   pthread_mutex_unlock(&self->realtime_mutex);
 }
+
 /*----------------------------------------------------------*/
 //returns true on success
 int        quantizer_realtime_start                 (Quantizer* self, unsigned update_interval_usecs)
@@ -96,9 +94,10 @@ int        quantizer_realtime_start                 (Quantizer* self, unsigned u
   if(!self->realtime_is_running)
     {
       self->realtime_is_running = 1;
+      self->realtime_update_interval = update_interval_usecs;
       success = pthread_create(&self->realtime_update_thread, NULL, quantizer_realtime_run_loop, self);
     }
-  return success;
+  return (success==0);
 }
 
 /*----------------------------------------------------------*/
@@ -132,19 +131,18 @@ void       quantizer_realtime_set_update_interval   (Quantizer* self, unsigned u
 }
 
 /*----------------------------------------------------------*/
-void       quantizer_realtime_push                  (Quantizer* self, double IOI)
+double    quantizer_realtime_push                  (Quantizer* self, double IOI)
 {
-  unsigned i = self->num_network_nodes;
-  double*  p = self->network_nodes;
+  unsigned len    = self->num_network_nodes * sizeof(self->network_nodes[0]);
+  double   result = self->network_nodes[0];
   
+  //can I use a ring buffer~?
   pthread_mutex_lock(&self->realtime_mutex);
-  while(i-- > 1)
-    {
-      p[0] = p[1];
-      p++;
-    }
-  *p = IOI;
+  memmove(self->network_nodes, self->network_nodes+1, len);
+  self->network_nodes[self->num_network_nodes-1] = IOI;
   pthread_mutex_unlock(&self->realtime_mutex);
+  
+  return result;
 }
 
 /*----------------------------------------------------------*/
@@ -177,7 +175,7 @@ double     quantizer_offline_get_expectancy_at_time (double* IOIs, unsigned num_
 }
 
 /*----------------------------------------------------------*/
-#include <stdio.h> //testing only
+//#include <stdio.h> //testing only
 double     quantizer_offline_quantize_once(Quantizer* self, double* IOIs, unsigned num_IOIs)
 {
   struct sum_cell_struct
@@ -259,16 +257,16 @@ void quantizer_snap_to_grid(double* IOIs, int n, double grid_duration)
 }
 
 /*----------------------------------------------------------*/
-void quantizer_intervals_to_times(double* IOIs, int n, double start, double divisor)
+void quantizer_intervals_to_times(double* IOIs, int n, double start, double scale)
 {
   if(n<=0) return;
   
   int i;
-  double temp = IOIs[0] / divisor;
+  double temp = IOIs[0] * scale;
   IOIs[0] = start;
   
   for(i=1; i<n; i++)
-    IOIs[i] = IOIs[i-1] + (IOIs[i]/divisor - temp);
+    IOIs[i] = IOIs[i-1] + (IOIs[i]*scale - temp);
 }
 
 /*----------------------------------------------------------*/
@@ -297,6 +295,12 @@ double     quantizer_offline_quantize(Quantizer* self, double* IOIs, unsigned nu
     }
   
   return delta;
+}
+
+/*----------------------------------------------------------*/
+double*    quantizer_offline_get_quantized_IOIs     (Quantizer* self)
+{
+  return self->network_nodes;
 }
 
 /*----------------------------------------------------------*/
@@ -366,7 +370,7 @@ double quantizer_default_interaction_function(void* user_parameters, double r /*
   
   return result;
 }
-
+#include <stdio.h> //testing only
 /*----------------------------------------------------------*/
 void* quantizer_realtime_run_loop(void* SELF)
 {
