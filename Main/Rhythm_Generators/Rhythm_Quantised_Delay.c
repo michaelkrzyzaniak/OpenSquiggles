@@ -128,6 +128,22 @@ double rhythm_quantized_delay_get_beats_delay(void* SELF)
 }
 
 /*--------------------------------------------------------------------*/
+void rhythm_quantized_delay_set_quantizer_update_interval(void* SELF, unsigned usecs)
+{
+  if(usecs < 1) usecs = 1;
+  Rhythm_Quantized_Delay* self = (Rhythm_Quantized_Delay*)SELF;
+  quantizer_realtime_set_update_interval(self->quantizer, usecs);
+}
+
+/*--------------------------------------------------------------------*/
+unsigned rhythm_quantized_delay_get_quantizer_update_interval(void* SELF)
+{
+  Rhythm_Quantized_Delay* self = (Rhythm_Quantized_Delay*)SELF;
+  return quantizer_realtime_get_update_interval(self->quantizer);
+}
+
+
+/*--------------------------------------------------------------------*/
 void         rhythm_quantized_delay_onset   (void* SELF, BTT* beat_tracker, unsigned long long sample_time)
 {
   Rhythm_Quantized_Delay* self = (Rhythm_Quantized_Delay*)SELF;

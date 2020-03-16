@@ -45,7 +45,7 @@ double     quantizer_offline_quantize               (Quantizer* self,
 
 /* if interaction function is quantizer_default_interaction_function,  user_parameters will be ignored and self will be used */
 void       quantizer_set_interaction_function                        (Quantizer* self, quantizer_interaction_function_t interaction_function, void* user_parameters);
-quantizer_interaction_function_t quantizer_get_interaction_function(Quantizer* self, void** user_parameters);
+quantizer_interaction_function_t quantizer_get_interaction_function  (Quantizer* self, void** user_parameters);
 void       quantizer_set_default_interaction_function_peak_parameter (Quantizer* self, double peak /*usually 2 ~ 12*/);
 double     quantizer_get_default_interaction_function_peak_parameter (Quantizer* self);
 void       quantizer_set_default_interaction_function_decay_parameter(Quantizer* self, double decay /*usually -1 ~ -3*/);

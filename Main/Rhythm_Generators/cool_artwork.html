@@ -1,0 +1,201 @@
+<!doctyp HTML>
+<html>
+<!--
+ _   _ _   _   _                   _
+| | | (_) | |_| |__   ___ _ __ ___| |
+| |_| | | | __| '_ \ / _ \ '__/ _ \ |
+|  _  | | | |_| | | |  __/ | |  __/_|
+|_| |_|_|  \__|_| |_|\___|_|  \___(_)
+
+A fun drawing program written by Michael Krzyzaniak
+At RITMO in March of 2020 just for the heck of it
+-->
+  <canvas id="cool_artwork" width="500px" height="500px" style="display:block; margin:2em auto 2em auto; width:500px; height:500px;"></canvas>
+
+  <script>
+    /*--------------------------------------------------------------------*/
+    function Cool_Artwork(canvas_id)
+    {
+      this.canvas             = document.getElementById(canvas_id);
+      this.context            = this.canvas.getContext('2d');
+
+      this.canvas.addEventListener("touchstart", this.touchstart.bind(this), false);
+      this.canvas.addEventListener("touchend"  , this.touchend.bind(this)  , false);
+      this.canvas.addEventListener("touchmove" , this.touchmove.bind(this)  , false);
+      document.body.addEventListener("touchmove", this.prevent_touch_scroll.bind(this), {passive:false, capture:false});
+      this.canvas.onmousedown = this.onmousedown.bind(this);
+      this.canvas.onmouseenter= this.onmousedown.bind(this);
+      this.canvas.onmouseup   = this.onmouseup.bind  (this);
+      this.canvas.onmouseout  = this.onmouseup.bind  (this);
+      this.canvas.onmousemove = this.onmousemove.bind(this);
+  
+      this.is_updating   = false;
+      this.update_thread = null;
+      this.should_normalize_valence_arousal = true;
+  
+      this.callback = null;
+      this.update_interval = 16.666; //millisecs
+      this.init();
+      this.resume_updating();
+    }
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.init = function()
+    {
+      this.r       = 100;
+      this.theta   = 0;
+      this.phi     = 0;
+      this.pos_phase = 0;
+      this.hue_phase = 0;
+      this.x_pos   = 0;
+      this.y_pos   = 0;
+      this.hue     = 0;
+      
+      this.follows_mouse = false;
+    }
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.stop_updating = function()
+    {
+      clearTimeout(this.update_thread);
+      this.is_updating = false;
+    };
+
+    //PUBLIC
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.resume_updating = function()
+    {
+      if(this.is_updating === false)
+        this.interpolation_thread_run_loop_run();
+      this.is_updating = true;
+    };
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.onmousedown = function(e)
+    {
+
+    };
+
+    //PRIVATE
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.onmouseup   = function(e)
+    {
+    };
+
+    //PRIVATE
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.onmousemove = function(e)
+    {
+      if(this.follows_mouse)
+        {
+          this.x_pos = e.offsetX;
+          this.y_pos = e.offsetY;
+        }
+    };
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.touchstart = function(e)
+    {
+      var mousePos = this.get_touch_position(this.canvas, e);
+      var touch = e.touches[0];
+      var mouseEvent = new MouseEvent("mousedown",
+        {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+      this.canvas.dispatchEvent(mouseEvent);
+    };
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.touchend = function(e)
+    {
+      var mouseEvent = new MouseEvent("mouseup", {});
+      this.canvas.dispatchEvent(mouseEvent);
+    };
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.touchmove = function(e)
+    {
+      var touch = e.touches[0];
+      var mouseEvent = new MouseEvent("mousemove",
+        {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+      this.canvas.dispatchEvent(mouseEvent);
+    };
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.prevent_touch_scroll = function(e)
+    {
+      if ((e.target == this.canvas) && (this.mouse_is_down_in_goal_indicator))
+        e.preventDefault();
+      else if ((e.target == this.canvas) && (this.mouse_is_down_in_goal_indicator_2) && (this.style ==         Cool_Artwork.STYLE_RANGE))
+        e.preventDefault();
+    };
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.get_touch_position = function(canvas, e)
+    {
+      var rect = canvas.getBoundingClientRect();
+      var result =
+        {
+          x: e.touches[0].clientX - rect.left,
+          y: e.touches[0].clientY - rect.top
+        };
+      return result;
+    };
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.scalef = function(x, in_min, in_max, out_min, out_max)
+    {
+      return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    };
+
+    //PRIVATE
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.draw = function()
+    {
+      this.context.strokeStyle = "hsl("+this.hue+", 50%, 50%)";
+
+
+      this.context.save        ();
+      this.context.translate(this.x_pos, this.y_pos);
+      this.context.rotate(this.theta);
+      this.context.translate(this.r * (this.follows_mouse ? 0.3 : 1), 0);
+      this.context.rotate(this.phi);
+      this.context.beginPath();
+      if(!this.follows_mouse)
+        this.context.ellipse(0, 0, 100, 25, 0, 0, 2*Math.PI);
+      else
+        this.context.ellipse(0, 0, 50, 17, 0, 0, 2*Math.PI);
+      this.context.stroke();
+      this.context.restore();
+    };
+
+    /*--------------------------------------------------------------------*/
+    Cool_Artwork.prototype.interpolation_thread_run_loop_run = function()
+    {
+      if(!this.follows_mouse)
+        {
+          this.x_pos   = this.scalef(Math.sin(Math.PI*this.pos_phase), -1, 1, 0, this.canvas.width);
+          this.y_pos   = this.scalef(Math.cos(this.pos_phase), -1, 1, 0, this.canvas.height);
+        }
+      this.pos_phase += 0.02;
+      this.theta += 0.05;
+      this.phi   += 0.14;
+      this.hue    = 100 * this.hue_phase;
+      this.hue_phase += 0.00135;
+      if(this.hue_phase > 1)
+        this.hue_pase -= 1;
+
+      this.draw();
+      this.update_thread = setTimeout(this.interpolation_thread_run_loop_run.bind(this), this.update_interval);
+    };
+
+   
+    var cool_artwork = new Cool_Artwork("cool_artwork");
+    cool_artwork.follows_mouse = true;
+  </script>
+ 
+</html>

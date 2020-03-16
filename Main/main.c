@@ -16,6 +16,8 @@
 //sudo apt-get install libasound2-dev
 //gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2
 
+#define __SQ_VERSION__ "1.20"
+
 #include "Microphone.h"
 #include <string.h> //strcmp
 
@@ -782,6 +784,34 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level)
       int num_params = sizeof(params) / sizeof(params[0]);
       return cycle_through_paramaters_and_take_get_input("rhythm", params, num_params, "OSC RHYTHM SUBMENU", indent_level);
     }
+  else if(strcmp(name, "Quantized_Delay") == 0)
+    {
+      param_t params[] =
+        {
+          {
+            .set = (funct)rhythm_quantized_delay_set_beats_delay,
+            .get = (funct)rhythm_quantized_delay_get_beats_delay,
+            .enter = NULL,
+            .self = rhythm,
+            .type = 'd',
+            .init = 2,
+            .increment = 1,
+            .name = "rhythm_quantized_delay_set_beats_delay",
+          },
+          {
+            .set = (funct)rhythm_quantized_delay_set_quantizer_update_interval,
+            .get = (funct)rhythm_quantized_delay_get_quantizer_update_interval,
+            .enter = NULL,
+            .self = rhythm,
+            .type = 'i',
+            .init = 100000,
+            .increment = 1000,
+            .name = "rhythm_quantized_delay_set_quantizer_update_interval",
+          },
+        };
+      int num_params = sizeof(params) / sizeof(params[0]);
+      return cycle_through_paramaters_and_take_get_input("rhythm", params, num_params, "TWO BEAT DELAY RHYTHM SUBMENU", indent_level);
+    }
   else
     {
       return 1;
@@ -790,26 +820,26 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level)
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  //fprintf(stderr, " ____         ____              _             _\r\n");
-  //fprintf(stderr, "|  _ \\ _ __  / ___|  __ _ _   _(_) __ _  __ _| | ___  ___\r\n");
-  //fprintf(stderr, "| | | | '__| \\___ \\ / _` | | | | |/ _` |/ _` | |/ _ \\/ __|\r\n");
-  //fprintf(stderr, "| |_| | | _   ___) | (_| | |_| | | (_| | (_| | |  __/\\__ \\\r\n");
-  //fprintf(stderr, "|____/|_|(_) |____/ \\__, |\\__,_|_|\\__, |\\__, |_|\\___||___/\r\n");
-  //fprintf(stderr, "                       |_|        |___/ |___/\r\n");
+  fprintf(stderr, " ____         ____              _             _\r\n");
+  fprintf(stderr, "|  _ \\ _ __  / ___|  __ _ _   _(_) __ _  __ _| | ___  ___\r\n");
+  fprintf(stderr, "| | | | '__| \\___ \\ / _` | | | | |/ _` |/ _` | |/ _ \\/ __|\r\n");
+  fprintf(stderr, "| |_| | | _   ___) | (_| | |_| | | (_| | (_| | |  __/\\__ \\\r\n");
+  fprintf(stderr, "|____/|_|(_) |____/ \\__, |\\__,_|_|\\__, |\\__, |_|\\___||___/\r\n");
+  fprintf(stderr, "                       |_|        |___/ |___/\r\n");
 
-  fprintf(stderr, "o-o              o-o                        o\r\n");
-  fprintf(stderr, "|  \\            |               o           |\r\n");
-  fprintf(stderr, "|   O o-o        o-o   o-o o  o   o--o o--o | o-o o-o\r\n");
-  fprintf(stderr, "|  /  |             | |  | |  | | |  | |  | | |-'  \\\r\n");
-  fprintf(stderr, "o-o   o   O     o--o   o-O o--o | o--O o--O o o-o o-o\r\n");
-  fprintf(stderr, "                         |           |    |\r\n");
-  fprintf(stderr, "                         o        o--o o--o\r\n");
+  //fprintf(stderr, "o-o              o-o                        o\r\n");
+  //fprintf(stderr, "|  \\            |               o           |\r\n");
+  //fprintf(stderr, "|   O o-o        o-o   o-o o  o   o--o o--o | o-o o-o\r\n");
+  //fprintf(stderr, "|  /  |             | |  | |  | | |  | |  | | |-'  \\\r\n");
+  //fprintf(stderr, "o-o   o   O     o--o   o-O o--o | o--O o--O o o-o o-o\r\n");
+  //fprintf(stderr, "                         |           |    |\r\n");
+  //fprintf(stderr, "                         o        o--o o--o\r\n");
   
   Microphone*  mic = mic_new();
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
   /* mic_new might print Arduino firmware version */
  
-  fprintf(stderr, "Raspi is running software version 1.18\r\n\r\n");
+  fprintf(stderr, "Raspi is running software version %s\r\n\r\n", __SQ_VERSION__);
   fprintf(stderr, " -- 'Q' to quit\r\n");
   fprintf(stderr, " -- [ENTER] to enter submenu\r\n");
   fprintf(stderr, " -- 'q' to exit submenu\r\n");
