@@ -175,7 +175,7 @@ double     quantizer_offline_get_expectancy_at_time (double* IOIs, unsigned num_
 }
 
 /*----------------------------------------------------------*/
-//#include <stdio.h> //testing only
+#include <stdio.h> //testing only
 double     quantizer_offline_quantize_once(Quantizer* self, double* IOIs, unsigned num_IOIs)
 {
   struct sum_cell_struct
@@ -187,13 +187,15 @@ double     quantizer_offline_quantize_once(Quantizer* self, double* IOIs, unsign
   
   unsigned left_start_index;
   unsigned i;
-  double change, ratio, min_IOI, delta, max_delta=0;
+  double denom, change, ratio, min_IOI, delta, max_delta=0;
+  double high_sign, low_sign;
   
   min_IOI = IOIs[0];
   for(i=1; i<num_IOIs; i++)
     if(IOIs[i] < min_IOI)
       min_IOI = IOIs[i];
   
+  //error: this should update the cells synchronously rather than in place?
   for(left_cell.num_basic_cells=1; left_cell.num_basic_cells<num_IOIs; left_cell.num_basic_cells++)
     {
       for(left_start_index=0; left_start_index<num_IOIs-left_cell.num_basic_cells; left_start_index++)
@@ -211,29 +213,30 @@ double     quantizer_offline_quantize_once(Quantizer* self, double* IOIs, unsign
               for(i=0; i<right_cell.num_basic_cells; i++)
                 right_cell.sum += right_cell.basic_cells[i];
               
-              if(left_cell.sum >= right_cell.sum)
+              if(fabs(left_cell.sum) >= fabs(right_cell.sum))
                 {high_cell = &left_cell; low_cell = &right_cell;}
               else
                 {high_cell = &right_cell; low_cell = &left_cell;}
               
-              if(low_cell->sum <= 0) continue;
-              
-              ratio  = high_cell->sum / low_cell->sum;
-              change = self->interaction_function(self->user_parameters, ratio);  
+              if(low_cell->sum == 0) continue;
 
-              //this variant was included in an addendum to 1989 paper
-              //delta = low_cell->sum * change;
-              delta = min_IOI * change;
-              delta /= 1 + ratio + change;
-              
+              ratio  = fabs(high_cell->sum / low_cell->sum);
+              change = self->interaction_function(self->user_parameters, ratio);
+
+
+              delta = low_cell->sum * change; /*this one does better when mistaken double-onsets are present*/
+              //delta = min_IOI * change; /*this variant was included in an addendum to 1989 paper*/
+              denom = 1 + ratio + change;
+              delta /= denom;
+
               //fprintf(stderr, "left_sum: %lf right_sum: %lf\r\n", left_cell.sum, right_cell.sum);
-              //fprintf(stderr, "delta: %lf change: %lf, ratio: %lf\r\n", delta, change, ratio);
-              
+              //fprintf(stderr, "delta: %lf change: %lf, ratio: %lf\r\n", delta, change, high_cell->sum / low_cell->sum);
+
               for(i=0; i<high_cell->num_basic_cells; i++)
                 high_cell->basic_cells[i] += delta * high_cell->basic_cells[i] / high_cell->sum;
               for(i=0; i<low_cell->num_basic_cells; i++)
                 low_cell->basic_cells[i] -= delta * low_cell->basic_cells[i] / low_cell->sum;
-                
+            
               delta = fabs(delta);
               if(delta > max_delta)
                 max_delta = delta;
@@ -370,7 +373,7 @@ double quantizer_default_interaction_function(void* user_parameters, double r /*
   
   return result;
 }
-#include <stdio.h> //testing only
+
 /*----------------------------------------------------------*/
 void* quantizer_realtime_run_loop(void* SELF)
 {

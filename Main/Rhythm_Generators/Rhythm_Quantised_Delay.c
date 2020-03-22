@@ -153,8 +153,8 @@ void         rhythm_quantized_delay_onset   (void* SELF, BTT* beat_tracker, unsi
       self->prev_onset_time = sample_time;
       return;
     }
-  
-  double IOI = sample_time - self->prev_onset_time;
+
+  double IOI = (signed int)(sample_time - self->prev_onset_time);
   self->prev_onset_time = sample_time;
   ++self->onsets_per_beat[self->beat_counter];
   

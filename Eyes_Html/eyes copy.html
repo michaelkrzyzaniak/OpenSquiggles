@@ -1,0 +1,653 @@
+<html>
+  <body>
+
+    <div id="canvas_div" style="filter: blur(0px);">
+      <canvas id="eyes" width="370" height="180"></canvas>
+    </div>
+
+
+    <script>
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* LIBRARY FOR DRAWING TO LED ARRAY */
+      canvas         = document.getElementById("eyes");
+      context        = this.canvas.getContext('2d');
+      var led_width  = 16;
+      var led_height = 9;
+      var num_leds   = led_width * led_height;
+      var radius_x   = 0.5 * canvas.width  / led_width;
+      var radius_y   = 0.5 * canvas.height / led_height;
+      var led_values = new Array(led_width * led_height).fill(0);
+
+      /* -------------------------------------------------------------- */
+      function set_blur(blur)
+      {
+        var div = document.getElementById("canvas_div");
+        canvas_div.style = "filter: blur("+blur+"px);";
+      }      
+    
+      /* -------------------------------------------------------------- */
+      function draw()
+      {
+        this.context.fillStyle = "black";
+        this.context.fillRect(0, 0, canvas.width,canvas.height);
+
+        var i, j, led_index=0;
+        for(j=0; j<led_height; j++) //top to bottom
+          for(i=0; i<led_width; i++) //left to right
+            {
+              var col = led_values[led_index];
+              context.beginPath();
+              context.fillStyle = "rgb("+col+", "+col+", "+col+")";
+              context.ellipse(radius_x * (2*i+1), radius_y * (2*j+1), 0.9*radius_x, 0.9*radius_y, 0, 0, 2*Math.PI);
+              context.fill();
+              ++led_index;
+            }
+      }
+
+      /* -------------------------------------------------------------- */
+      function set_pixel_color(x, y, color)
+      {
+        if((x >= led_width) || (y >= led_height))
+          return;
+        if((x < 0) || (y < 0))
+          return;
+        var index = y * led_width + x;
+
+        led_values[index] = color;
+      }
+    
+      /* -------------------------------------------------------------- */
+      function clear()
+      {
+        var i;
+        for(i=0; i<num_leds; i++)
+          led_values[i] = 0;
+      }
+
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* USER CODE FOR DRAWING EYES */
+      //typedef enum
+      var EYE_WIDTH           = 0;
+      var EYE_HEIGHT          = 1;
+      var EYE_POSITION_X      = 2;
+      var EYE_POSITION_Y      = 3;
+      var EYE_IRIS_WIDTH      = 4;
+      var EYE_IRIS_HEIGHT     = 5;
+      var EYE_IRIS_POSITION_X = 6;
+      var EYE_IRIS_POSITION_Y = 7;
+      var EYE_NUM_PARAMS      = 8;
+      
+      //#define EYE_NULL_VALUE -128
+      var EYE_NULL_VALUE      = -128;
+      
+      var EYE_DEFAULT_VALS    = [6, 5, 0, 0, 2, 2, 0, 0];
+      
+      //#define EYE_UPDATE_INTERVAL 30 //millisecs
+      var EYE_UPDATE_INTERVAL     = 30; //millisecs
+      
+      /* -------------------------------------------------------------- */
+      function eye_init(eye, val)
+      {
+        //memset
+        for(i=0; i<EYE_NUM_PARAMS; i++)
+          eye[i] = val;
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_copy(from, to)
+      {
+        //memset
+        for(i=0; i<EYE_NUM_PARAMS; i++)
+          to[i] = from[i];
+      }
+
+      /* -------------------------------------------------------------- */
+      //struct
+      function Eyes(init_val)
+      {
+        this.l = Array(EYE_NUM_PARAMS);
+        this.r = Array(EYE_NUM_PARAMS);
+        this.spacing = 1;
+        eye_init(this.l, init_val);
+        eye_init(this.r, init_val);
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eyes_copy(from, to)
+      {
+        eye_copy(from.l, to.l);
+        eye_copy(from.r, to.r);
+        to.spacing = from.spacing;
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_draw(eye, spacing, is_robot_left)
+      {
+        var center_x = led_width * 0.5;
+        var center_y = led_height * 0.5;
+ 
+        var half_spacing = 0.5 * spacing;
+        var half_height = 0.5 * eye[EYE_HEIGHT];
+
+        var top = Math.round(center_y - half_height + eye[EYE_POSITION_Y]);
+        var bottom = top + eye[EYE_HEIGHT];
+        
+        var left = center_x + eye[EYE_POSITION_X];
+        if(is_robot_left)
+          left = Math.round(left + half_spacing);
+        else
+          left = Math.round(left - half_spacing - eye[EYE_WIDTH]);
+        var right = left + eye[EYE_WIDTH];
+
+        var top_iris = Math.round(center_y - (0.5*eye[EYE_IRIS_HEIGHT]) + eye[EYE_POSITION_Y] + eye[EYE_IRIS_POSITION_Y]);
+        top_iris = Math.max(top_iris, top);
+        top_iris = Math.min(top_iris, bottom-eye[EYE_IRIS_HEIGHT]);
+        var bottom_iris = top_iris + eye[EYE_IRIS_HEIGHT];
+        bottom_iris = Math.min(bottom_iris, bottom);
+
+        var left_iris = center_x  + eye[EYE_POSITION_X] + eye[EYE_IRIS_POSITION_X] - (0.5*eye[EYE_IRIS_WIDTH]);
+        if(is_robot_left)
+          left_iris = Math.round(left_iris + half_spacing + (0.5*eye[EYE_WIDTH]));
+        else
+          left_iris = Math.round(left_iris - half_spacing - (0.5*eye[EYE_WIDTH]));
+        left_iris = Math.max(left_iris, left);
+        left_iris = Math.min(left_iris, right-eye[EYE_IRIS_WIDTH]);
+        var right_iris = left_iris + eye[EYE_IRIS_WIDTH];
+
+        var x, y;
+        
+        //draw rectangular eyes
+        for(y=top; y<bottom; y++) //top to bottom
+          {
+            for(x=left; x<right; x++) //left to right
+              set_pixel_color(x, y, 255);
+          }
+        
+        //take out corners from eyes
+        if(eye[EYE_HEIGHT] > 2)
+          {
+            if(eye[EYE_WIDTH] > 1)
+              {
+                set_pixel_color(right-1, top, 0);
+                //set_pixel_color(left_2, top, 0);
+              }
+            if(eye[EYE_WIDTH] > 2)
+              {
+                //set_pixel_color(right_2-1, top, 0);
+                set_pixel_color(left, top, 0);
+              }
+          }
+          if(eye[EYE_HEIGHT] > 1)
+          {
+            if(eye[EYE_WIDTH] > 1)
+              {
+                set_pixel_color(right-1, bottom-1, 0);
+                //set_pixel_color(left_2, bottom-1, 0);
+              }
+            if(eye[EYE_WIDTH] > 2)
+              {
+                //set_pixel_color(right_2-1, bottom-1, 0);
+                set_pixel_color(left, bottom-1, 0);
+              }
+          }
+        
+        //irises
+        for(y=top_iris; y<bottom_iris; y++) //top to bottom
+          {
+            for(x=left_iris; x<right_iris; x++) //left to right
+              set_pixel_color(x, y, 0);
+          }
+      }
+      
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* -------------------------------------------------------------- */
+      /* USER CODE FOR ANIMATING EYES */
+      function eye_animate_run_loop(eyes, queues)
+      {
+        var q;
+        for(q=0; q<queues.length; q++)
+          {
+            var queue = queues[q];
+            if(queue.poses.length > queue.pose+1)
+              {
+                ++queue.pose_timer;
+                var this_pose = queue.poses[queue.pose];
+                var next_pose = queue.poses[queue.pose+1];
+                var steps = next_pose.steps;
+                
+                var param;
+                for(param=0; param<EYE_NUM_PARAMS; param++)
+                  {
+                    //interpolate robot left eye
+                    if((this_pose.eyes.l[param] != EYE_NULL_VALUE) && (next_pose.eyes.l[param] != EYE_NULL_VALUE))
+                      eyes.l[param] = Math.round(eye_animation_scalef(queue.pose_timer, 0, steps, this_pose.eyes.l[param], next_pose.eyes.l[param]));
+                    //interpolate right eye
+                    if((this_pose.eyes.r[param] != EYE_NULL_VALUE) && (next_pose.eyes.r[param] != EYE_NULL_VALUE))
+                      eyes.r[param] = Math.round(eye_animation_scalef(queue.pose_timer, 0, steps, this_pose.eyes.r[param], next_pose.eyes.r[param]));
+                  }
+                //interpolate eye spacing
+                if((this_pose.eyes.spacing != EYE_NULL_VALUE) && (next_pose.eyes.spacing != EYE_NULL_VALUE))
+                  eyes.spacing = Math.round(eye_animation_scalef(queue.pose_timer, 0, steps, this_pose.eyes.spacing, next_pose.eyes.spacing));
+              
+                if(queue.pose_timer >= steps)
+                  {
+                    ++queue.pose;
+                    queue.pose_timer = 0;
+                  }
+              }
+          }
+      
+        clear();
+        eye_draw(eyes.r, eyes.spacing, false);
+        eye_draw(eyes.l, eyes.spacing, true);
+        draw();
+        
+        var r;
+        r = Math.random();
+        /* typical blink rate of adults is every 4 seconds */
+
+        if(r < (EYE_UPDATE_INTERVAL / (4.0 * 1000.0)))
+          eye_animate_blink(eyes, queues, true);
+         
+         
+        setTimeout(eye_animate_run_loop.bind(this, eyes, queues), EYE_UPDATE_INTERVAL);
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_animation_scalef(x, in_min, in_max, out_min, out_max)
+      {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+      }
+    
+      /* -------------------------------------------------------------- */
+      //typedef struct
+      //duration of first pose is ignored
+      function Eye_Animation_Pose(eyes, duration_millisecs)
+      {
+        this.eyes = eyes;
+        this.steps = Math.max(1, Math.round(duration_millisecs / EYE_UPDATE_INTERVAL));
+      }
+
+      /* -------------------------------------------------------------- */
+      //typedef struct
+      function Eye_Animation_Queue(poses/*linked_list*/, should_loop)
+      {
+        this.poses = poses;
+        this.pose         = 0;
+        this.pose_timer   = 0;
+        this.should_loop = should_loop;
+      }
+
+      /* -------------------------------------------------------------- */
+      function initalize_initial_eyes_hahaha(eyes, initial_eyes, target_eyes)
+      {
+        var param;
+        for(param=0; param<EYE_NUM_PARAMS; param++)
+          {
+            if(target_eyes.l[param] != EYE_NULL_VALUE)
+              initial_eyes.l[param] = eyes.l[param];
+            if(target_eyes.r[param] != EYE_NULL_VALUE)
+              initial_eyes.r[param] = eyes.r[param];
+          }
+        if(target_eyes.spacing != EYE_NULL_VALUE)
+          initial_eyes.spacing = eyes.spacing;
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_initalize_final_eye_hahaha(eyes, initial_eyes, final_eyes)
+      {
+        var param;
+        var defaults = EYE_DEFAULT_VALS;
+        
+        for(param=0; param<EYE_NUM_PARAMS; param++)
+          {
+            if(initial_eyes.l[param] != EYE_NULL_VALUE)
+              final_eyes.l[param] = defaults[param];
+            if(initial_eyes.r[param] != EYE_NULL_VALUE)
+              final_eyes.r[param] = defaults[param];
+          }
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_go_to_pose(eyes, queues, target_eyes, go_duration)
+      {
+        var initial_eyes = new Eyes(EYE_NULL_VALUE);
+        initalize_initial_eyes_hahaha(eyes, initial_eyes, target_eyes);
+        
+        /* linked list */
+        var poses = [];
+        var pose = new Eye_Animation_Pose(initial_eyes, 0);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        var pose = new Eye_Animation_Pose(target_eyes, go_duration);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        
+        var queue = new Eye_Animation_Queue(poses, false);
+        queues.push(queue);
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_go_to_pose_stay_and_return(eyes, queues, target_eyes, go_duration, stay_duration, return_duration)
+      {
+        var initial_eyes = new Eyes(EYE_NULL_VALUE);
+        initalize_initial_eyes_hahaha(eyes, initial_eyes, target_eyes);
+        
+        var final_eyes = new Eyes(EYE_NULL_VALUE);
+        eye_initalize_final_eye_hahaha(eyes, initial_eyes, final_eyes);
+        /* linked list */
+        var poses = [];
+        var pose = new Eye_Animation_Pose(initial_eyes, 0);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        var pose = new Eye_Animation_Pose(target_eyes, go_duration);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        if(stay_duration > 0)
+          {
+            var pose = new Eye_Animation_Pose(target_eyes, stay_duration);
+            //if(pose == NULL) return;
+            poses.push(pose);
+          }
+        var pose = new Eye_Animation_Pose(final_eyes, return_duration);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        var queue = new Eye_Animation_Queue(poses, false);
+        queues.push(queue);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_go_to_poses_stay_and_return(eyes, queues, num_poses, target_eyes /* array of eyes */, go_durations /* array, size num_poses + 1*/, stay_durations /*array*/)
+      {
+        var initial_eyes = new Eyes(EYE_NULL_VALUE);
+        
+        initalize_initial_eyes_hahaha(eyes, initial_eyes, target_eyes[0]);
+        
+        console.log(initial_eyes);
+        
+        /* linked list */
+        var poses = [];
+        
+        var pose = new Eye_Animation_Pose(initial_eyes, 0);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        
+        var i;
+        for(i=0; i<num_poses; i++)
+          {
+            var pose = new Eye_Animation_Pose(target_eyes[i], go_durations[i]);
+            //if(pose == NULL) return;
+            poses.push(pose);
+            if(stay_durations[i] > 0)
+              {
+                var pose = new Eye_Animation_Pose(target_eyes[i], stay_durations[i]);
+                //if(pose == NULL) return;
+                poses.push(pose);
+              }
+          }
+          
+        var pose = new Eye_Animation_Pose(initial_eyes, go_durations[i]);
+        //if(pose == NULL) return;
+        poses.push(pose);
+        var queue = new Eye_Animation_Queue(poses, false);
+        queues.push(queue);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_blink(eyes, queues, both_eyes)
+      {
+        var target_eyes = new Eyes(EYE_NULL_VALUE);
+        
+        target_eyes.l[EYE_HEIGHT]      = 1;
+        target_eyes.l[EYE_WIDTH]       = led_width;
+        target_eyes.l[EYE_IRIS_HEIGHT] = 0;
+        target_eyes.l[EYE_IRIS_WIDTH]  = 0;
+        target_eyes.l[EYE_POSITION_Y]  = eyes.l[EYE_POSITION_Y]+2;
+        
+        if(both_eyes)
+          {
+            target_eyes.r[EYE_HEIGHT]      = target_eyes.l[EYE_HEIGHT];
+            target_eyes.r[EYE_WIDTH]       = target_eyes.l[EYE_WIDTH];
+            target_eyes.r[EYE_IRIS_HEIGHT] = target_eyes.l[EYE_IRIS_HEIGHT];
+            target_eyes.r[EYE_IRIS_WIDTH]  = target_eyes.l[EYE_IRIS_WIDTH];
+            target_eyes.r[EYE_POSITION_Y]  = target_eyes.l[EYE_POSITION_Y];
+          }
+        
+        target_eyes.spacing = 0;
+        
+        eye_go_to_pose_stay_and_return(eyes, queues, target_eyes, 60, 60, 60)
+      }
+  
+      /* -------------------------------------------------------------- */
+      function eye_animate_inquisitive(eyes, queues)
+      {
+        var target_eyes = new Eyes(EYE_NULL_VALUE);
+        
+        target_eyes.l[EYE_HEIGHT]  = 7;
+        target_eyes.l[EYE_WIDTH]   = 6;
+        target_eyes.r[EYE_HEIGHT]  = 4;
+        target_eyes.r[EYE_WIDTH]   = 5;
+
+        target_eyes.l[EYE_IRIS_HEIGHT]  = 2;
+        target_eyes.l[EYE_IRIS_WIDTH]   = 2;
+        target_eyes.r[EYE_IRIS_HEIGHT]  = 2;
+        target_eyes.r[EYE_IRIS_WIDTH]   = 1;
+        
+        target_eyes.spacing = 1;
+        
+        eye_go_to_pose_stay_and_return(eyes, queues, target_eyes, 200, 1000, 300)
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_focused(eyes, queues)
+      {
+        var target_eyes = new Eyes(EYE_NULL_VALUE);
+        
+        target_eyes.l[EYE_HEIGHT]  = 5;
+        target_eyes.l[EYE_WIDTH]   = 5;
+        target_eyes.r[EYE_HEIGHT]  = 5;
+        target_eyes.r[EYE_WIDTH]   = 5;
+
+        target_eyes.l[EYE_IRIS_HEIGHT]  = 1;
+        target_eyes.l[EYE_IRIS_WIDTH]   = 1;
+        target_eyes.r[EYE_IRIS_HEIGHT]  = 1;
+        target_eyes.r[EYE_IRIS_WIDTH]   = 1;
+        
+        target_eyes.spacing = 1;
+        
+        eye_go_to_pose_stay_and_return(eyes, queues, target_eyes, 200, 1000, 300)
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_animate_suprised(eyes, queues)
+      {
+        var target_eyes = new Eyes(EYE_NULL_VALUE);
+        
+        target_eyes.l[EYE_HEIGHT]  = 9;
+        target_eyes.l[EYE_WIDTH]   = 4;
+        target_eyes.r[EYE_HEIGHT]  = 9;
+        target_eyes.r[EYE_WIDTH]   = 4;
+
+        target_eyes.l[EYE_IRIS_HEIGHT]  = 2;
+        target_eyes.l[EYE_IRIS_WIDTH]   = 2;
+        target_eyes.r[EYE_IRIS_HEIGHT]  = 2;
+        target_eyes.r[EYE_IRIS_WIDTH]   = 2;
+        
+        target_eyes.spacing = 1;
+        
+        eye_go_to_pose_stay_and_return(eyes, queues, target_eyes, 200, 600, 200)
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_neutral_size(eyes, queues)
+      {
+        var target_eyes = new Eyes(EYE_NULL_VALUE);
+        
+        target_eyes.l[EYE_HEIGHT]  = 5;
+        target_eyes.l[EYE_WIDTH]   = 6;
+        target_eyes.r[EYE_HEIGHT]  = 5;
+        target_eyes.r[EYE_WIDTH]   = 6;
+
+        target_eyes.l[EYE_IRIS_HEIGHT]  = 2;
+        target_eyes.l[EYE_IRIS_WIDTH]   = 2;
+        target_eyes.r[EYE_IRIS_HEIGHT]  = 2;
+        target_eyes.r[EYE_IRIS_WIDTH]   = 2;
+        
+        eye_go_to_pose(eyes, queues, target_eyes, 200);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_neutral_position(eyes, queues)
+      {
+        var target_eyes = new Eyes(EYE_NULL_VALUE);
+      
+        target_eyes.l[EYE_POSITION_X]  = 0;
+        target_eyes.l[EYE_POSITION_Y]  = 0;
+        target_eyes.r[EYE_POSITION_X]  = 0;
+        target_eyes.r[EYE_POSITION_Y]  = 0;
+
+        target_eyes.l[EYE_IRIS_POSITION_X]  = 0;
+        target_eyes.l[EYE_IRIS_POSITION_Y]  = 0;
+        target_eyes.r[EYE_IRIS_POSITION_X]  = 0;
+        target_eyes.r[EYE_IRIS_POSITION_Y]  = 0;
+        
+        eye_go_to_pose(eyes, queues, target_eyes, 200);
+      }
+    
+      /* -------------------------------------------------------------- */
+      function eye_animate_roll(eyes, queues, depth)
+      {
+        var target_eyes_1 = new Eyes(EYE_NULL_VALUE);
+        var target_eyes_2 = new Eyes(EYE_NULL_VALUE);
+        var target_eyes_3 = new Eyes(EYE_NULL_VALUE);
+        var target_eyes_4 = new Eyes(EYE_NULL_VALUE);
+        
+        target_eyes_1.l[EYE_POSITION_X]       = depth;
+        target_eyes_1.l[EYE_POSITION_Y]       = depth;
+        target_eyes_1.r[EYE_POSITION_X]       = -depth;
+        target_eyes_1.r[EYE_POSITION_Y]       = -depth;
+        target_eyes_1.l[EYE_IRIS_POSITION_X]  = depth;
+        target_eyes_1.l[EYE_IRIS_POSITION_Y]  = depth;
+        target_eyes_1.r[EYE_IRIS_POSITION_X]  = -depth;
+        target_eyes_1.r[EYE_IRIS_POSITION_Y]  = -depth;
+
+        target_eyes_2.l[EYE_POSITION_X]       = -depth;
+        target_eyes_2.l[EYE_POSITION_Y]       = depth;
+        target_eyes_2.r[EYE_POSITION_X]       = depth;
+        target_eyes_2.r[EYE_POSITION_Y]       = -depth;
+        target_eyes_2.l[EYE_IRIS_POSITION_X]  = -depth;
+        target_eyes_2.l[EYE_IRIS_POSITION_Y]  = depth;
+        target_eyes_2.r[EYE_IRIS_POSITION_X]  = depth;
+        target_eyes_2.r[EYE_IRIS_POSITION_Y]  = -depth;
+
+        target_eyes_3.l[EYE_POSITION_X]       = -depth;
+        target_eyes_3.l[EYE_POSITION_Y]       = -depth;
+        target_eyes_3.r[EYE_POSITION_X]       = depth;
+        target_eyes_3.r[EYE_POSITION_Y]       = depth;
+        target_eyes_3.l[EYE_IRIS_POSITION_X]  = -depth;
+        target_eyes_3.l[EYE_IRIS_POSITION_Y]  = -depth;
+        target_eyes_3.r[EYE_IRIS_POSITION_X]  = depth;
+        target_eyes_3.r[EYE_IRIS_POSITION_Y]  = depth;
+
+        target_eyes_4.l[EYE_POSITION_X]       = depth;
+        target_eyes_4.l[EYE_POSITION_Y]       = -depth;
+        target_eyes_4.r[EYE_POSITION_X]       = -depth;
+        target_eyes_4.r[EYE_POSITION_Y]       = depth;
+        target_eyes_4.l[EYE_IRIS_POSITION_X]  = depth;
+        target_eyes_4.l[EYE_IRIS_POSITION_Y]  = -depth;
+        target_eyes_4.r[EYE_IRIS_POSITION_X]  = -depth;
+        target_eyes_4.r[EYE_IRIS_POSITION_Y]  = depth;
+
+        var target_eyes  = [target_eyes_1, target_eyes_2, target_eyes_3, target_eyes_4, target_eyes_1, target_eyes_2, target_eyes_3, target_eyes_4, target_eyes_1];
+        var go_durations = [100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
+        var stay_durations = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        eye_go_to_poses_stay_and_return(eyes, queues, 9, target_eyes, go_durations, stay_durations);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_shifty(eyes, queues, depth, speed)
+      {
+        var target_eyes_1 = new Eyes(EYE_NULL_VALUE);
+        var target_eyes_2 = new Eyes(EYE_NULL_VALUE);
+        
+        target_eyes_1.l[EYE_POSITION_X]       = depth;
+        target_eyes_1.r[EYE_POSITION_X]       = depth;
+        target_eyes_1.l[EYE_IRIS_POSITION_X]  = depth;
+        target_eyes_1.r[EYE_IRIS_POSITION_X]  = depth;
+
+        target_eyes_2.l[EYE_POSITION_X]       = -depth;
+        target_eyes_2.r[EYE_POSITION_X]       = -depth;
+        target_eyes_2.l[EYE_IRIS_POSITION_X]  = -depth;
+        target_eyes_2.r[EYE_IRIS_POSITION_X]  = -depth;
+
+        var target_eyes  = [target_eyes_1, target_eyes_2, target_eyes_1];
+        var go_durations = [speed, 2*speed, 2*speed,speed];
+        var stay_durations = [2*speed, 2*speed, 2*speed];
+
+        eye_go_to_poses_stay_and_return(eyes, queues, 3, target_eyes, go_durations, stay_durations);
+      }
+
+      /* -------------------------------------------------------------- */
+      function eye_animate_yes(eyes, queues, depth, speed)
+      {
+        var target_eyes_1 = new Eyes(EYE_NULL_VALUE);
+        var target_eyes_2 = new Eyes(EYE_NULL_VALUE);
+        
+        target_eyes_1.l[EYE_POSITION_Y]       = depth;
+        target_eyes_1.r[EYE_POSITION_Y]       = depth;
+        target_eyes_1.l[EYE_IRIS_POSITION_Y]  = depth;
+        target_eyes_1.r[EYE_IRIS_POSITION_Y]  = depth;
+
+        target_eyes_2.l[EYE_POSITION_Y]       = -depth;
+        target_eyes_2.r[EYE_POSITION_Y]       = -depth;
+        target_eyes_2.l[EYE_IRIS_POSITION_Y]  = -depth;
+        target_eyes_2.r[EYE_IRIS_POSITION_Y]  = -depth;
+
+        var target_eyes  = [target_eyes_1, target_eyes_2, target_eyes_1];
+        var go_durations = [speed, 2*speed, 2*speed,speed];
+        var stay_durations = [2*speed, 2*speed, 2*speed];
+
+        eye_go_to_poses_stay_and_return(eyes, queues, 3, target_eyes, go_durations, stay_durations);
+      }
+    
+      /* -------------------------------------------------------------- */
+      document.onmousemove = function(e)
+      {
+        var rect = canvas.getBoundingClientRect();
+        var x_pos = e.pageX - rect.left - window.scrollX - (0.5 * canvas.clientWidth);
+        var y_pos = e.pageY - rect.top  - window.scrollY - (0.5 * canvas.clientHeight);
+        eyes.l[EYE_POSITION_Y] = eye_animation_scalef(y_pos, -500, 500, -5, 5);
+        eyes.r[EYE_POSITION_Y] = eye_animation_scalef(y_pos, -500, 500, -5, 5);
+        eyes.l[EYE_POSITION_X] = eye_animation_scalef(x_pos, -500, 500, -5, 5);
+        eyes.r[EYE_POSITION_X] = eye_animation_scalef(x_pos, -500, 500, -5, 5);
+      
+        eyes.l[EYE_IRIS_POSITION_Y] = eye_animation_scalef(y_pos, -500, 500, -3, 3);
+        eyes.r[EYE_IRIS_POSITION_Y] = eye_animation_scalef(y_pos, -500, 500, -3, 3);
+        eyes.l[EYE_IRIS_POSITION_X] = eye_animation_scalef(x_pos, -500, 500, -3, 3);
+        eyes.r[EYE_IRIS_POSITION_X] = eye_animation_scalef(x_pos, -500, 500, -3, 3);
+      };
+    
+      /* -------------------------------------------------------------- */
+      document.onmousedown = function(e)
+      {
+         eye_animate_inquisitive(eyes, queues);
+      }
+      /* linked_list */
+      var queues = new Array();
+      var eyes = new Eyes(0);
+      eyes.l[EYE_WIDTH] = eyes.r[EYE_WIDTH] = 6;
+      eyes.l[EYE_HEIGHT] = eyes.r[EYE_HEIGHT] = 5;
+      eyes.l[EYE_IRIS_WIDTH] = eyes.r[EYE_IRIS_WIDTH] = 2;
+      eyes.l[EYE_IRIS_HEIGHT] = eyes.r[EYE_IRIS_HEIGHT] = 2;
+      eye_animate_run_loop(eyes, queues);
+
+    </script>
+
+  </body>
+</html>

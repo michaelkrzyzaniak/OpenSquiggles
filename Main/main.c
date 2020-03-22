@@ -853,7 +853,7 @@ int main(void)
   fprintf(stderr, "\r\n");
 
   //mic_set_rhythm_generator       (mic, rhythm_random_beat_from_list_new);
-  mic_set_rhythm_generator       (mic, rhythm_osc_new);
+  mic_set_rhythm_generator       (mic, rhythm_quantized_delay_new);
   
   global_beat_tracker  = mic_get_btt(mic);
   Robot* robot = mic_get_robot(mic);
