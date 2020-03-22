@@ -24,7 +24,7 @@ const char*  rhythm_quantized_delay_name    (void*);
 void         rhythm_quantized_delay_onset   (void*, BTT*, unsigned long long);
 int          rhythm_quantized_delay_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
 
-#define NUM_IOIS               128
+#define NUM_IOIS               64
 #define QUANTIZER_FIFO_LENGTH  8
 #define NUM_ALREADY_QUANTIZED_IOIS ((NUM_IOIS) - (QUANTIZER_FIFO_LENGTH))
 #define MAX_DELAY_BEATS        8
