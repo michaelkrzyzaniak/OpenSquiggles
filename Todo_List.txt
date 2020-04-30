@@ -73,8 +73,7 @@ defaults.pcm.card 0
 
 alsamixer 
 	f4 (caputre)
-	#43 (full green, no white)
-        3 (barely green)
+	#81 (full white, no red, determined after making recordings with white mic)
 
 
 
