@@ -856,6 +856,7 @@ int main(void)
   //mic_set_rhythm_generator       (mic, rhythm_quantized_delay_new);
   mic_set_rhythm_generator       (mic, rhythm_histogram_new);
   mic_set_count_out_n            (mic, 0);
+  mic_set_should_play_beat_bell  (mic, 0);
   
   global_beat_tracker  = mic_get_btt(mic);
   Robot* robot = mic_get_robot(mic);
