@@ -306,9 +306,9 @@ void rhythm_histogram_send_osc_convergence_and_density(Rhythm_Histogram* self)
   float density     =  rhythm_histogram_get_note_density(self);
   float convergence =  rhythm_histogram_get_convergence_score(self, density);
   
-  int  buffer_n = 32;
+  int  buffer_n = 36; //I happen to know it will be exactly 36 bytes
   char buffer[buffer_n];
-  int  num_bytes = oscConstruct(buffer, 127, "/convergence", "iff", self->robot_osc_id, convergence, density);
+  int  num_bytes = oscConstruct(buffer, buffer_n, "/convergence", "iff", self->robot_osc_id, convergence, density);
   if(num_bytes > 0)
     net_udp_send(self->net, buffer, num_bytes, "255.255.255.255", self->osc_send_port);
 }
