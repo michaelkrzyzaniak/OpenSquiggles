@@ -16,7 +16,7 @@
 //sudo apt-get install libasound2-dev
 //gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2
 
-#define __SQ_VERSION__ "1.21"
+#define __SQ_VERSION__ "1.22"
 
 #include "Microphone.h"
 #include <string.h> //strcmp
@@ -857,6 +857,7 @@ int main(void)
   mic_set_rhythm_generator       (mic, rhythm_histogram_new);
   mic_set_count_out_n            (mic, 0);
   mic_set_should_play_beat_bell  (mic, 0);
+
   
   global_beat_tracker  = mic_get_btt(mic);
   Robot* robot = mic_get_robot(mic);
@@ -866,6 +867,9 @@ int main(void)
   btt_set_beat_prediction_adjustment(global_beat_tracker, 18.000000);
 #endif
   btt_set_tracking_mode(global_beat_tracker, BTT_COUNT_IN_TRACKING);
+  
+  btt_set_min_tempo(global_beat_tracker, 80);
+  btt_set_min_tempo(global_beat_tracker, 120);
   
   auPlay((Audio*)mic);
 
