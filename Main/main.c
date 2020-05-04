@@ -869,7 +869,7 @@ int main(void)
   btt_set_tracking_mode(global_beat_tracker, BTT_COUNT_IN_TRACKING);
   
   btt_set_min_tempo(global_beat_tracker, 80);
-  btt_set_min_tempo(global_beat_tracker, 120);
+  btt_set_max_tempo(global_beat_tracker, 120);
   
   auPlay((Audio*)mic);
 

@@ -347,11 +347,15 @@ void rhythm_histogram_send_osc_convergence_and_density(Rhythm_Histogram* self)
   float density     =  rhythm_histogram_get_note_density(self);
   float convergence =  rhythm_histogram_get_convergence_score(self/*, density*/);
   
+  fprintf(stderr, "%f\t%f\t", density, convergence);
+  
+  /*
   int  buffer_n = 36; //I happen to know it will be exactly 36 bytes
   char buffer[buffer_n];
   int  num_bytes = oscConstruct(buffer, buffer_n, "/convergence", "iff", self->robot_osc_id, convergence, density);
   if(num_bytes > 0)
     net_udp_send(self->net, buffer, num_bytes, "255.255.255.255", self->osc_send_port);
+  */
 }
 
 /*--------------------------------------------------------------------*/
@@ -386,7 +390,7 @@ void* rhythm_histogram_recv_thread_run_loop(void* SELF)
 
 
 
-#define BEATS_PER_EXPERIMENT 10 //probably make this a multiple of beats per rhythm
+#define BEATS_PER_EXPERIMENT 80 //probably make this a multiple of beats per rhythm
 const int RHYTHM_HISTOGRAM_EXPERIMENT_INVERSE_VALUES[] = {0, 1};
 const float RHYTHM_HISTOGRAM_EXPERIMENT_K_VALUES[] = {0, 0.5, 1, 2};
 const float RHYTHM_HISTOGRAM_EXPERIMENT_DECAY_VALUES[] = {0, 0.5, 0.75, 0.825}; //0 is immediate update
@@ -471,13 +475,17 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
       self->histogram[self->histogram_index + i] += onset_mask[i] * (1.0-self->decay_coefficient);
     }
   
-  rhythm_histogram_send_osc_convergence_and_density(self);
+  //if(self->experiment_is_running)
+    //rhythm_histogram_send_osc_convergence_and_density(self);
   
   self->histogram_index += self->subdivisions_per_beat;
   self->histogram_index %= self->subdivisions_per_beat * self->num_beats;
 
   if(self->experiment_is_running)
-    rhythm_histogram_update_experiment(self);
+    {
+      rhythm_histogram_update_experiment(self);
+      rhythm_histogram_send_osc_convergence_and_density(self);
+    }
 
   //generate a rhythm
   for(i=0; i<self->subdivisions_per_beat; i++)
