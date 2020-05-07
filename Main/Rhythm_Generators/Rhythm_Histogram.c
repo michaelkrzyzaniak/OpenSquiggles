@@ -494,7 +494,7 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
       float x = self->histogram[self->histogram_index + i];
       float nonliniarity = fabs(2*x-1);
       nonliniarity = pow(nonliniarity, self->nonlinear_exponent);
-      nonliniarity += self->is_inverse;
+      nonliniarity *= self->is_inverse;
       if(x < 0.5) nonliniarity *= -1;
       nonliniarity += 1;
       nonliniarity /= 2.0;
