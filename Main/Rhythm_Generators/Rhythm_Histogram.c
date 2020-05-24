@@ -383,7 +383,13 @@ void* rhythm_histogram_recv_thread_run_loop(void* SELF)
       }
     else if(address_hash == 5859001) // '/s'
       {
-        self->experiment_is_running = !self->experiment_is_running;
+        rhythm_histogram_init(self);
+        self->experiment_beat_count = 0;
+        self->experiment_is_running = 1;
+      }
+    else if(address_hash == 5858969) // '/S'
+      {
+        self->experiment_is_running = 0;
       }
   }
 }
