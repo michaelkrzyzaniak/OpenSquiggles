@@ -391,13 +391,94 @@ void* rhythm_histogram_recv_thread_run_loop(void* SELF)
 
 
 #define BEATS_PER_EXPERIMENT 80 //probably make this a multiple of beats per rhythm
-const int RHYTHM_HISTOGRAM_EXPERIMENT_INVERSE_VALUES[] = {0, 1};
-const float RHYTHM_HISTOGRAM_EXPERIMENT_K_VALUES[] = {0, 0.5, 1, 2};
-const float RHYTHM_HISTOGRAM_EXPERIMENT_DECAY_VALUES[] = {0, 0.5, 0.75, 0.825}; //0 is immediate update
+//const int RHYTHM_HISTOGRAM_EXPERIMENT_INVERSE_VALUES[] = {0, 1};
+//const float RHYTHM_HISTOGRAM_EXPERIMENT_K_VALUES[] = {0, 0.5, 1, 2};
+//const float RHYTHM_HISTOGRAM_EXPERIMENT_DECAY_VALUES[] = {0, 0.5, 0.75, 0.825}; //0 is immediate update
+//#define NUM_INVERSE_VALUES 2
+//#define NUM_K_VALUES 4
+//#define NUM_DECAY_VALUES 4
 
-#define NUM_INVERSE_VALUES 2
-#define NUM_K_VALUES 4
-#define NUM_DECAY_VALUES 4
+typedef struct
+{
+  int i;
+  float k;
+  float d;
+}h_params;
+
+#define NUM_TRIALS 30
+
+h_params p[NUM_TRIALS] =
+{
+  {0, 0, 0},
+  {0, 0, 0.75},
+  {0, 1, 0},
+  {0, 1, 0.75},
+  {0, 0, 0.75},
+  {0, 1, 0},
+  {0, 1, 0.75},
+  {0, 1, 0},
+  {0, 1, 0.75},
+  {0, 1, 0.75},
+
+  {1, 0, 0},
+  {1, 0, 0.75},
+  {1, 1, 0},
+  {1, 1, 0.75},
+  {1, 0, 0.75},
+  {1, 1, 0},
+  {1, 1, 0.75},
+  {1, 1, 0},
+  {1, 1, 0.75},
+  {1, 1, 0.75},
+
+  {1, 0, 0},
+  {1, 0, 0.75},
+  {1, 1, 0},
+  {1, 1, 0.75},
+  {1, 0, 0.75},
+  {1, 1, 0},
+  {1, 1, 0.75},
+  {1, 1, 0},
+  {1, 1, 0.75},
+  {1, 1, 0.75},
+};
+/*
+h_params p[NUM_TRIALS] =
+{
+  {0, 0, 0},
+  {0, 0, 0},
+  {0, 0, 0},
+  {0, 0, 0},
+  {0, 0, 0.75},
+  {0, 0, 0.75},
+  {0, 0, 0.75},
+  {0, 1, 0},
+  {0, 1, 0},
+  {0, 1, 0.75},
+
+  {0, 0, 0},
+  {0, 0, 0},
+  {0, 0, 0},
+  {0, 0, 0},
+  {0, 0, 0.75},
+  {0, 0, 0.75},
+  {0, 0, 0.75},
+  {0, 1, 0},
+  {0, 1, 0},
+  {0, 1, 0.75},
+  
+  {1, 0, 0},
+  {1, 0, 0},
+  {1, 0, 0},
+  {1, 0, 0},
+  {1, 0, 0.75},
+  {1, 0, 0.75},
+  {1, 0, 0.75},
+  {1, 1, 0},
+  {1, 1, 0},
+  {1, 1, 0.75},
+};
+*/
 
 /*--------------------------------------------------------------------*/
 void rhythm_histogram_update_experiment(Rhythm_Histogram* self)
@@ -407,24 +488,28 @@ void rhythm_histogram_update_experiment(Rhythm_Histogram* self)
   if(beat_number == 0)
     {
       int trial_count = self->experiment_beat_count / BEATS_PER_EXPERIMENT;
-      
-      if(trial_count >= (NUM_INVERSE_VALUES * NUM_K_VALUES * NUM_DECAY_VALUES))
+      //if(trial_count >= (NUM_INVERSE_VALUES * NUM_K_VALUES * NUM_DECAY_VALUES))
+      if(trial_count >= NUM_TRIALS)
         {
           self->experiment_is_running = 0;
           fprintf(stderr, "EXPERIMENT DONE\r\n\r\n\r\n\r\n\r\n");
           return;
         }
-      int decay_index = trial_count % NUM_DECAY_VALUES;
-      int k_index = (trial_count / NUM_DECAY_VALUES) % NUM_K_VALUES;
-      int inverse_index = (trial_count / (NUM_DECAY_VALUES * NUM_K_VALUES)) % NUM_INVERSE_VALUES;
-      
-      rhythm_histogram_set_is_inverse (self, RHYTHM_HISTOGRAM_EXPERIMENT_INVERSE_VALUES[inverse_index]);
-      rhythm_histogram_set_nonlinear_exponent(self, RHYTHM_HISTOGRAM_EXPERIMENT_K_VALUES[k_index]);
-      rhythm_histogram_set_decay_coefficient(self, RHYTHM_HISTOGRAM_EXPERIMENT_DECAY_VALUES[decay_index]);
+      //int decay_index = trial_count % NUM_DECAY_VALUES;
+      //int k_index = (trial_count / NUM_DECAY_VALUES) % NUM_K_VALUES;
+      //int inverse_index = (trial_count / (NUM_DECAY_VALUES * NUM_K_VALUES)) % NUM_INVERSE_VALUES;
+      //rhythm_histogram_set_is_inverse (self, RHYTHM_HISTOGRAM_EXPERIMENT_INVERSE_VALUES[inverse_index]);
+      //rhythm_histogram_set_nonlinear_exponent(self, RHYTHM_HISTOGRAM_EXPERIMENT_K_VALUES[k_index]);
+      //rhythm_histogram_set_decay_coefficient(self, RHYTHM_HISTOGRAM_EXPERIMENT_DECAY_VALUES[decay_index]);
+
+      rhythm_histogram_set_is_inverse (self, p[trial_count].i);
+      rhythm_histogram_set_nonlinear_exponent(self, p[trial_count].k);
+      rhythm_histogram_set_decay_coefficient(self, p[trial_count].d);
+
       fprintf(stderr, "starting trial with d: %f\tk: %f\ti: %i\r\n",
-                      RHYTHM_HISTOGRAM_EXPERIMENT_DECAY_VALUES[decay_index],
-                      RHYTHM_HISTOGRAM_EXPERIMENT_K_VALUES[k_index],
-                      RHYTHM_HISTOGRAM_EXPERIMENT_INVERSE_VALUES[inverse_index]);
+                      p[trial_count].d,
+                      p[trial_count].k,
+                      p[trial_count].i);
       rhythm_histogram_init(self);
     }
   
