@@ -466,8 +466,8 @@ void eye_animate_run_loop(void)
 
   eye_draw(eye);
 
-  if(false)
-  //if(eye_global_saccade_resume_timer <= 0)
+  //if(false)
+  if(eye_global_saccade_resume_timer <= 0)
     {
       float r;
       r = eye_random();  
