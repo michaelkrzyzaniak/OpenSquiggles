@@ -29,35 +29,36 @@ uint32_t pid_prev_time = 0;
 //determine the fan speed from the fan sensor counters
 ISR(TIMER2_OVF_vect)
 {
- // this timer ISR runs every 16.384 milliseconds
- // but that is too fast so only update every 8 times,
- // ie  131.072 milliseconds
+  // this timer ISR runs every 16.384 milliseconds
+  // but that is too fast so only update every 8 times,
+  // ie  131.072 milliseconds
+
   ++fan_sensor_clock_divider;
- if((fan_sensor_clock_divider % 8) == 0)
-   {
-     cli();
-     float inlet                = fan_inlet_sensor_counter  * 60 / 0.524292;
-     float outlet               = fan_outlet_sensor_counter * 60 / 0.524292;
-     fan_inlet_sensor_rpm       = (inlet * 0.2)  + (fan_inlet_sensor_rpm  * 0.8);
-     fan_outlet_sensor_rpm      = (outlet * 0.2) + (fan_outlet_sensor_rpm * 0.8);     
-     fan_inlet_sensor_counter   = 0;
-     fan_outlet_sensor_counter  = 0;
-     sei();
-   }
+  if((fan_sensor_clock_divider % 8) == 0)
+    {
+      cli();
+      float inlet                = fan_inlet_sensor_counter  * ((1000 * 60) / (4 * 131.072));
+      float outlet               = fan_outlet_sensor_counter * ((1000 * 60) / (4 * 131.072));  
+      fan_inlet_sensor_counter   = 0;
+      fan_outlet_sensor_counter  = 0;
+      sei();
+      fan_inlet_sensor_rpm       = (inlet * 0.2)  + (fan_inlet_sensor_rpm  * 0.8);
+      fan_outlet_sensor_rpm      = (outlet * 0.2) + (fan_outlet_sensor_rpm * 0.8); 
+    }
 }
 
 /*---------------------------------------------------------------*/
 //PRIVATE
 void fan_inlet_sensor_counter_interrupt()
 {
- ++fan_inlet_sensor_counter;
+  ++fan_inlet_sensor_counter;
 }
 
 /*---------------------------------------------------------------*/
 //PRIVATE
 void fan_outlet_sensor_counter_interrupt()
 {
- ++fan_outlet_sensor_counter;
+  ++fan_outlet_sensor_counter;
 }
 
 /*---------------------------------------------------------------*/
@@ -91,14 +92,16 @@ void fan_control_init()
 void fan_sensor_init()
 {
   //timer to count 
-  TIMSK2 = (TIMSK2 & B11111110) | 0x01;
-  TCCR2B = (TCCR2B & B11111000) | 0x07; //set 1024 prescaler (16.384 milliseconds)
+  //WGM22:0 = 0, normal mode
+  TIMSK2 = (TIMSK2 & B11111110) | 0x01; //enable interrupt on overflow
+  TCCR2A = (TCCR2B & B11111100) | 0x00; //WGM to normal mode
+  TCCR2B = (TCCR2B & B11110000) | 0x07; //set 1024 prescaler and one WGM bit (16.384 milliseconds)
 
   pinMode(FAN_INLET_SENSOR_PIN , INPUT_PULLUP);
   pinMode(FAN_OUTLET_SENSOR_PIN, INPUT_PULLUP);
 
-  attachInterrupt(digitalPinToInterrupt(FAN_INLET_SENSOR_PIN) , fan_inlet_sensor_counter_interrupt , RISING); 
-  attachInterrupt(digitalPinToInterrupt(FAN_OUTLET_SENSOR_PIN), fan_outlet_sensor_counter_interrupt, RISING); 
+  attachInterrupt(digitalPinToInterrupt(FAN_INLET_SENSOR_PIN) , fan_inlet_sensor_counter_interrupt , CHANGE); 
+  attachInterrupt(digitalPinToInterrupt(FAN_OUTLET_SENSOR_PIN), fan_outlet_sensor_counter_interrupt, CHANGE); 
 }
 
 /*---------------------------------------------------------------*/
