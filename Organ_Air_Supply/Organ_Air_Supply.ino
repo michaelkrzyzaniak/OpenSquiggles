@@ -37,8 +37,8 @@ ISR(TIMER2_OVF_vect)
   if((fan_sensor_clock_divider % 8) == 0)
     {
       cli();
-      float inlet                = fan_inlet_sensor_counter  * ((1000 * 60) / (4 * 131.072));
-      float outlet               = fan_outlet_sensor_counter * ((1000 * 60) / (4 * 131.072));  
+      float inlet                = fan_inlet_sensor_counter  * ((1000.0 * 60.0) / (4.0 * 131.072));
+      float outlet               = fan_outlet_sensor_counter * ((1000.0 * 60.0) / (4.0 * 131.072));  
       fan_inlet_sensor_counter   = 0;
       fan_outlet_sensor_counter  = 0;
       sei();
@@ -47,7 +47,7 @@ ISR(TIMER2_OVF_vect)
     }
 }
 
-/*---------------------------------------------------------------*/
+/*-------------------------------------------------------------c--*/
 //PRIVATE
 void fan_inlet_sensor_counter_interrupt()
 {
@@ -142,12 +142,18 @@ void pressure_sensor_init()
 //PUBLIC
 float pressure_sensor_read()
 {
-  //output range 0 to 5 inches h20 5% to 80% of output voltage; 51.15 to 819.2 
-  //empirical: 54 ~ 1010
+  // theoretical output range 0 to 5 inches h20 
+  // 5% to 80% of input voltage; 51.15 to 819.2 raw analogRead.
+  //empirical: sensor reads 54 (raw analogRead) when 0 pressure,
+  //reading average 762.27 (raw analogRead) when 4.375 inches measared with u-tube manometer
+  //this is more like 5.3% to 84% (54 to 864) raw analogRead
   int raw = analogRead(PRESSURE_SENSOR_PIN);
+
+//4 3/8 reading 4.6
+//4.375 inches reading 4.627 inches
   
-  float inches = (raw - 51.15) * 5.0 / (819.2 - 51.15);
-  inches = CLIP(inches, 0, 5);
+  float inches = (raw - 54) * 5.0 / (864 - 54);
+  //inches = CLIP(inches, 0, 5);
   return inches;
 }
 
