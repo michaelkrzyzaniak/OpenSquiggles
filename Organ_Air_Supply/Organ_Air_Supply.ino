@@ -225,9 +225,12 @@ float pid_update(float pressure, float target_pressure)
       return 0;  
     }
 
-  //trapezoidal integral
-  pid_integral_error += (e+pid_prev_error) * 0.5 * (float)dt;
-
+  //trapezoidal rule integral
+  //pid_integral_error += (e+pid_prev_error) * 0.5 * (float)dt;
+  
+  //mean rule integral
+  pid_integral_error += e * (float)dt;
+  
   return pid_p*e + pid_i*pid_integral_error + pid_d*deriv;
 }
 
