@@ -1,3 +1,9 @@
+/*
+Compile this using the Arduino IDE
+Board: Teensy 3.2
+USB Type: MIDI
+*/
+
 #include "Interface.h"
 #include "Solenoid.h"
 #include "Eye.h"

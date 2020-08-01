@@ -346,13 +346,11 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   //#define PRODUCT_NAME    {'T','e','e','n','s','y',' ','M','I','D','I'}
   //#define PRODUCT_NAME_LEN  11
   #define VENDOR_ID        0x0451
+  #define PRODUCT_ID        0x3200
   #define MANUFACTURER_NAME    {'M','i','c','h','a','e','l',' ','K','r','z','y','z','a','n','i','a','k'}
   #define MANUFACTURER_NAME_LEN    18
-
-  #define PRODUCT_ID        0x3200
   #define PRODUCT_NAME        {'D','r',' ','S','q','u','i','g','g','l','e','s'}
   #define PRODUCT_NAME_LEN    12
-
   #define EP0_SIZE		64
   #define NUM_ENDPOINTS         4
   #define NUM_USB_BUFFERS	16

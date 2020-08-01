@@ -1,0 +1,9 @@
+Replace the file at
+
+/Applications/Arduino.app/Contents/Java/hardware/teensy/avr/cores/teensy3/usb_desc.h
+
+with 
+
+usb_desc.h
+
+in this directory. That will make the TEENSY show up as a MIDI device called "Dr Squiggles" and not "Teensy MIDI".

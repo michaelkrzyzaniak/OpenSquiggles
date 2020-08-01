@@ -5,7 +5,7 @@
 #include "Eye.h"
  
 #define FIRMWARE_MAJOR_VERSION 1
-#define FIRMWARE_MINOR_VERSION 4
+#define FIRMWARE_MINOR_VERSION 5
 
 void interface_dispatch          (void* self, char* message, robot_arg_t args[], int num_args);
 void interface_note_on_callback  (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
@@ -40,34 +40,22 @@ void interface_note_on_callback(midi_channel_t chan, midi_pitch_t pitch, midi_ve
     {
       float strength = vel / 127.0;
 
-//NIME ONLY!!!!!!!!!!!!!
-      //int s[] = {0, 1, 2, 3, 4, 5, 6, 7};
-      //int n = 8;
-      int s[] = {0, 1, 5, 6, 7};
-      int n = 5;
-      int r = random() % n;
-      solenoid_tap_specific(s[r], 1);
-      eye_animate_blink(); //!!!! For NIME
-//END NIME ONLY
-
-      //switch(pitch)
-      //  {
-      //    case 60: /* cascade */
-      //    case 61: /* cascade */
-      //    case 62: /* cascade */
-      //    case 63: /* cascade */
-      //    case 64: /* cascade */
-      //    case 65: /* cascade */
-      //    case 66: /* cascade */
-      //    case 67: /* cascade */
-      //        solenoid_tap_specific((pitch-60), strength);
-      //        eye_animate_blink(); //!!!! For NIME
-      //        break;
-      //    default: 
-      //      solenoid_tap(strength);
-      //      eye_animate_blink(); //!!!! For NIME
-      //      break;
-      //  }
+      switch(pitch)
+        {
+          case 60: /* cascade */
+          case 61: /* cascade */
+          case 62: /* cascade */
+          case 63: /* cascade */
+          case 64: /* cascade */
+          case 65: /* cascade */
+          case 66: /* cascade */
+          case 67: /* cascade */
+              solenoid_tap_specific((pitch-60), strength);
+              break;
+          default: 
+            solenoid_tap(strength);
+            break;
+        }
     }
 }
 
