@@ -6,7 +6,7 @@ Cast on with working yarn starting on pin 4 (first white one), dont catch pin 29
 Colored yarn on inside of needle
 40 rows 25 cols
 Eyes in row 21, 6 wide, pins 13 to 18, leave long tail on either side
-Bind off with waste yarn, crochet off with working yarn, leave long tail
+Bind off with waste yarn, crochet off with working yarn, leave long tail 2.5 meters
 chain 1 between each crochet in bind-off row
 
 
@@ -98,3 +98,18 @@ sudo apt-get purge wolfram-engine
 sudo apt autoremove
 
 
+Use your phone to create hotspot with following credentials:
+SSID: Dr_Squiggles
+Pass: isthebest!
+
+Switch robot on
+connect your laptop to this netowrk.
+
+From your laptop, do 
+ssh pi@dr-squiggles-002.local
+pass squiggles
+
+use raspi-config to change 
+dr-squiggles-002
+to 
+dr-squiggles-002 etc...
