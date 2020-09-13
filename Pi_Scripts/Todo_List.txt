@@ -10,23 +10,6 @@ Bind off with waste yarn, crochet off with working yarn, leave long tail 2.5 met
 chain 1 between each crochet in bind-off row
 
 
-todo: 
-
-2) Fix laser-cut skeleton
-	Hole where dinger cable enters base plate on wrong side of arm
-	Eye slot longer (can this be glue-less)
-	
-	
-4) Main
-	auto boot main in foreground of raspi
-	optimize raspi for low latency, turn off x-window at boot
-	New module for teaching rhythms?
-	New module for decaying histograms
-	Two-beat delay fix lag between onset and beat
-	Option to turn on and off quantization
-
-
-
 //-----------------------------------------------
 Raspberry pi
 (online beat tracking demo)
