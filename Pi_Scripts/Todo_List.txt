@@ -96,3 +96,31 @@ use raspi-config to change
 dr-squiggles-002
 to 
 dr-squiggles-002 etc...
+
+
+
+
+
+
+https://computers.tutsplus.com/articles/how-to-clone-raspberry-pi-sd-cards-using-the-command-line-in-os-x--mac-59911
+
+
+
+ssh pi@dr_squiggles.local
+drsquiggles
+
+sudo raspi-config
+
+1 Change User Password Change password for the current user 
+	drsquiggles
+
+
+2 Network Options      Configure network settings
+	N1 Hostname                Set the visible name for this Pi on a network
+		dr-squiggles
+	N2 Wi-fi                   Enter SSID and passphrase 
+		Dr_Squiggles
+		IsAwesome!                                                                  │
+│	N3 Network interface names Enable/Disable predictable network interface names
+
+

@@ -126,7 +126,16 @@ crontab -e
 
 
 ------------------------------------------------
- 
+TURN OFF WAKE ON GPIO
+vcgencmd bootloader_config
+cp /lib/firmware/raspberrypi/bootloader/critical/pieeprom-2019-09-10.bin pieeprom.bin
+rpi-eeprom-config pieeprom.bin > bootconf.txt
+sudo nano bootconf.txt
+WAKE_ON_GPIO = 0
+rpi-eeprom-config --out pieeprom-new.bin --config bootconf.txt pieeprom.bin
+sudo rpi-eeprom-update -d -f ./pieeprom-new.bin
+sudo reboot 
+
 
 ************************************************
 ************************************************
