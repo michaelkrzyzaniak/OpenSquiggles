@@ -5,11 +5,14 @@
 #include "Eye.h"
  
 #define FIRMWARE_MAJOR_VERSION 1
-#define FIRMWARE_MINOR_VERSION 5
+#define FIRMWARE_MINOR_VERSION 6
 
 void interface_dispatch          (void* self, char* message, robot_arg_t args[], int num_args);
 void interface_note_on_callback  (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
 void interface_note_off_callback (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
+
+/* 0 tap mode, 1 organ mode */
+int interface_sustain_mode = 0;
 
 /*---------------------------------------------------*/
 void interface_init()
@@ -34,8 +37,6 @@ void interface_run_loop()
 /*---------------------------------------------------*/
 void interface_note_on_callback(midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel)
 {
-  //robot_send_message("here:%i %i %i", chan, pitch, vel);
-  
   //if(chan == (*midi_channel) - 1)
     {
       float strength = vel / 127.0;
@@ -50,8 +51,11 @@ void interface_note_on_callback(midi_channel_t chan, midi_pitch_t pitch, midi_ve
           case 65: /* cascade */
           case 66: /* cascade */
           case 67: /* cascade */
-              solenoid_tap_specific((pitch-60), strength);
-              break;
+            if(interface_sustain_mode == 0)
+              solenoid_tap_specific(pitch-60, strength);
+            else //(interface_sustain_mode == 1)
+              solenoid_on(pitch-60);
+            break;
           default: 
             solenoid_tap(strength);
             break;
@@ -62,7 +66,25 @@ void interface_note_on_callback(midi_channel_t chan, midi_pitch_t pitch, midi_ve
 /*---------------------------------------------------*/
 void interface_note_off_callback(midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel)
 {
-
+  if(interface_sustain_mode == 1)
+    {
+      switch(pitch)
+        {
+          case 60: /* cascade */
+          case 61: /* cascade */
+          case 62: /* cascade */
+          case 63: /* cascade */
+          case 64: /* cascade */
+          case 65: /* cascade */
+          case 66: /* cascade */
+          case 67: /* cascade */
+              solenoid_off(pitch-60);
+              break;
+          default:
+            solenoid_all_off();
+            break;
+        }
+    }
 }
 
 /*-----------------------------------------------------*/
@@ -96,7 +118,63 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
             robot_send_message(robot_reply_aok);
           }
         break;
-      
+  
+      /******************************/
+      case robot_hash_set_sustain_mode:
+        if(num_args == 1)
+          {
+            unsigned mode = robot_arg_to_int(&args[0]);
+            if(mode < 2)
+              {
+                interface_sustain_mode = mode;
+                robot_send_message(robot_reply_aok);
+              }
+            else robot_send_message(robot_reply_error, "mode out of range");
+          }
+        break;
+
+      /******************************/
+      case robot_hash_note_on:
+        if(num_args == 1)
+          {
+            solenoid_on(robot_arg_to_int(&args[0]));
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+        
+      /******************************/
+      case robot_hash_note_off:
+        if(num_args == 1)
+          {
+            solenoid_off(robot_arg_to_int(&args[0]));
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+        
+      /******************************/
+      case robot_hash_play_note_for_duration:
+        if(num_args == 2)
+          {
+            solenoid_on_for_duration(robot_arg_to_int(&args[0]), robot_arg_to_float(&args[1]));
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+        
+      /******************************/
+      case robot_hash_all_notes_off:
+        if(num_args == 1)
+          {
+            solenoid_all_off();
+            robot_send_message(robot_reply_aok);
+          }
+        break;
+        
+      /******************************/
+      case robot_hash_get_sustain_mode:
+        if(num_args == 0)
+          robot_send_message(robot_reply_firmware_version, interface_sustain_mode);
+        break;
+        
       /******************************/
       case robot_hash_get_firmware_version:
         if(num_args == 0)

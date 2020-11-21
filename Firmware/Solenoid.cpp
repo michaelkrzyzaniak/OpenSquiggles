@@ -70,6 +70,47 @@ void solenoid_tap_specific(int index, float strength)
 }
 
 /*----------------------------------------------------*/
+void solenoid_on             (int index)
+{
+  if(index >= SOLENOID_NUM_SOLENOIDS) index = SOLENOID_NUM_SOLENOIDS-1;
+  if(index < 0) index = 0;
+  
+  solenoid_timers[index] = 0;
+  analogWrite(solenoid_pins[index], 255);
+}
+
+/*----------------------------------------------------*/
+void solenoid_on_for_duration(int index, float duration)
+{
+  if(index >= SOLENOID_NUM_SOLENOIDS) index = SOLENOID_NUM_SOLENOIDS-1;
+  if(index < 0) index = 0;
+  
+  int ticks = (int)((SOLENOID_TIMER_DURATION_SECONDS * 1000000.0 / ((double)duration)) + 0.5);
+  solenoid_timers[index] = ticks;
+  analogWrite(solenoid_pins[index], 255);
+  
+}
+
+/*----------------------------------------------------*/
+void solenoid_off            (int index)
+{
+  if(index >= SOLENOID_NUM_SOLENOIDS) index = SOLENOID_NUM_SOLENOIDS-1;
+  if(index < 0) index = 0;
+  
+  solenoid_timers[index] = 0;
+  analogWrite(solenoid_pins[index], 0);
+}
+
+/*----------------------------------------------------*/
+void solenoid_all_off       ()
+{
+  int i;
+  
+  for(i=0; i<SOLENOID_NUM_SOLENOIDS; i++)
+    solenoid_off(i);
+}
+
+/*----------------------------------------------------*/
 void solenoid_timer_thread_run_loop(void)
 {
   interface_run_loop();

@@ -18,16 +18,11 @@
 #include <pthread.h>
 #include <math.h>
 
-#include "../extras/Network.h" //calloc
-#include "../extras/OSC.h" //calloc
-
 /*--------------------------------------------------------------------*/
 void*        rhythm_histogram_destroy (void*);
 const char*  rhythm_histogram_name    (void*);
 void         rhythm_histogram_onset   (void*, BTT*, unsigned long long);
 int          rhythm_histogram_beat    (void*, BTT*, unsigned long long, rhythm_onset_t*, int);
-
-void*        rhythm_histogram_recv_thread_run_loop(void* SELF);
 
 #define NUM_ONSET_TIMES           128
 #define MAX_SUBDIVISIONS_PER_BEAT 8
@@ -36,11 +31,6 @@ void*        rhythm_histogram_recv_thread_run_loop(void* SELF);
 #define DEFAULT_NUM_BEATS             4
 #define HISTOGRAM_MAX_LENGTH (MAX_SUBDIVISIONS_PER_BEAT * MAX_NUM_BEATS)
 #define DEFAULT_DECAY_COEFFICIENT 0.75
-
-#define DEFAULT_OSC_SEND_PORT     9000
-#define DEFAULT_OSC_RECV_PORT     9001
-#define  OSC_BUFFER_SIZE          512
-#define  OSC_VALUES_BUFFER_SIZE   64
 
 /*--------------------------------------------------------------------*/
 typedef struct opaque_rhythm_histogram_struct
@@ -63,19 +53,6 @@ typedef struct opaque_rhythm_histogram_struct
   
   int                 is_inverse;
   double              nonlinear_exponent;
-  
-  int                 robot_osc_id;
-  unsigned short      osc_send_port;
-  Network*            net;
-  pthread_t           osc_recv_thread;
-  //pthread_mutex_t   onset_buffer_mutex;
-  //char* osc_send_buffer;
-  char*               osc_recv_buffer;
-  oscValue_t*         osc_values_buffer;
-  
-  int                 experiment_is_running;
-  int                 experiment_beat_count;
-  
 }Rhythm_Histogram;
 
 void         rhythm_histogram_init(Rhythm_Histogram* self);
@@ -99,18 +76,6 @@ Rhythm* rhythm_histogram_new(BTT* beat_tracker)
       self->histogram = calloc(HISTOGRAM_MAX_LENGTH, sizeof(*self->histogram));
       if(self->histogram == NULL) return self->destroy(self);
  
-      self->osc_recv_buffer = calloc(1, OSC_BUFFER_SIZE);
-      if(!self->osc_recv_buffer) return self->destroy(self);
-      self->osc_values_buffer = calloc(sizeof(*self->osc_values_buffer), OSC_VALUES_BUFFER_SIZE);
-      if(!self->osc_values_buffer) return self->destroy(self);
-      
-      self->net = net_new();
-      if(!self->net) return rhythm_histogram_destroy(self);
-      if(!net_udp_connect(self->net, DEFAULT_OSC_RECV_PORT))
-        return self->destroy(self);
-      
-      self->osc_send_port = DEFAULT_OSC_SEND_PORT;
-    
       rhythm_histogram_set_is_inverse (self, 0);
       rhythm_histogram_set_num_beats  (self, DEFAULT_NUM_BEATS);
       rhythm_histogram_set_subdivisions_per_beat(self, DEFAULT_SUBDIVISIONS_PER_BEAT);
@@ -118,13 +83,6 @@ Rhythm* rhythm_histogram_new(BTT* beat_tracker)
       rhythm_histogram_set_decay_coefficient(self, DEFAULT_DECAY_COEFFICIENT);
       
       rhythm_histogram_init(self);
-      
-      //if(pthread_mutex_init(&self->onset_buffer_mutex, NULL) != 0)
-        //return rhythm_osc_destroy(self);
-    
-      int error = pthread_create(&self->osc_recv_thread, NULL, rhythm_histogram_recv_thread_run_loop, self);
-      if(error != 0)
-        return self->destroy(self);
     }
   
   return (Rhythm*)self;
@@ -155,7 +113,6 @@ void*      rhythm_histogram_destroy (void* SELF)
         free(self->onset_times);
       if(self->histogram != NULL)
         free(self->histogram);
-      net_destroy(self->net);
       free(self);
     }
   return (Rhythm*) NULL;
@@ -243,34 +200,6 @@ double rhythm_histogram_get_decay_coefficient(void* SELF)
 }
 
 /*--------------------------------------------------------------------*/
-void   rhythm_histogram_set_robot_osc_id(void* SELF, int id)
-{
-  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
-  self->robot_osc_id = id;
-}
-
-/*--------------------------------------------------------------------*/
-int rhythm_histogram_get_robot_osc_id(void* SELF)
-{
-  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
-  return self->robot_osc_id;
-}
-
-/*--------------------------------------------------------------------*/
-void   rhythm_histogram_set_osc_send_port(void* SELF, int port)
-{
-  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
-  self->osc_send_port = port;
-}
-
-/*--------------------------------------------------------------------*/
-int rhythm_histogram_get_osc_send_port(void* SELF)
-{
-  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
-  return self->osc_send_port;
-}
-
-/*--------------------------------------------------------------------*/
 const char*  rhythm_histogram_name    (void* SELF)
 {
   /* just return the name of the module for display */
@@ -342,147 +271,6 @@ float        rhythm_histogram_get_convergence_score   (Rhythm_Histogram* self /*
 }
 
 /*--------------------------------------------------------------------*/
-void rhythm_histogram_send_osc_convergence_and_density(Rhythm_Histogram* self)
-{
-  float density     =  rhythm_histogram_get_note_density(self);
-  float convergence =  rhythm_histogram_get_convergence_score(self/*, density*/);
-  
-  fprintf(stderr, "%f\t%f\t", density, convergence);
-  
-  /*
-  int  buffer_n = 36; //I happen to know it will be exactly 36 bytes
-  char buffer[buffer_n];
-  int  num_bytes = oscConstruct(buffer, buffer_n, "/convergence", "iff", self->robot_osc_id, convergence, density);
-  if(num_bytes > 0)
-    net_udp_send(self->net, buffer, num_bytes, "255.255.255.255", self->osc_send_port);
-  */
-}
-
-/*--------------------------------------------------------------------*/
-void* rhythm_histogram_recv_thread_run_loop(void* SELF)
-{
-  Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
-  char senders_address[16];
-  char *osc_address, *osc_type_tag;
-  
-  for(;;)
-  {
-    int num_valid_bytes = net_udp_receive (self->net, self->osc_recv_buffer, OSC_BUFFER_SIZE, senders_address);
-    if(num_valid_bytes < 0)
-      continue; //return NULL ?
-  
-    int num_osc_values = oscParse(self->osc_recv_buffer, num_valid_bytes, &osc_address, &osc_type_tag, self->osc_values_buffer, OSC_VALUES_BUFFER_SIZE);
-    if(num_osc_values < 0)
-        continue;
-  
-    uint32_t address_hash = oscHash((unsigned char*)osc_address);
-    if(address_hash == 5858985) // '/c'
-      {
-         rhythm_histogram_init(self);
-         self->experiment_beat_count = 0;
-      }
-    else if(address_hash == 5859001) // '/s'
-      {
-        rhythm_histogram_init(self);
-        self->experiment_beat_count = 0;
-        self->experiment_is_running = 1;
-      }
-    else if(address_hash == 5858969) // '/S'
-      {
-        self->experiment_is_running = 0;
-      }
-  }
-}
-
-
-
-#define BEATS_PER_EXPERIMENT 80 //probably make this a multiple of beats per rhythm
-//const int RHYTHM_HISTOGRAM_EXPERIMENT_INVERSE_VALUES[] = {0, 1};
-//const float RHYTHM_HISTOGRAM_EXPERIMENT_K_VALUES[] = {0, 0.5, 1, 2};
-//const float RHYTHM_HISTOGRAM_EXPERIMENT_DECAY_VALUES[] = {0, 0.5, 0.75, 0.825}; //0 is immediate update
-//#define NUM_INVERSE_VALUES 2
-//#define NUM_K_VALUES 4
-//#define NUM_DECAY_VALUES 4
-
-typedef struct
-{
-  int i;
-  float k;
-  float d;
-}h_params;
-
-#define NUM_TRIALS 5
-
-h_params p[NUM_TRIALS] =
-{
-  {0, 0, 1},
-  {0, 0, 0},
-  {0, 0, 0.61803399},
-  {1, 0, 0},
-  {1, 0, 0.8},
-};
-/*
-h_params p[NUM_TRIALS] =
-{
-  {0, 0, 1},
-  {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0},
-};
-*/
-/*
-h_params p[NUM_TRIALS] =
-{
-  {0, 0, 1},
-  {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0},
-};
-*/
-/*--------------------------------------------------------------------*/
-void rhythm_histogram_update_experiment(Rhythm_Histogram* self)
-{
-  int beat_number = self->experiment_beat_count % BEATS_PER_EXPERIMENT;
-  
-  if(beat_number == 0)
-    {
-      int trial_count = self->experiment_beat_count / BEATS_PER_EXPERIMENT;
-      //if(trial_count >= (NUM_INVERSE_VALUES * NUM_K_VALUES * NUM_DECAY_VALUES))
-      if(trial_count >= NUM_TRIALS)
-        {
-          self->experiment_is_running = 0;
-          fprintf(stderr, "EXPERIMENT DONE\r\n\r\n\r\n\r\n\r\n");
-          return;
-        }
-      //int decay_index = trial_count % NUM_DECAY_VALUES;
-      //int k_index = (trial_count / NUM_DECAY_VALUES) % NUM_K_VALUES;
-      //int inverse_index = (trial_count / (NUM_DECAY_VALUES * NUM_K_VALUES)) % NUM_INVERSE_VALUES;
-      //rhythm_histogram_set_is_inverse (self, RHYTHM_HISTOGRAM_EXPERIMENT_INVERSE_VALUES[inverse_index]);
-      //rhythm_histogram_set_nonlinear_exponent(self, RHYTHM_HISTOGRAM_EXPERIMENT_K_VALUES[k_index]);
-      //rhythm_histogram_set_decay_coefficient(self, RHYTHM_HISTOGRAM_EXPERIMENT_DECAY_VALUES[decay_index]);
-
-      rhythm_histogram_set_is_inverse (self, p[trial_count].i);
-      rhythm_histogram_set_nonlinear_exponent(self, p[trial_count].k);
-      rhythm_histogram_set_decay_coefficient(self, p[trial_count].d);
-
-      fprintf(stderr, "starting trial with d: %f\tk: %f\ti: %i\r\n",
-                      p[trial_count].d,
-                      p[trial_count].k,
-                      p[trial_count].i);
-      rhythm_histogram_init(self);
-    }
-  
-  int i;
-  for(i=0; i<self->subdivisions_per_beat * self->num_beats; i++)
-    fprintf(stderr, "%f\t", self->histogram[i]);
-  //fprintf(stderr, "\r\n");
-  
-  ++self->experiment_beat_count;
-}
-
-/*--------------------------------------------------------------------*/
 int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned long long sample_time, rhythm_onset_t* returned_rhythm, int returned_rhythm_maxlen)
 {
   Rhythm_Histogram* self = (Rhythm_Histogram*)SELF;
@@ -521,17 +309,8 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
       self->histogram[self->histogram_index + i] += onset_mask[i] * (1.0-self->decay_coefficient);
     }
   
-  //if(self->experiment_is_running)
-    //rhythm_histogram_send_osc_convergence_and_density(self);
-  
   self->histogram_index += self->subdivisions_per_beat;
   self->histogram_index %= self->subdivisions_per_beat * self->num_beats;
-
-  if(self->experiment_is_running)
-    {
-      rhythm_histogram_update_experiment(self);
-      rhythm_histogram_send_osc_convergence_and_density(self);
-    }
 
   //generate a rhythm
   for(i=0; i<self->subdivisions_per_beat; i++)
@@ -552,12 +331,7 @@ int          rhythm_histogram_beat    (void* SELF, BTT* beat_tracker, unsigned l
           returned_rhythm[n].timbre_class = -1;
           ++n;
         }
-      if(self->experiment_is_running)
-        fprintf(stderr, "%i\t", nonliniarity > r);
     }
-  
-  if(self->experiment_is_running)
-    fprintf(stderr, "\r\n");
   
   return n;
 }

@@ -16,7 +16,7 @@
 //sudo apt-get install libasound2-dev
 //gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2
 
-#define __SQ_VERSION__ "1.25"
+#define __SQ_VERSION__ "1.26"
 
 #include "Microphone.h"
 #include <string.h> //strcmp
@@ -106,7 +106,8 @@ int cycle_through_paramaters_and_take_get_input(const char* object_name, param_t
               ((double_setter) p.set)(p.self, p.init);
             break;
 
-          case '\r':
+          //case '\r':
+          case '\\':
             if((p.enter != NULL))
               exit_code = ((enter_funct)p.enter)(p.self, indent_level+1);
               if(exit_code == -1)
@@ -232,6 +233,7 @@ int enter_mic_submenu(Microphone* mic, int indent_level)
 double robot_strength = 1.0;
 int    robot_solenoid = 0;
 int    eye_depth      = 2;
+int    robot_sustain_mode = 0;
 double eye_speed      = 100;
 void   robot_set_solenoid     (void* ignored, int    solenoid){clip(robot_solenoid, solenoid, 0, 7)};
 void   robot_set_strength     (void* ignored, double strength){clip(robot_strength, strength, 0, 1)};
@@ -241,9 +243,21 @@ int    robot_get_solenoid     (void* ignored){return robot_solenoid;}
 double robot_get_strength     (void* ignored){return robot_strength;}
 int    robot_get_eye_depth    (void* ignored){return eye_depth;}
 double robot_get_eye_speed    (void* ignored){return eye_speed;}
+
+int    robot_get_sustain_mode (void* ignored){return robot_sustain_mode;}
+
+
 int    send_robot_tap         (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_tap, robot_strength); return 1;}
 int    send_robot_tap_specific(Robot* robot, int ignored){robot_send_message(robot, robot_cmd_tap_specific, robot_solenoid, robot_strength); return 1;}
 int    send_robot_bell        (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_bell, robot_strength); return 1;}
+
+int    send_robot_sustain_mode(Robot* robot, int mode){robot_send_message(robot, robot_cmd_set_sustain_mode, robot_sustain_mode=mode%2); return 1;}
+int    send_robot_note_on     (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_note_on, robot_solenoid); return 1;}
+int    send_robot_note_off    (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_note_off, robot_solenoid); return 1;}
+int    send_robot_play        (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_play_note_for_duration, robot_solenoid, 1.0); return 1;}
+int    send_robot_all_off     (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_bell); return 1;}
+
+
 int    send_robot_blink       (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_eye_blink); return 1;}
 int    send_robot_roll        (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_eye_roll, eye_depth); return 1;}
 int    send_robot_no          (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_eye_no, eye_depth, eye_speed); return 1;}
@@ -307,6 +321,56 @@ int enter_robot_communication_submenu(Robot* robot, int indent_level)
         .init = 0,
         .increment = 0,
         .name = "robot_send_message(robot_cmd_bell, strength)",
+      },
+      {
+        .set = (funct)send_robot_sustain_mode,
+        .get = (funct)robot_get_sustain_mode,
+        .enter = NULL,
+        .self = robot,
+        .type = 'i',
+        .init = 0,
+        .increment = 1,
+        .name = "robot_send_message(robot_cmd_set_sustain_mode, mode)",
+      },
+      {
+        .set = NULL,
+        .get = NULL,
+        .enter = (funct)send_robot_note_on,
+        .self = robot,
+        .type = 'e',
+        .init = 0,
+        .increment = 0,
+        .name = "robot_send_message(robot_cmd_note_on, solenoid)",
+      },
+      {
+        .set = NULL,
+        .get = NULL,
+        .enter = (funct)send_robot_note_off,
+        .self = robot,
+        .type = 'e',
+        .init = 0,
+        .increment = 0,
+        .name = "robot_send_message(robot_cmd_note_off, solenoid)",
+      },
+      {
+        .set = NULL,
+        .get = NULL,
+        .enter = (funct)send_robot_play,
+        .self = robot,
+        .type = 'e',
+        .init = 0,
+        .increment = 0,
+        .name = "robot_send_message(robot_cmd_play_note_for_duration, solenoid, 1.0)",
+      },
+      {
+        .set = NULL,
+        .get = NULL,
+        .enter = (funct)send_robot_all_off,
+        .self = robot,
+        .type = 'e',
+        .init = 0,
+        .increment = 0,
+        .name = "robot_send_message(robot_cmd_all_notes_off)",
       },
       {
         .set = NULL,
@@ -723,26 +787,6 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level)
             .init = 0.75,
             .increment = 0.01,
             .name = "rhythm_histogram_set_decay_coefficient",
-          },
-          {
-            .set = (funct)rhythm_histogram_set_robot_osc_id,
-            .get = (funct)rhythm_histogram_get_robot_osc_id,
-            .enter = NULL,
-            .self = rhythm,
-            .type = 'i',
-            .init = 0,
-            .increment = 1,
-            .name = "rhythm_histogram_set_robot_osc_id",
-          },
-          {
-            .set = (funct)rhythm_histogram_set_osc_send_port,
-            .get = (funct)rhythm_histogram_get_osc_send_port,
-            .enter = NULL,
-            .self = rhythm,
-            .type = 'i',
-            .init = 9000,
-            .increment = 1,
-            .name = "rhythm_histogram_set_osc_send_port",
           },
         };
       int num_params = sizeof(params) / sizeof(params[0]);

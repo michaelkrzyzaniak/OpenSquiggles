@@ -27,6 +27,12 @@ typedef enum robot_message_hash_enum
   robot_hash_tap                         = 2085486991,
   robot_hash_tap_specific                = 642191216,
   robot_hash_bell                        = 100947277,
+  robot_hash_set_sustain_mode            = 1486368820,
+  robot_hash_get_sustain_mode            = 942610080,
+  robot_hash_note_on                     = 2186442148,
+  robot_hash_note_off                    = 3433114442,
+  robot_hash_play_note_for_duration      = 3031286305,
+  robot_hash_all_notes_off               = 412662823,
   robot_hash_eye_blink                   = 3331026536,
   robot_hash_eye_roll                    = 101520471,
   robot_hash_eye_no                      = 193346379,
@@ -38,6 +44,7 @@ typedef enum robot_message_hash_enum
   robot_hash_eye_neutral_pos             = 1030114188,
   robot_hash_get_firmware_version        = 1616850098,
   robot_hash_reply_firmware_version      = 857564406,
+  robot_hash_reply_sustain_mode          = 1740575204,
   robot_hash_aok                         = 2085472399,
   robot_hash_error                       = 3342388946,
 }robot_message_hash_t;
@@ -46,7 +53,16 @@ typedef enum robot_message_hash_enum
 #define robot_cmd_tap                         "/tap %f"             //strength, 0.0~1.0
 #define robot_cmd_tap_specific                "/tap_specific %i %f" //index 0-7 strength, 0.0~1.0
 #define robot_cmd_bell                        "/bell %f"            //strength, 0.0~1.0
+
+#define robot_cmd_set_sustain_mode            "/set_mode %i"        //0 tap mode, 1 organ pipe mode
+#define robot_cmd_get_sustain_mode            "/get_mode %i"        //0 tap mode, 1 organ pipe mode
+#define robot_cmd_note_on                     "/note_on %i"         //solenoid, 0~7
+#define robot_cmd_note_off                    "/note_off %i"        //solenoid, 0~7
+#define robot_cmd_play_note_for_duration      "/play_note %i %f"    //strength, seconds
+#define robot_cmd_all_notes_off               "/all_notes_off"      //
+
 #define robot_cmd_get_firmware_version        "/get_firmware"
+#define robot_cmd_get_sustain_mode            "/get_mode %i"        //0 tap mode, 1 organ pipe mode
 
 #define robot_cmd_eye_blink                   "/blink"
 #define robot_cmd_eye_roll                    "/roll %i"            //depth
@@ -61,6 +77,7 @@ typedef enum robot_message_hash_enum
 #define robot_reply_aok                       "/aok"
 #define robot_reply_error                     "/error %s"
 #define robot_reply_firmware_version          "/reply_firmware %i %i"
+#define robot_reply_sustain_mode              "/reply_mode %i"
 
 /*---------------------------------------------------*/
 typedef void  (*robot_message_received_callback)(void* self, char* message, robot_arg_t args[], int num_args);
