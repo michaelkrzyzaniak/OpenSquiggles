@@ -85,7 +85,7 @@ void solenoid_on_for_duration(int index, float duration)
   if(index >= SOLENOID_NUM_SOLENOIDS) index = SOLENOID_NUM_SOLENOIDS-1;
   if(index < 0) index = 0;
   
-  int ticks = (int)((SOLENOID_TIMER_DURATION_SECONDS * 1000000.0 / ((double)duration)) + 0.5);
+  int ticks = (int)((duration * 1000000.0 / ((double)SOLENOID_TIMER_THREAD_INTERVAL)) + 0.5);
   solenoid_timers[index] = ticks;
   analogWrite(solenoid_pins[index], 255);
   
