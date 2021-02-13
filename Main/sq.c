@@ -10,15 +10,15 @@
 ----------------------------------------------------------------------*/
 
 //OSX compile with:
-//gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2
+//gcc sq.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2 -o sq
 
 //Linux compile with:
 //sudo apt-get install libasound2-dev
-//gcc *.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2
+//gcc sq.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o sq
 
 #define __SQ_VERSION__ "1.26"
 
-#include "Microphone.h"
+#include "core/Microphone.h"
 #include <string.h> //strcmp
 
 #define clip(in, val, min, max) in = (val < min) ? min : (val > max) ? max : val;
@@ -106,8 +106,8 @@ int cycle_through_paramaters_and_take_get_input(const char* object_name, param_t
               ((double_setter) p.set)(p.self, p.init);
             break;
 
-          //case '\r':
-          case '\\':
+          case '\r':
+          //case '\\':
             if((p.enter != NULL))
               exit_code = ((enter_funct)p.enter)(p.self, indent_level+1);
               if(exit_code == -1)
@@ -255,7 +255,7 @@ int    send_robot_sustain_mode(Robot* robot, int mode){robot_send_message(robot,
 int    send_robot_note_on     (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_note_on, robot_solenoid); return 1;}
 int    send_robot_note_off    (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_note_off, robot_solenoid); return 1;}
 int    send_robot_play        (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_play_note_for_duration, robot_solenoid, 1.0); return 1;}
-int    send_robot_all_off     (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_bell); return 1;}
+int    send_robot_all_off     (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_all_notes_off); return 1;}
 
 
 int    send_robot_blink       (Robot* robot, int ignored){robot_send_message(robot, robot_cmd_eye_blink); return 1;}

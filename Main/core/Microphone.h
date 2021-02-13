@@ -15,9 +15,9 @@ extern "C"{
 #endif   //(__cplusplus)
 
 #include "AudioSuperclass.h"
-#include "Rhythm_Generators/Rhythm_Generators.h"
-#include "../Beat-and-Tempo-Tracking/BTT.h"
-#include "../Robot_Communication_Framework/Robot_Communication.h"
+#include "../Rhythm_Generators/Rhythm_Generators.h"
+#include "../../Beat-and-Tempo-Tracking/BTT.h"
+#include "../../Robot_Communication_Framework/Robot_Communication.h"
 
 typedef struct OpaqueMicrophoneStruct Microphone;
 
