@@ -30,6 +30,7 @@ void make_stdin_cannonical_again();
 /*--------------------------------------------------------------------*/
 #include <stdio.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "extras/Network.h"
 #include "extras/OSC.h"
