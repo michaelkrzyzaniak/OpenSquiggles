@@ -101,6 +101,7 @@ OSC_Responder* osc_responder_new()
         //return osc_responder_destroy(self);
     
       self->robot = robot_new(osc_responder_robot_message_received_callback, NULL);
+      
       if(self->robot == NULL)
         return osc_responder_destroy(self);
       
@@ -264,24 +265,31 @@ void osc_responder_midi_mode_change_event_handler(midi_channel_t  chan, midi_mod
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  i_hate_canonical_input_processing();
-  fprintf(stderr, "\r\n");
+  //i_hate_canonical_input_processing();
+  fprintf(stderr, "Here 1\r\n");
   
   //defined globally because reasons
+  
   responder = osc_responder_new();
+if(responder == NULL) {perror("Yikes!"); return(-1);}
+
+ fprintf(stderr, "Here 2\r\n");
  
   robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 1);
  
-  if(responder == NULL) {perror("Yikes!"); return(-1);}
+ fprintf(stderr, "Here 3\r\n");
+
   
   for(;;)
     if(getchar() == 'q')
       break;
-  
+ 
+ fprintf(stderr, "Here 4\r\n");
+ 
   robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 0);
   responder = osc_responder_destroy(responder);
   
-  make_stdin_cannonical_again();
+  //make_stdin_cannonical_again();
 }
 
 /*--------------------------------------------------------------------*/
