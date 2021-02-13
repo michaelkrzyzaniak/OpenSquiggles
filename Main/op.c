@@ -236,8 +236,11 @@ void osc_responder_midi_note_on_event_handler(midi_channel_t chan, midi_pitch_t 
 {
   int solenoid = osc_responder_midi_to_solenoid_number(/*self*/responder, note);
   if(solenoid >= 0)
-    //robot_send_message(/*self*/responder->robot, robot_cmd_note_on, solenoid);
-    fprintf(stderr, "NOTE ON -- chan: %u\tnote: %u\tvel:%u\r\n", chan, note, vel);
+    {
+      robot_send_message(/*self*/responder->robot, robot_cmd_note_on, solenoid);
+      robot_send_message(/*self*/responder->robot, robot_cmd_eye_blink);
+      //fprintf(stderr, "NOTE ON -- chan: %u\tnote: %u\tvel:%u\r\n", chan, note, vel);
+    }
 }
 
 /*--------------------------------------------------------------------*/
@@ -245,16 +248,16 @@ void osc_responder_midi_note_off_event_handler(midi_channel_t chan, midi_pitch_t
 {
   int solenoid = osc_responder_midi_to_solenoid_number(/*self*/responder, note);
   if(solenoid >= 0)
-    //robot_send_message(/*self*/responder->robot, robot_cmd_note_off, solenoid);
-    fprintf(stderr, "NOTE OFF -- chan: %u\tnote: %u\tvel:%u\r\n", chan, note, vel);
+    robot_send_message(/*self*/responder->robot, robot_cmd_note_off, solenoid);
+    //fprintf(stderr, "NOTE OFF -- chan: %u\tnote: %u\tvel:%u\r\n", chan, note, vel);
 }
 
 /*--------------------------------------------------------------------*/
 void osc_responder_midi_mode_change_event_handler(midi_channel_t  chan, midi_mode_t mode, uint8_t arg)
 {
   if(mode == MIDI_MODE_ALL_SOUND_OFF)
-    //robot_send_message(/*self*/responder->robot, robot_cmd_all_notes_off);
-    fprintf(stderr, "ALL NOTES OFF -- chan: %u\tmode: %u\tvel:%u\r\n", chan, mode, arg);
+    robot_send_message(/*self*/responder->robot, robot_cmd_all_notes_off);
+    //fprintf(stderr, "ALL NOTES OFF -- chan: %u\tmode: %u\tvel:%u\r\n", chan, mode, arg);
 }
 
 /*--------------------------------------------------------------------*/
