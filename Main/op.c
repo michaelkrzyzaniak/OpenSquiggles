@@ -287,6 +287,9 @@ if(responder == NULL) {perror("Yikes!"); return(-1);}
  fprintf(stderr, "Here 4\r\n");
  
   robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 0);
+  
+  fprintf(stderr, "Here 5\r\n");
+  
   responder = osc_responder_destroy(responder);
   
   //make_stdin_cannonical_again();
