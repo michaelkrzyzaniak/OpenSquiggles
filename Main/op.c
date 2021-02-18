@@ -175,7 +175,7 @@ void* osc_responder_recv_thread_run_loop(void* SELF)
     int num_osc_values = oscParse(self->osc_recv_buffer, num_valid_bytes, &osc_address, &osc_type_tag, self->osc_values_buffer, OSC_VALUES_BUFFER_SIZE);
     if(num_osc_values < 0)
         continue;
-        
+    
     uint32_t address_hash = oscHash((unsigned char*)osc_address);
     if(address_hash == 100987747) // '/midi'
       {
@@ -241,7 +241,7 @@ void osc_responder_midi_note_on_event_handler(midi_channel_t chan, midi_pitch_t 
     {
       robot_send_message(/*self*/responder->robot, robot_cmd_note_on, solenoid);
       robot_send_message(/*self*/responder->robot, robot_cmd_eye_blink);
-      //fprintf(stderr, "NOTE ON -- chan: %u\tnote: %u\tvel:%u\r\n", chan, note, vel);
+      fprintf(stderr, "NOTE ON -- chan: %u\tnote: %u\tvel:%u\r\n", chan, note, vel);
     }
 }
 
@@ -257,39 +257,30 @@ void osc_responder_midi_note_off_event_handler(midi_channel_t chan, midi_pitch_t
 /*--------------------------------------------------------------------*/
 void osc_responder_midi_mode_change_event_handler(midi_channel_t  chan, midi_mode_t mode, uint8_t arg)
 {
+ //0xB0 0x78 0,00
   if(mode == MIDI_MODE_ALL_SOUND_OFF)
-    robot_send_message(/*self*/responder->robot, robot_cmd_all_notes_off);
-    //fprintf(stderr, "ALL NOTES OFF -- chan: %u\tmode: %u\tvel:%u\r\n", chan, mode, arg);
+    {
+      robot_send_message(/*self*/responder->robot, robot_cmd_all_notes_off);
+      fprintf(stderr, "ALL NOTES OFF -- chan: %u\tmode: %u\targ:%u\r\n", chan, mode, arg);
+    }
 }
 
 /*--------------------------------------------------------------------*/
 int main(void)
 {
   //i_hate_canonical_input_processing();
-  fprintf(stderr, "Here 1\r\n");
-  
   //defined globally because reasons
   
   responder = osc_responder_new();
-if(responder == NULL) {perror("Yikes!"); return(-1);}
-
- fprintf(stderr, "Here 2\r\n");
- 
-  robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 1);
- 
- fprintf(stderr, "Here 3\r\n");
-
+  if(responder == NULL) {perror("Yikes!"); return(-1);}
   
+  robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 1);
+
   for(;;)
     if(getchar() == 'q')
       break;
  
- fprintf(stderr, "Here 4\r\n");
- 
   robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 0);
-  
-  fprintf(stderr, "Here 5\r\n");
-  
   responder = osc_responder_destroy(responder);
   
   //make_stdin_cannonical_again();
