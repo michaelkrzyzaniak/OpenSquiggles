@@ -137,23 +137,37 @@ OSC_Responder*      osc_responder_destroy (OSC_Responder* self)
     {
       /* free any malloc-ed instance variables here */
     
+      fprintf(stderr, "Here Free 1");
       if(self->osc_recv_thread != 0)
         {
           pthread_cancel(self->osc_recv_thread);
+          
+          fprintf(stderr, "Here Free 1.5");
           pthread_join(self->osc_recv_thread, NULL);
         }
-        
+      
+      fprintf(stderr, "Here Free 2");
       if(self->osc_send_buffer != NULL)
         free(self->osc_send_buffer);
+        
+      fprintf(stderr, "Here Free 2");
       if(self->osc_recv_buffer != NULL)
         free(self->osc_recv_buffer);
+        
+      fprintf(stderr, "Here Free 3");
       if(self->net != NULL)
         net_disconnect(self->net);
+        
+      fprintf(stderr, "Here Free 4");
       net_destroy(self->net);
       
+      fprintf(stderr, "Here Free 5");
       robot_destroy(self->robot);
+      
+      fprintf(stderr, "Here Free 6");
       params_destroy(self->params);
       
+      fprintf(stderr, "Here Free 7");
       free(self);
     }
   return (OSC_Responder*) NULL;
@@ -266,25 +280,16 @@ void osc_responder_midi_mode_change_event_handler(midi_channel_t  chan, midi_mod
 int main(void)
 {
   //i_hate_canonical_input_processing();
-  fprintf(stderr, "Here 1\r\n");
   
   //defined globally because reasons
-  
   responder = osc_responder_new();
-if(responder == NULL) {perror("Yikes!"); return(-1);}
-
- fprintf(stderr, "Here 2\r\n");
+  if(responder == NULL) {perror("Yikes!"); return(-1);}
  
   robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 1);
- 
- fprintf(stderr, "Here 3\r\n");
-
   
   for(;;)
     if(getchar() == 'q')
       break;
- 
- fprintf(stderr, "Here 4\r\n");
  
   robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 0);
   

@@ -238,11 +238,14 @@ button:hover, input[type=file]:hover{
 
 
 /*radio buttons*/
-.radio_container{
+.radio_container
+{
   display: block;
   margin: auto;
   height: auto;
   width:100%;
+  border: 1px solid black;
+  background-color:red;
 }
 
 .radio_container ul{
