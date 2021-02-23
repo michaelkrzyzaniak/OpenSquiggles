@@ -5,7 +5,7 @@
 #include "Eye.h"
  
 #define FIRMWARE_MAJOR_VERSION 1
-#define FIRMWARE_MINOR_VERSION 6
+#define FIRMWARE_MINOR_VERSION 7
 
 void interface_dispatch          (void* self, char* message, robot_arg_t args[], int num_args);
 void interface_note_on_callback  (midi_channel_t chan, midi_pitch_t pitch, midi_velocity_t vel);
@@ -162,7 +162,7 @@ void interface_dispatch(void* self, char* message, robot_arg_t args[], int num_a
         
       /******************************/
       case robot_hash_all_notes_off:
-        if(num_args == 1)
+        if(num_args == 0)
           {
             solenoid_all_off();
             robot_send_message(robot_reply_aok);
