@@ -44,7 +44,7 @@
 
 
 /*--------------------------------------------------------------------*/
-typedef void (*notify_when_done_recording_t)(void* SELF, MKAiff* aiff);
+typedef void (*notify_when_done_recording_t)(void* SELF, MKAiff* aiff, unsigned samples_clipped);
 
 /*--------------------------------------------------------------------*/
 typedef struct opaque_sampler_calibrator_struct
@@ -53,6 +53,7 @@ typedef struct opaque_sampler_calibrator_struct
   MKAiff* aiff;
   
   unsigned samples_recorded;
+  unsigned samples_clipped;
   
   notify_when_done_recording_t notify_when_done_callback;
   void* notify_when_done_self;
@@ -80,6 +81,7 @@ Sampler_Calibrator* sampler_calibrator_new()
         return (Sampler_Calibrator*)auDestroy((Audio*)self);
       
       self->samples_recorded = SAMPLE_LENGTH;
+      self->samples_clipped = 0;
     }
   
   return (Sampler_Calibrator*)self;
@@ -106,6 +108,7 @@ void sampler_calibrator_start_recording(Sampler_Calibrator* self, notify_when_do
   aiffRemoveSamplesAtPlayhead(self->aiff, aiffDurationInSamples(self->aiff));
   
   self->samples_recorded = 0;
+  self->samples_clipped = 0;
   //mutex unlock
 }
 
@@ -131,12 +134,12 @@ int sampler_calibrator_audio_callback(void* SELF, auSample_t* buffer, int num_fr
       int samples_needed = SAMPLE_LENGTH - self->samples_recorded;
       int samples_to_add = (samples_needed > num_frames) ? num_frames : samples_needed;
       
-      aiffAddFloatingPointSamplesAtPlayhead(self->aiff, buffer, samples_to_add, aiffFloatSampleType, aiffYes);
+      self->samples_clipped += aiffAddFloatingPointSamplesAtPlayhead(self->aiff, buffer, samples_to_add, aiffFloatSampleType, aiffYes);
       
       self->samples_recorded += samples_to_add;
       
       if(self->samples_recorded >= SAMPLE_LENGTH)
-        self->notify_when_done_callback(self->notify_when_done_self, self->aiff);
+        self->notify_when_done_callback(self->notify_when_done_self, self->aiff, self->samples_clipped);
     }
 
   return  num_frames;
@@ -169,7 +172,7 @@ Params* main_init_params(const char* home)
 }
 
 /*--------------------------------------------------------------------*/
-void main_notify_when_done_recording (void* SELF, MKAiff* aiff)
+void main_notify_when_done_recording (void* SELF, MKAiff* aiff, unsigned samples_clipped)
 {
   globals_t* globals = (globals_t*)SELF;
   
@@ -178,6 +181,15 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff)
   
   aiffRewindPlayheadToBeginning(aiff);
   aiffReadFloatingPointSamplesAtPlayhead(aiff, globals->real, SAMPLE_LENGTH, aiffYes);
+  
+  float max_sample = 0;
+  for(i=0; i<SAMPLE_LENGTH; i++)
+    {
+      float test = fabs(globals->real[i]);
+      if(test > max_sample)
+        max_sample = test;
+    }
+  
   dft_apply_window(globals->real, globals->window, SAMPLE_LENGTH);
   dft_real_forward_dft(globals->real, globals->imag, SAMPLE_LENGTH);
   dft_rect_to_polar(globals->real, globals->imag, SAMPLE_LENGTH/2);
@@ -213,7 +225,7 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff)
   params_init_int(globals->params, param_string, -1);
   params_set_int(globals->params, param_string, midi);
   
-  fprintf(stderr, "solenoid: %i\t note: %i (%.2f - %.2f)\r\n", globals->i, midi, AU_CPS2MIDI(freq_range_min), AU_CPS2MIDI(freq_range_max));
+  fprintf(stderr, "solenoid: %i\tnote: %i (%.2f - %.2f)\tpeak amplitude: %.2f\t%u samples clipped\r\n", globals->i, midi, AU_CPS2MIDI(freq_range_min), AU_CPS2MIDI(freq_range_max), max_sample, samples_clipped);
   
   free(filename_string);
   free(param_string);
