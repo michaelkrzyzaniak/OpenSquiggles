@@ -201,7 +201,8 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff)
   fprintf(stderr, "argmax %i\r\n", argmax);
   
   double freq = dft_frequency_of_bin(argmax, AU_SAMPLE_RATE, SAMPLE_LENGTH);
-  int midi = round(AU_CPS2MIDI(freq));
+  double float_midi = AU_CPS2MIDI(freq);
+  int midi = round(float_midi);
   
   
   asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", globals->home, PARAMS_DIR, globals->i);
@@ -212,7 +213,7 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff)
   params_init_int(globals->params, param_string, -1);
   params_set_int(globals->params, param_string, midi);
   
-  fprintf(stderr, "solenoid: %i\t note: %i\r\n", globals->i, midi);
+  fprintf(stderr, "solenoid: %i\t note: %.2f\r\n", globals->i, float_midi);
   
   free(filename_string);
   free(param_string);
