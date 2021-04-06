@@ -68,7 +68,6 @@ void* osc_responder_recv_thread_run_loop(void* self);
 void  osc_responder_robot_message_received_callback(void* SELF, char* message, robot_arg_t args[], int num_args);
 void  osc_responder_init_midi_note_params(OSC_Responder* self);
 OSC_Responder* osc_responder_destroy (OSC_Responder* self);
-void osc_responder_init_midi_note_params(OSC_Responder* self);
 int osc_responder_midi_to_solenoid_number(OSC_Responder* self, int midi_note);
 
 void osc_responder_midi_note_on_event_handler(midi_channel_t chan, midi_pitch_t note, midi_velocity_t vel);
