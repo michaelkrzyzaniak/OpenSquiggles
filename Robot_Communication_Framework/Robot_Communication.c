@@ -89,6 +89,7 @@ Robot* robot_destroy(Robot* self)
 
 #elif defined __linux__
       self->read_thread_should_continue_running = 0;
+      pthread_kill(self->midi_read_thread, SIGUSR1);
       pthread_join(self->midi_read_thread, NULL);
       snd_rawmidi_drain(self->in_port);
       snd_rawmidi_close(self->in_port);

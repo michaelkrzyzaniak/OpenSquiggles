@@ -198,11 +198,11 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff)
         argmax = i;
     }
   
-  fprintf(stderr, "argmax %i\r\n", argmax);
-  
   double freq = dft_frequency_of_bin(argmax, AU_SAMPLE_RATE, SAMPLE_LENGTH);
-  double float_midi = AU_CPS2MIDI(freq);
-  int midi = round(float_midi);
+  int midi = round(AU_CPS2MIDI(freq));
+  
+  double freq_range_min = dft_frequency_of_bin(argmax-0.5, AU_SAMPLE_RATE, SAMPLE_LENGTH);
+  double freq_range_max = dft_frequency_of_bin(argmax+0.5, AU_SAMPLE_RATE, SAMPLE_LENGTH);
   
   
   asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", globals->home, PARAMS_DIR, globals->i);
@@ -213,7 +213,7 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff)
   params_init_int(globals->params, param_string, -1);
   params_set_int(globals->params, param_string, midi);
   
-  fprintf(stderr, "solenoid: %i\t note: %.2f\r\n", globals->i, float_midi);
+  fprintf(stderr, "solenoid: %i\t note: %i (%.2f - %.2f)\r\n", globals->i, midi, AU_CPS2MIDI(freq_range_min), AU_CPS2MIDI(freq_range_max));
   
   free(filename_string);
   free(param_string);
@@ -290,7 +290,7 @@ int main(void)
   free(globals.window);
   free(globals.imag);
   free(globals.real);
-  robot_destroy(robot);
+  //robot_destroy(robot);
   sampler_calibrator_destroy(sampler);
   
   fprintf(stderr, "Done.\r\n");

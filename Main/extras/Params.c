@@ -82,7 +82,7 @@ void params_set_string(Params* self, char* tag, char* value)
   list_destroy(setting_list, NO);
   
   value = params_get_string(self, tag, "");
-  fprintf(stderr, "SET -- tag: %s, val: %s\r\n", tag, value);
+  //fprintf(stderr, "SET -- tag: %s, val: %s\r\n", tag, value);
   
   char* xml_save_filename = params_get_string(self, "xml_save_filename", "");
   if(xml_save_filename != NULL)
