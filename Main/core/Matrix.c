@@ -14,6 +14,7 @@ multi-thread support and many small changes
 #include <stdio.h>   // NULL
 #include <stdlib.h>  // calloc
 #include <string.h>  // memcpy
+#include <stdint.h>  //uint8_t
 
 #define MATRIX_MULTI_THREAD_SUPPORT 1
 

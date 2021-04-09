@@ -73,7 +73,6 @@ typedef  int (*auAudioCallback_t) (void* SELF, auSample_t* buffer, int numFrames
   pthread_t                   thread                        ; \
   int                         threadIsRunning               ; \
   int                         threadShouldContinueRunning   ; \
-  unsigned long int           bufferNumFrames               ;
   
 #define AU_SPEAKER_DEVICE_NAME "default"  
 #define AU_MIC_DEVICE_NAME     "default"  
@@ -85,7 +84,7 @@ typedef  int (*auAudioCallback_t) (void* SELF, auSample_t* buffer, int numFrames
   BOOL                        isOutput                      ; \
   BOOL                        isPlaying                     ; \
   double                      sampleRate                    ; \
-  int                         bufferNumFrames               ; \
+  unsigned long int           bufferNumFrames               ; \
   int                         numBuffers                    ; \
   float                       masterVolume                  ; \
   float                       targetMasterVolume            ; \

@@ -136,11 +136,11 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
       if(error >= 0)
         {
           int dir = 0;
-          self->bufferNumFrames = self->bufferNumFrames; //the buffer I give to ALSA
+          //self->bufferNumFrames = self->bufferNumFrames; //the buffer I give to ALSA
           error = snd_pcm_hw_params_set_period_size_near(self->device, hardwareParameters, &(self->bufferNumFrames), &dir);
           if(error < 0) fprintf(stderr, "Audio.c: Unable to set the sample buffer size to %lu: %s\n", self->bufferNumFrames, snd_strerror(error));
           else if(self->bufferNumFrames != self->bufferNumFrames)
-            fprintf(stderr, "Audio.c: device does not support %i period size, %lu will be used instead\n", self->bufferNumFrames, self->bufferNumFrames);
+            fprintf(stderr, "Audio.c: device does not support the desired period size, %lu will be used instead\n", self->bufferNumFrames, self->bufferNumFrames);
         }
       if(error >= 0)
         {
