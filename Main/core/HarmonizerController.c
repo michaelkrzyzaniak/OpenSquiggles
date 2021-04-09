@@ -24,7 +24,7 @@ struct OpaqueHarmonizerControllerStruct
 
   AUDIO_GUTS               ;
   Harmonizer* harmonizer   ;
-  Beep*  beep              ;
+  //Beep*  beep              ;
   int sounding_notes[OP_NUM_SOLENOIDS];
   int midi_notes[OP_NUM_SOLENOIDS];
   Params* params           ;
@@ -43,9 +43,9 @@ HarmonizerController* harmonizer_controller_new ()
       if(self->harmonizer == NULL)
         return (HarmonizerController*)auDestroy((Audio*)self);
         
-      self->beep = beep_new();
-      if(self->beep == NULL)
-        return (HarmonizerController*)auDestroy((Audio*)self);
+      //self->beep = beep_new();
+      //if(self->beep == NULL)
+        //return (HarmonizerController*)auDestroy((Audio*)self);
         
       harmonizer_set_notes_changed_callback(self->harmonizer, harmonizer_controller_notes_changed_callback, self);
 
@@ -69,7 +69,7 @@ HarmonizerController* harmonizer_controller_new ()
       robot_send_message(self->robot, robot_cmd_set_sustain_mode, 1);
       
       //there should be a play callback that I can intercept and do this there.
-      auPlay((Audio*)self->beep);
+      //auPlay((Audio*)self->beep);
     }
   return self;
 }
@@ -81,7 +81,7 @@ HarmonizerController* harmonizer_controller_destroy (HarmonizerController* self)
     {
       harmonizer_destroy(self->harmonizer);
       robot_destroy(self->robot);
-      auDestroy((Audio*)self->beep);
+      //auDestroy((Audio*)self->beep);
     }
     
   return (HarmonizerController*) NULL;
@@ -168,7 +168,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
   Organ_Pipe_Filter* filter = harmonizer_get_organ_pipe_filter(self->harmonizer);
   organ_pipe_filter_notify_sounding_notes(filter, self->sounding_notes);
   
-  beep_set_notes(self->beep, midi_notes, num_notes);
+  //beep_set_notes(self->beep, midi_notes, num_notes);
 }
 
 /*--------------------------------------------------------------------*/
