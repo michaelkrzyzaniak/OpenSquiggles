@@ -34,12 +34,10 @@
 #include "core/AudioSuperclass.h"
 #include "extras/Params.h"
 #include "extras/MKAiff.h"
+#include "core/constants.h"
 #include "../Robot_Communication_Framework/Robot_Communication.h"
 #include "../Beat-and-Tempo-Tracking/src/DFT.h"
 
-#define PARAMS_DIR ".squiggles_notes"
-#define PARAMS_FILENAME "squiggles_notes.xml" //it will go in home directory
-#define NUM_SOLENOIDS 8
 #define SAMPLE_LENGTH (1<<13)
 
 
@@ -162,8 +160,8 @@ Params* main_init_params(const char* home)
 {
   char *dir_string;
   char *filename_string;
-  asprintf(&dir_string, "%s/%s", home, PARAMS_DIR);
-  asprintf(&filename_string, "%s/%s/%s", home, PARAMS_DIR, PARAMS_FILENAME);
+  asprintf(&dir_string, "%s/%s", home, OP_PARAMS_DIR);
+  asprintf(&filename_string, "%s/%s/%s", home, OP_PARAMS_DIR, OP_PARAMS_FILENAME);
   mkdir(dir_string, 0777);
   Params* p = params_new(filename_string);
   free(dir_string);
@@ -217,7 +215,7 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff, unsigned samples
   double freq_range_max = dft_frequency_of_bin(argmax+0.5, AU_SAMPLE_RATE, SAMPLE_LENGTH);
   
   
-  asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", globals->home, PARAMS_DIR, globals->i);
+  asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", globals->home, OP_PARAMS_DIR, globals->i);
   asprintf(&param_string,     "solenoid_%i_note", globals->i);
   
   aiffSaveWithFilename(aiff, filename_string);
@@ -279,7 +277,7 @@ int main(void)
   auPlay((Audio*)sampler);
   
   int i;
-  for(i=0; i<NUM_SOLENOIDS; i++)
+  for(i=0; i<OP_NUM_SOLENOIDS; i++)
     {
       globals.i = i;
       globals.is_done_recording = 0;

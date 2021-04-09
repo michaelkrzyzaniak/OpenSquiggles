@@ -83,7 +83,7 @@ struct OpaqueMicrophoneStruct
 Microphone* mic_new()
 {
 #ifndef   ICLI_MODE
-  Microphone* self = (Microphone*) auAlloc(sizeof(*self), mic_audio_callback, NO, 2);
+  Microphone* self = (Microphone*) auAlloc(sizeof(*self), mic_audio_callback, NO, 2, 44100, 128, 6);
 #else
   Microphone* self = (Microphone*) calloc(1, sizeof(*self));
 #endif
@@ -474,7 +474,6 @@ int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_c
   Microphone* self = (Microphone*)SELF;
   int frame, channel;
   auSample_t samp = 0;
-  
   
   //mix to mono without correcting amplitude
   for(frame=0; frame<num_frames; frame++)

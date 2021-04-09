@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include "AudioSuperclass.h"
 
+const double AU_TWO_PI_OVER_SAMPLE_RATE = SIN_TWO_PI / AU_SAMPLE_RATE;
+
 #if defined __APPLE__
 void  auAudioOutputCallback(void*, AudioQueueRef, AudioQueueBufferRef);
 void  auAudioInputCallback (void*, AudioQueueRef, AudioQueueBufferRef, const AudioTimeStamp*, UInt32, const AudioStreamPacketDescription*);
@@ -32,7 +34,7 @@ struct OpaqueAudioStruct
 };
 
 /*auNew---------------------------------------------------*/
-Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, unsigned numChannels, double sampleRate, int bufferNumFrames, int numBuffers)
+Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, unsigned numChannels)
 {
   Audio* self = (Audio*)calloc(1, sizeofstarself);
 
@@ -40,9 +42,6 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
     {
       self->isOutput                     = isOutput;
       self->isPlaying                    = NO;
-      self->sampleRate                   = sampleRate;
-      self->bufferNumFrames              = bufferNumFrames;
-      self->numBuffers                   = numBuffers;
       self->audioCallback                = callback;
       self->numChannels                  = numChannels;
       self->targetMasterVolume           = 1;
@@ -53,7 +52,7 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
       int i;
       OSStatus error;
       
-      self->dataFormat.mSampleRate       = self->sampleRate;
+      self->dataFormat.mSampleRate       = AU_SAMPLE_RATE;
       self->dataFormat.mBytesPerPacket   = 4 * numChannels  ;
       self->dataFormat.mFramesPerPacket  = 1             ;
       self->dataFormat.mBytesPerFrame    = 4 * numChannels  ;
@@ -74,9 +73,8 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
         }
       else //(!error)
         {
-          self->buffers = calloc(self->numBuffers, sizeof(*self->buffers));
-          unsigned bufferNumBytes = self->bufferNumFrames * numChannels * sizeof(auSample_t);
-          for(i=0; i<self->numBuffers; i++)
+          unsigned bufferNumBytes = AU_BUFFER_NUM_FRAMES * numChannels * sizeof(auSample_t);
+          for(i=0; i<AU_NUM_AUDIO_BUFFERS; i++)
             {
               error = AudioQueueAllocateBuffer(self->queue, bufferNumBytes, &((self->buffers)[i]));
               if(error) 
@@ -126,29 +124,28 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
         }
       if(error >= 0)
         {
-          unsigned int sampleRate = self->sampleRate;
+          unsigned int sampleRate = AU_SAMPLE_RATE;
           error = snd_pcm_hw_params_set_rate_near(self->device, hardwareParameters, &sampleRate, 0);
           if(error < 0) fprintf(stderr, "Audio.c: Unable to set the sample rate to %u: %s\n", sampleRate, snd_strerror(error));
-          else if(sampleRate != self->sampleRate)
-            fprintf(stderr, "Audio.c: device does not support %i sample rate, %u will be used instead\n", (int)self->sampleRate, sampleRate);
-          self->sampleRate = sampleRate;
+          else if(sampleRate != AU_SAMPLE_RATE)
+            fprintf(stderr, "Audio.c: device does not support %i sample rate, %u will be used instead\n", (int)AU_SAMPLE_RATE, sampleRate);
         }
       if(error >= 0)
         {
           int dir = 0;
-          self->bufferNumFrames = self->bufferNumFrames; //the buffer I give to ALSA
+          self->bufferNumFrames = AU_BUFFER_NUM_FRAMES; //the buffer I give to ALSA
           error = snd_pcm_hw_params_set_period_size_near(self->device, hardwareParameters, &(self->bufferNumFrames), &dir);
-          if(error < 0) fprintf(stderr, "Audio.c: Unable to set the sample buffer size to %lu: %s\n", self->bufferNumFrames, snd_strerror(error));
-          else if(self->bufferNumFrames != self->bufferNumFrames)
-            fprintf(stderr, "Audio.c: device does not support %i period size, %lu will be used instead\n", self->bufferNumFrames, self->bufferNumFrames);
+          if(error < 0) fprintf(stderr, "Audio.cpp: Unable to set the sample buffer size to %lu: %s\n", self->bufferNumFrames, snd_strerror(error));
+          else if(self->bufferNumFrames != AU_BUFFER_NUM_FRAMES)
+            fprintf(stderr, "Audio.c: device does not support %i period size, %lu will be used instead\n", AU_BUFFER_NUM_FRAMES, self->bufferNumFrames);
         }
       if(error >= 0)
         {
-          unsigned long int internalBufferNumFrames = self->bufferNumFrames * self->numBuffers; //the buffer ALSA uses internally
+          unsigned long int internalBufferNumFrames = self->bufferNumFrames * AU_NUM_AUDIO_BUFFERS; //the buffer ALSA uses internally
           error = snd_pcm_hw_params_set_buffer_size_near(self->device, hardwareParameters, &internalBufferNumFrames);
           if(error < 0) fprintf(stderr, "Audio.c: Unable to set the internal buffer size to %lu: %s\n", internalBufferNumFrames, snd_strerror(error));
-          else if(internalBufferNumFrames != self->numBuffers * self->bufferNumFrames)
-              fprintf(stderr, "Audio.c: device does not support %lu internal buffer size, %lu will be used instead\n", self->numBuffers * self->bufferNumFrames, internalBufferNumFrames);
+          else if(internalBufferNumFrames != AU_NUM_AUDIO_BUFFERS * self->bufferNumFrames)
+              fprintf(stderr, "Audio.c: device does not support %lu internal buffer size, %lu will be used instead\n", AU_NUM_AUDIO_BUFFERS * self->bufferNumFrames, internalBufferNumFrames);
         }
       if(error >= 0)
         {
@@ -184,7 +181,7 @@ Audio* auDestroy(Audio* self)
 
 #if defined __APPLE__
       int i;
-      for(i=0; i<self->numBuffers; i++)
+      for(i=0; i<AU_NUM_AUDIO_BUFFERS; i++)
         if(self->buffers[i] != NULL)
           AudioQueueFreeBuffer(self->queue, self->buffers[i]);
           
@@ -227,7 +224,7 @@ BOOL auPlay(Audio* self)
 
 #ifdef __APPLE__
       int i;
-      for(i=0; i<self->numBuffers; i++)
+      for(i=0; i<AU_NUM_AUDIO_BUFFERS; i++)
         {
           if(self->isOutput)
             auAudioOutputCallback(self, self->queue, self->buffers[i]);

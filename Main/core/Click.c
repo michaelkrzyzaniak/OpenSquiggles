@@ -9,8 +9,8 @@
 
 #include "Click.h"
 
-#define CLICK_KLOP_FREQ      (440 * 2 * M_PI / AU_SAMPLE_RATE)
-#define CLICK_KLOP_DURATION  (AU_SAMPLE_RATE / 100)
+#define CLICK_KLOP_FREQ      (440 * 2 * M_PI / self->sampleRate)
+#define CLICK_KLOP_DURATION  (self->sampleRate / 100)
 
 /*--------------------------------------------------------------------*/
 struct OpaqueClickStruct
@@ -31,7 +31,7 @@ Click* click_destroy             (Click* self);
 /*--------------------------------------------------------------------*/
 Click* click_new()
 {
-  Click* self = (Click*) auAlloc(sizeof(*self), click_audio_callback, YES, 1);
+  Click* self = (Click*) auAlloc(sizeof(*self), click_audio_callback, YES, 1, 44100, 128, 6);
   
   if(self != NULL)
     {
