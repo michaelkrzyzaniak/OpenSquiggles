@@ -85,6 +85,8 @@ Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/)
   self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, 120);
   self->test_output = aiffWithDurationInSeconds(1, 44100, 16, 120);
   
+  
+  
   return self;
 }
 
@@ -182,8 +184,8 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
             }
           
           if(!self->did_save)
-            aiffAddFloatingPointSamplesAtPlayhead(self->test_input, self->real, self->hop_size, aiffFloatSampleType, aiffYes);
-
+            aiffAppendFloatingPointSamples(self->test_input, self->real, self->hop_size, aiffFloatSampleType);
+            
           dft_apply_window(self->real, self->window, self->window_size);
           dft_real_forward_dft(self->real, self->imag, self->fft_N);
 

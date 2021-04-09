@@ -1685,7 +1685,9 @@ int aiffPlayheadPositionInFrames(MKAiff* aiff)
 int aiffPlayheadPositionInSamples(MKAiff* aiff)
 {
   uint64_t offset = aiff->playhead - aiff->soundBuffer;
-  offset /= 4;
+
+  //uint64_t offset = (uint64_t)aiff->playhead - (uint64_t)aiff->soundBuffer;
+  //offset /= 4;
   //printf("offset: %u, bufferSize: %u\n", (unsigned int)offset, (unsigned int)aiff->bufferCapacityInSamples);
   return offset;
 }
