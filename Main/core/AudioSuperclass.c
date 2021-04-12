@@ -323,6 +323,27 @@ void    auPlayFile       (Audio* self, const char* path)
 }
 */
 
+/*auProcessOffline-----------------------------------------*/
+void   auProcessOffline     (Audio* self, MKAiff* aiff)
+{
+  int numChannels = aiffNumChannels(aiff);
+  int bufferNumSamples = self->bufferNumFrames * numChannels;
+  auSample_t* buffer = malloc(bufferNumSamples * sizeof(*buffer));
+  if(buffer == NULL)
+    {perror("Unable to allocate buffer for offline processing"); return;}
+  aiffRewindPlayheadToBeginning(aiff);
+  
+  for(;;)
+    {
+      int n = aiffReadFloatingPointSamplesAtPlayhead(aiff, buffer, bufferNumSamples, aiffYes);
+      self->audioCallback(self, buffer, self->bufferNumFrames, numChannels);
+      if(n != bufferNumSamples)
+        break;
+    }
+    
+  free(buffer);
+}
+
 /*auDeinterleave-------------------------------------------*/
 //if buffer is big, use calloc instead for temp
 //there is probably a better way that uses less space...

@@ -35,7 +35,7 @@ extern "C"{
 #include <alsa/asoundlib.h>
 #endif
 
-//#include "MKAiff.h"
+#include "MKAiff.h"
 //#include "fastsin.h"
 //#define SIN_TWO_PI 0xFFFFFFFF
 
@@ -128,6 +128,7 @@ float   auMasterVolume       (Audio* self);
 void    auSetMasterVolume    (Audio* self, float volume);
 void    auSetMasterVolumeSmoothing(Audio* self, float smoothing);
 float   auMasterVolumeSmoothing(Audio* self);
+void    auProcessOffline     (Audio* self, MKAiff* aiff); /*dose not attemp to match sample rate or num channels*/
 void    auDeinterleave       (auSample_t* buffer, int numFrames, int numChannels);
 
 #if defined(__cplusplus)

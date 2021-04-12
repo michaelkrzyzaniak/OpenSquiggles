@@ -520,7 +520,6 @@ void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
     {
       num_notes = 0;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
-      i = -1;
     }
   ++i;
 }

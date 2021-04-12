@@ -16,9 +16,8 @@
 //sudo apt-get install libasound2-dev
 //gcc opc.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o opc
 
-#define __OPC_VERSION__ "0.1"
+#define __OPC_VERSION__ "0.3"
 
-#define clip(in, val, min, max) in = (val < min) ? min : (val > max) ? max : val;
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
@@ -38,8 +37,9 @@
 #include "../Robot_Communication_Framework/Robot_Communication.h"
 #include "../Beat-and-Tempo-Tracking/src/DFT.h"
 
-#define SAMPLE_LENGTH (1<<13)
-
+#define SAMPLE_RATE 44100
+#define SAMPLE_LENGTH SAMPLE_RATE * 2
+#define DFT_LENGTH (1<<13)
 
 /*--------------------------------------------------------------------*/
 typedef void (*notify_when_done_recording_t)(void* SELF, MKAiff* aiff, unsigned samples_clipped);
@@ -69,12 +69,12 @@ Sampler_Calibrator* sampler_calibrator_destroy(Sampler_Calibrator* self);
 /*--------------------------------------------------------------------*/
 Sampler_Calibrator* sampler_calibrator_new()
 {
-  Sampler_Calibrator* self = (Sampler_Calibrator*) auAlloc(sizeof(*self), sampler_calibrator_audio_callback, NO, 2);
+  Sampler_Calibrator* self = (Sampler_Calibrator*) auAlloc(sizeof(*self), sampler_calibrator_audio_callback, NO, 2, SAMPLE_RATE, 512, 6);
   self->destroy = (Audio* (*)(Audio*))sampler_calibrator_destroy;
   
   if(self != NULL)
     {
-      self->aiff = aiffWithDurationInSamples(1, AU_SAMPLE_RATE, 16, SAMPLE_LENGTH);
+      self->aiff = aiffWithDurationInSamples(1, self->sampleRate, 16, SAMPLE_LENGTH);
       if(self->aiff == NULL)
         return (Sampler_Calibrator*)auDestroy((Audio*)self);
       
@@ -174,59 +174,67 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff, unsigned samples
 {
   globals_t* globals = (globals_t*)SELF;
   
-  int i, argmax;
   char *filename_string, *param_string;
+  int i;
+  float max_sample = 0;
   
   aiffRewindPlayheadToBeginning(aiff);
   aiffReadFloatingPointSamplesAtPlayhead(aiff, globals->real, SAMPLE_LENGTH, aiffYes);
   
-  float max_sample = 0;
   for(i=0; i<SAMPLE_LENGTH; i++)
     {
       float test = fabs(globals->real[i]);
       if(test > max_sample)
         max_sample = test;
     }
-  
-  dft_apply_window(globals->real, globals->window, SAMPLE_LENGTH);
-  dft_real_forward_dft(globals->real, globals->imag, SAMPLE_LENGTH);
-  dft_rect_to_polar(globals->real, globals->imag, SAMPLE_LENGTH/2);
-  
-  //actual pipes range from 52 to 75
-  int start_midi = 36;
-  int end_midi = 96;
-  
-  int start_bin = dft_bin_of_frequency(AU_MIDI2CPS(start_midi), AU_SAMPLE_RATE, SAMPLE_LENGTH);
-  int end_bin   = dft_bin_of_frequency(AU_MIDI2CPS(end_midi), AU_SAMPLE_RATE, SAMPLE_LENGTH);
-  
-  argmax = start_bin;
-  //todo:check end_bin < sample_length / 2
-  
-  for(i=start_bin+1; i<end_bin; i++)
-    {
-      if(globals->real[i] > globals->real[argmax])
-        argmax = i;
-    }
-  
-  double freq = dft_frequency_of_bin(argmax, AU_SAMPLE_RATE, SAMPLE_LENGTH);
-  int midi = round(AU_CPS2MIDI(freq));
-  
-  double freq_range_min = dft_frequency_of_bin(argmax-0.5, AU_SAMPLE_RATE, SAMPLE_LENGTH);
-  double freq_range_max = dft_frequency_of_bin(argmax+0.5, AU_SAMPLE_RATE, SAMPLE_LENGTH);
-  
-  
-  asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", globals->home, OP_PARAMS_DIR, globals->i);
-  asprintf(&param_string,     "solenoid_%i_note", globals->i);
-  
-  aiffSaveWithFilename(aiff, filename_string);
+        
   //initalize only if it dosen't already exist
-  params_init_int(globals->params, param_string, -1);
-  params_set_int(globals->params, param_string, midi);
+  if(globals->i<0) //noise recording
+    {
+      asprintf(&filename_string, "%s/%s/noise_sample.aiff", globals->home, OP_PARAMS_DIR);
+      fprintf(stderr, "Noise: peak amplitude: %.2f\t%u samples clipped\r\n", max_sample, samples_clipped);
+    }
+  else
+    {
+      dft_apply_window(globals->real, globals->window, DFT_LENGTH);
+      dft_real_forward_dft(globals->real, globals->imag, DFT_LENGTH);
+      dft_rect_to_polar(globals->real, globals->imag, DFT_LENGTH/2);
   
-  fprintf(stderr, "solenoid: %i\tnote: %i (%.2f - %.2f)\tpeak amplitude: %.2f\t%u samples clipped\r\n", globals->i, midi, AU_CPS2MIDI(freq_range_min), AU_CPS2MIDI(freq_range_max), max_sample, samples_clipped);
+      //actual pipes range from 52 to 75
+      int start_midi = 36;
+      int end_midi = 96;
+  
+      int start_bin = dft_bin_of_frequency(AU_MIDI2CPS(start_midi), SAMPLE_RATE, DFT_LENGTH);
+      int end_bin   = dft_bin_of_frequency(AU_MIDI2CPS(end_midi), SAMPLE_RATE, DFT_LENGTH);
+      int argmax    = start_bin;
+      
+      //todo:check end_bin < sample_length / 2
+      for(i=start_bin+1; i<end_bin; i++)
+        {
+          if(globals->real[i] > globals->real[argmax])
+            argmax = i;
+        }
+  
+      double freq = dft_frequency_of_bin(argmax, SAMPLE_RATE, DFT_LENGTH);
+      int    midi = round(AU_CPS2MIDI(freq));
+  
+      double freq_range_min = dft_frequency_of_bin(argmax-0.5, SAMPLE_RATE, DFT_LENGTH);
+      double freq_range_max = dft_frequency_of_bin(argmax+0.5, SAMPLE_RATE, DFT_LENGTH);
+    
+    
+      asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", globals->home, OP_PARAMS_DIR, globals->i);
+      asprintf(&param_string, "solenoid_%i_note", globals->i);
+      params_init_int(globals->params, param_string, -1);
+      params_set_int(globals->params, param_string, midi);
+  
+      fprintf(stderr, "Solenoid: %i\tnote: %i (%.2f - %.2f)\tpeak amplitude: %.2f\t%u samples clipped\r\n", globals->i, midi, AU_CPS2MIDI(freq_range_min), AU_CPS2MIDI(freq_range_max), max_sample, samples_clipped);
+      
+      free(param_string);
+    }
+    
+  aiffSaveWithFilename(aiff, filename_string);
   
   free(filename_string);
-  free(param_string);
   
   globals->is_done_recording = 1;
 }
@@ -262,34 +270,35 @@ int main(void)
   if(globals.real == NULL)
     {fprintf(stderr, "unable to make real buffer\r\n"); return -1;}
 
-  globals.imag = calloc(SAMPLE_LENGTH, sizeof(*globals.imag));
+  globals.imag = calloc(DFT_LENGTH, sizeof(*globals.imag));
   if(globals.imag == NULL)
     {fprintf(stderr, "unable to make imag buffer\r\n"); return -1;}
     
-  globals.window = calloc(SAMPLE_LENGTH, sizeof(*globals.window));
+  globals.window = calloc(DFT_LENGTH, sizeof(*globals.window));
   if(globals.window == NULL)
     {fprintf(stderr, "unable to make window buffer\r\n"); return -1;}
 
-  dft_init_blackman_window(globals.window, SAMPLE_LENGTH);
+  dft_init_blackman_window(globals.window, DFT_LENGTH);
   
   robot_send_message(robot, robot_cmd_set_sustain_mode, 1);
   
   auPlay((Audio*)sampler);
   
+  
   int i;
-  for(i=0; i<OP_NUM_SOLENOIDS; i++)
+  for(i=-1; i<OP_NUM_SOLENOIDS; i++)
     {
       globals.i = i;
       globals.is_done_recording = 0;
-      robot_send_message(robot, robot_cmd_note_on, i);
+      if(i>=0) robot_send_message(robot, robot_cmd_note_on, i);
       usleep(500000);
       
       sampler_calibrator_start_recording(sampler, main_notify_when_done_recording, &globals);
       
       while(!globals.is_done_recording)
-        usleep(10000);
+        usleep(500000);
       
-      robot_send_message(robot, robot_cmd_note_off, i);
+      if(i>=0) robot_send_message(robot, robot_cmd_note_off, i);
     
     }
 

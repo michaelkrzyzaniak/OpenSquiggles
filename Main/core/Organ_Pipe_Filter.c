@@ -1,10 +1,15 @@
 #include "Organ_Pipe_Filter.h"
-#include "../extras/MKAiff.h"
+#include "MKAiff.h"
 
 #include <stdlib.h> //calloc
 #include <pthread.h>
 
 int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self);
+//empirically it takes about 4 or 5 frames from the time a
+//note is turned on to show up in the audio, so
+//delay by 4 and crossfade in the 5th frame
+//must be at least 2
+#define QUEUE_LENGTH 6
 
 /*--------------------------------------------------------------------*/
 struct Opaque_Organ_Pipe_Filter_Struct
@@ -22,12 +27,10 @@ struct Opaque_Organ_Pipe_Filter_Struct
   dft_sample_t* imag;
   
   dft_sample_t* filters[OP_NUM_SOLENOIDS];
+  dft_sample_t* noise;
   
   pthread_mutex_t note_amplitudes_mutex;
-  float note_amplitudes_private_a[OP_NUM_SOLENOIDS];
-  float note_amplitudes_private_b[OP_NUM_SOLENOIDS];
-  float* note_amplitudes_newer;
-  float* note_amplitudes_older;
+  float note_amplitudes[QUEUE_LENGTH][OP_NUM_SOLENOIDS];
   
   int did_save;
   MKAiff* test_input;
@@ -68,6 +71,7 @@ Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/)
       dft_init_half_sine_window(self->window, self->window_size);
       //dft_init_hamming_window(self->window, self->window_size);
       
+      self->noise = calloc(self->fft_N, sizeof(*(self->noise)));
       for(i=0; i<OP_NUM_SOLENOIDS; i++)
         {
           self->filters[i] = calloc(self->fft_N, sizeof(*(self->filters[i])));
@@ -78,9 +82,6 @@ Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/)
   
   if(!organ_pipe_filter_init_filters(self))
     return organ_pipe_filter_destroy(self);
-  
-  self->note_amplitudes_newer = self->note_amplitudes_private_a;
-  self->note_amplitudes_older = self->note_amplitudes_private_b;
   
   self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, 120);
   self->test_output = aiffWithDurationInSeconds(1, 44100, 16, 120);
@@ -105,6 +106,8 @@ Organ_Pipe_Filter* organ_pipe_filter_destroy(Organ_Pipe_Filter* self)
         free(self->real);
       if(self->imag != NULL)
         free(self->imag);
+      if(self->noise != NULL)
+        free(self->noise);
       int i;
       for(i=0; i<OP_NUM_SOLENOIDS; i++)
         {
@@ -119,28 +122,79 @@ Organ_Pipe_Filter* organ_pipe_filter_destroy(Organ_Pipe_Filter* self)
 /*--------------------------------------------------------------------*/
 int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self)
 {
-  int i;
+  int i, j;
   const char* home = getenv("HOME");
   char* filename_string;
   MKAiff* aiff;
-  for(i=0; i<OP_NUM_SOLENOIDS; i++)
+  
+  for(i=-1; i<OP_NUM_SOLENOIDS; i++)
     {
-      asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", home, OP_PARAMS_DIR, i);
+      int num_windows = 0;
+      
+      if(i<0)
+        asprintf(&filename_string, "%s/%s/noise_sample.aiff", home, OP_PARAMS_DIR);
+      else
+        asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", home, OP_PARAMS_DIR, i);
+      
       aiff = aiffWithContentsOfFile(filename_string);
       free(filename_string);
       if(aiff == NULL)
         return 0;
       
-      int n = aiffReadFloatingPointSamplesAtPlayhead(aiff, self->filters[i], self->window_size, aiffYes);
-      if(n < self->window_size)
-        {aiffDestroy(aiff); return -1;}
+      dft_sample_t* filter = (i<0) ? self->noise : self->filters[i];
+      
+      for(;;)
+        {
+          memset(self->real, 0, self->fft_N * sizeof(*self->real));
+          int samples_read = aiffReadFloatingPointSamplesAtPlayhead(aiff, self->real, self->window_size, aiffYes);
+          if(samples_read < self->window_size)
+            break;
+          
+          dft_apply_window(self->real, self->window, self->window_size);
+          dft_real_forward_dft(self->real, self->imag, self->fft_N);
+          dft_rect_to_polar(self->real, self->imag, self->fft_N);
 
-      dft_apply_window(self->filters[i], self->window, self->window_size);
-      dft_real_forward_dft(self->filters[i], self->imag, self->fft_N);
-      dft_rect_to_polar(self->filters[i], self->imag, self->fft_N);
-  
-      aiffDestroy(aiff);
+          ++num_windows;
+
+          if(num_windows == 1)
+            {
+              memcpy(filter, self->real, self->fft_N * sizeof(*self->real));
+//              if(i == 0)
+//                for(int k=0; k<self->window_size; k++)
+//                  fprintf(stderr, "%f\r\n", self->real[k]);
+            }
+          else
+            {
+              for(j=0; j<self->window_size; j++)
+                {
+                  //running average, for numerical stablilty
+                  filter[j] += (self->real[j] - filter[j]) / (double)num_windows;
+                  //fprintf(stderr, "%f\r\n", self->real[j]);
+                }
+            }
+        }
+        
+      if(i>=0)
+        for(j=0; j<self->window_size; j++)
+          {
+            filter[j] -= self->noise[j];
+            if(filter[j] < 0)
+              filter[j] = 0;
+          }
+    
+
+//      if(i<=0)
+//        {
+//          fprintf(stderr, "\r\n\r\n num_windows: %i\r\n\r\n", num_windows);
+//          for(int k=0; k<self->window_size; k++)
+//            fprintf(stderr, "%f\r\n", filter[k]);
+//        }
+      
+      aiff = aiffDestroy(aiff);
+      if(num_windows == 0)
+        return 0;
     }
+  
   return 1;
 }
 
@@ -149,10 +203,9 @@ void organ_pipe_filter_notify_sounding_notes(Organ_Pipe_Filter* self, int soundi
 {
   pthread_mutex_lock(&self->note_amplitudes_mutex);
   
-  //assumes 50% overlapping windows
   int i;
   for(i=0; i<OP_NUM_SOLENOIDS; i++)
-    self->note_amplitudes_newer[i] = sounding_notes[i] * 0.5;
+    self->note_amplitudes[0][i] = sounding_notes[i] * 1/3.0;
   
   pthread_mutex_unlock(&self->note_amplitudes_mutex);
 }
@@ -182,7 +235,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
               self->real[j] = 0;
               self->imag[j] = 0;
             }
-          
+
           if(!self->did_save)
             aiffAppendFloatingPointSamples(self->test_input, self->real, self->hop_size, aiffFloatSampleType);
             
@@ -192,29 +245,39 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
           dft_rect_to_polar(self->real, self->imag, self->window_size);
   
           pthread_mutex_lock(&self->note_amplitudes_mutex);
-          //assumes 50% overlapping windows and self->window_size % len == 0
-          //assumes 50% overlapping windows and self->window_size % len == 0
+
+          for(k=0; k<self->window_size; k++)
+            self->real[k] -= self->noise[k];
           
           for(j=0; j<OP_NUM_SOLENOIDS; j++)
             {
-              amplitude = self->note_amplitudes_older[j] + self->note_amplitudes_newer[j];
+              amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j]
+                        + self->note_amplitudes[QUEUE_LENGTH-2][j]
+                        + self->note_amplitudes[QUEUE_LENGTH-3][j];
               if(amplitude > 0)
-                for(k=0; k<self->window_size; k++)
+                //don't filter the DC offset
+                for(k=1; k<self->window_size; k++)
                   self->real[k] -= amplitude * self->filters[j][k];
             }
 
-          for(j=0; j<OP_NUM_SOLENOIDS; j++)
-            self->note_amplitudes_older[j] = self->note_amplitudes_newer[j];
-           
-          //float* temp = self->note_amplitudes_older;
-          //self->note_amplitudes_older = self->note_amplitudes_newer;
-          //self->note_amplitudes_newer = temp;
-          pthread_mutex_unlock(&self->note_amplitudes_mutex);
-          
-          for(j=0; j<self->window_size; j++)
-            if(self->real[j] < 0)
-              self->real[j] = 0;
+          for(j=QUEUE_LENGTH-1; j>0; j--)
+            {
+              memcpy(self->note_amplitudes[j], self->note_amplitudes[j-1], OP_NUM_SOLENOIDS*sizeof(*self->note_amplitudes[j]));
+            }
 
+          pthread_mutex_unlock(&self->note_amplitudes_mutex);
+
+          float total_energy = 0;
+          for(j=1; j<self->window_size; j++)
+            {
+              if(self->real[j] < 0.1)
+                self->real[j] = 0;
+              total_energy += self->real[j];
+            }
+          if(total_energy < 100)
+            for(j=0; j<self->window_size; j++)
+              self->real[j] = 0;
+              
           dft_polar_to_rect(self->real, self->imag, self->window_size);
   
           //dft_real_autocorrelate(self->real, self->imag, self->fft_N);
@@ -224,6 +287,11 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
           for(j=self->window_size; j<self->fft_N; j++)
             self->real[j] = 0;
           
+          //if(needs_click)
+            //{
+              //self->real[0] = 1;
+              //self->real[self->window_size - 1] = 1;
+             //}
 
           for(j=0; j<self->window_size-self->hop_size; j++)
             self->running_output[j] = self->real[j] + self->running_output[j+self->hop_size];

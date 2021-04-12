@@ -87,16 +87,41 @@ int main(void)
 }
 */
 
-int main(void)
+int main(int argc, char* argv[])
 {
   HarmonizerController* controller = harmonizer_controller_new();
   if(controller == NULL)
     {perror("unable to create Harmonizer Controller"); return -1;}
   
-  auPlay((Audio*)controller);
+  if(argc > 1)
+    {
+      while(--argc > 0)
+        {
+          ++argv;
+          MKAiff* aiff = aiffWithContentsOfFile(*argv);
+          if(aiff != NULL)
+            {
+              double aiff_secs = aiffDurationInSeconds(aiff);
+              fprintf(stderr, "processing %s -- %.1f secs -- %i channels ...\r\n", *argv, aiff_secs, aiffNumChannels(aiff));
+              timestamp_microsecs_t start = timestamp_get_current_time();
+              auProcessOffline((Audio*)controller, aiff);
+              timestamp_microsecs_t end = timestamp_get_current_time();
+              double process_secs = (end-start)/1000000.0;
+              fprintf(stderr, "Done in %.2f seconds -- %.2f%% realtime\r\n", process_secs, 100*process_secs/aiff_secs);
+              aiffDestroy(aiff);
+            }
+          else
+            fprintf(stderr, "%s is not a valid AIFF or wav file\r\n", *argv);
+        }
+    }
+  else
+    {
+      auPlay((Audio*)controller);
+      for(;;)
+        sleep(1);
+    }
   
-  for(;;)
-    sleep(1);
+  //controller = (HarmonizerController*)auDestroy((Audio*)controller);
   return 0;
 }
 
