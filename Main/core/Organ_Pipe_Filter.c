@@ -11,10 +11,6 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self);
 //must be at least 2
 #define QUEUE_LENGTH 6
 
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 /*--------------------------------------------------------------------*/
 struct Opaque_Organ_Pipe_Filter_Struct
 {
@@ -85,14 +81,6 @@ Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/)
     }
   
   if(!organ_pipe_filter_init_filters(self))
-<<<<<<< Updated upstream
-    return organ_pipe_filter_destroy(self);
-  
-  self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, 120);
-  self->test_output = aiffWithDurationInSeconds(1, 44100, 16, 120);
-  
-  
-=======
     {
       fprintf(stderr, "Unable to find calibration samples for self-filterng. Try running opc first\r\n");
       return organ_pipe_filter_destroy(self);
@@ -100,7 +88,6 @@ Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/)
 
   //self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, 120);
   //self->test_output = aiffWithDurationInSeconds(1, 44100, 16, 120);
->>>>>>> Stashed changes
   
   return self;
 }
@@ -167,32 +154,15 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self)
           dft_apply_window(self->real, self->window, self->window_size);
           dft_real_forward_dft(self->real, self->imag, self->fft_N);
           dft_rect_to_polar(self->real, self->imag, self->fft_N);
-<<<<<<< Updated upstream
 
-=======
-           
-          
->>>>>>> Stashed changes
           ++num_windows;
 
           if(num_windows == 1)
             memcpy(filter, self->real, self->fft_N * sizeof(*self->real));
           else
-<<<<<<< Updated upstream
-            {
-              for(j=0; j<self->window_size; j++)
-                {
-                  //running average, for numerical stablilty
-                  filter[j] += (self->real[j] - filter[j]) / (double)num_windows;
-                  //fprintf(stderr, "%f\r\n", self->real[j]);
-                }
-            }
-=======
             for(j=0; j<self->window_size; j++)
               filter[j] += (self->real[j] - filter[j]) / (double)num_windows;
->>>>>>> Stashed changes
-        }
-        
+
       if(i>=0)
         for(j=0; j<self->window_size; j++)
           {
@@ -281,11 +251,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
           if(total_energy < 100)
             for(j=0; j<self->window_size; j++)
               self->real[j] = 0;
-<<<<<<< Updated upstream
-              
-=======
 
->>>>>>> Stashed changes
           dft_polar_to_rect(self->real, self->imag, self->window_size);
           dft_real_autocorrelate(self->real, self->imag, self->fft_N);
 
