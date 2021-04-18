@@ -5,12 +5,16 @@
 #include <pthread.h>
 
 int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self);
-//empirically it takes about 4 or 5 frames from the time a
+//empirically it takes about 5 or 6 frames from the time a
 //note is turned on to show up in the audio, so
-//delay by 4 and crossfade in the 5th frame
+//delay by 4 and crossfade in the 5th and 6th frame
 //must be at least 2
 #define QUEUE_LENGTH 6
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 /*--------------------------------------------------------------------*/
 struct Opaque_Organ_Pipe_Filter_Struct
 {
@@ -32,9 +36,9 @@ struct Opaque_Organ_Pipe_Filter_Struct
   pthread_mutex_t note_amplitudes_mutex;
   float note_amplitudes[QUEUE_LENGTH][OP_NUM_SOLENOIDS];
   
-  int did_save;
-  MKAiff* test_input;
-  MKAiff* test_output;
+  //int did_save;
+  //MKAiff* test_input;
+  //MKAiff* test_output;
 };
 
 /*--------------------------------------------------------------------*/
@@ -68,8 +72,8 @@ Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/)
       if(self->imag             == NULL) return organ_pipe_filter_destroy(self);
 
       //half sine for reconstruction
-      dft_init_half_sine_window(self->window, self->window_size);
-      //dft_init_hamming_window(self->window, self->window_size);
+      //dft_init_half_sine_window(self->window, self->window_size);
+      dft_init_hamming_window(self->window, self->window_size);
       
       self->noise = calloc(self->fft_N, sizeof(*(self->noise)));
       for(i=0; i<OP_NUM_SOLENOIDS; i++)
@@ -81,12 +85,22 @@ Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/)
     }
   
   if(!organ_pipe_filter_init_filters(self))
+<<<<<<< Updated upstream
     return organ_pipe_filter_destroy(self);
   
   self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, 120);
   self->test_output = aiffWithDurationInSeconds(1, 44100, 16, 120);
   
   
+=======
+    {
+      fprintf(stderr, "Unable to find calibration samples for self-filterng. Try running opc first\r\n");
+      return organ_pipe_filter_destroy(self);
+    }
+
+  //self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, 120);
+  //self->test_output = aiffWithDurationInSeconds(1, 44100, 16, 120);
+>>>>>>> Stashed changes
   
   return self;
 }
@@ -153,17 +167,18 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self)
           dft_apply_window(self->real, self->window, self->window_size);
           dft_real_forward_dft(self->real, self->imag, self->fft_N);
           dft_rect_to_polar(self->real, self->imag, self->fft_N);
+<<<<<<< Updated upstream
 
+=======
+           
+          
+>>>>>>> Stashed changes
           ++num_windows;
 
           if(num_windows == 1)
-            {
-              memcpy(filter, self->real, self->fft_N * sizeof(*self->real));
-//              if(i == 0)
-//                for(int k=0; k<self->window_size; k++)
-//                  fprintf(stderr, "%f\r\n", self->real[k]);
-            }
+            memcpy(filter, self->real, self->fft_N * sizeof(*self->real));
           else
+<<<<<<< Updated upstream
             {
               for(j=0; j<self->window_size; j++)
                 {
@@ -172,6 +187,10 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self)
                   //fprintf(stderr, "%f\r\n", self->real[j]);
                 }
             }
+=======
+            for(j=0; j<self->window_size; j++)
+              filter[j] += (self->real[j] - filter[j]) / (double)num_windows;
+>>>>>>> Stashed changes
         }
         
       if(i>=0)
@@ -181,15 +200,7 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self)
             if(filter[j] < 0)
               filter[j] = 0;
           }
-    
 
-//      if(i<=0)
-//        {
-//          fprintf(stderr, "\r\n\r\n num_windows: %i\r\n\r\n", num_windows);
-//          for(int k=0; k<self->window_size; k++)
-//            fprintf(stderr, "%f\r\n", filter[k]);
-//        }
-      
       aiff = aiffDestroy(aiff);
       if(num_windows == 0)
         return 0;
@@ -226,18 +237,13 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
           self->sample_counter = 0;
         
           for(j=0; j<self->window_size; j++)
-            {
-              self->real[j] = self->running_input[(self->input_index+j) % self->window_size];
-              self->imag[j] = 0;
-            }
+            self->real[j] = self->running_input[(self->input_index+j) % self->window_size];
+            
           for(j=self->window_size; j<self->fft_N; j++)
-            {
-              self->real[j] = 0;
-              self->imag[j] = 0;
-            }
+            self->real[j] = 0;
 
-          if(!self->did_save)
-            aiffAppendFloatingPointSamples(self->test_input, self->real, self->hop_size, aiffFloatSampleType);
+          //if(!self->did_save)
+            //aiffAppendFloatingPointSamples(self->test_input, self->real, self->hop_size, aiffFloatSampleType);
             
           dft_apply_window(self->real, self->window, self->window_size);
           dft_real_forward_dft(self->real, self->imag, self->fft_N);
@@ -246,7 +252,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
   
           pthread_mutex_lock(&self->note_amplitudes_mutex);
 
-          for(k=0; k<self->window_size; k++)
+          for(k=1; k<self->window_size; k++)
             self->real[k] -= self->noise[k];
           
           for(j=0; j<OP_NUM_SOLENOIDS; j++)
@@ -261,9 +267,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
             }
 
           for(j=QUEUE_LENGTH-1; j>0; j--)
-            {
-              memcpy(self->note_amplitudes[j], self->note_amplitudes[j-1], OP_NUM_SOLENOIDS*sizeof(*self->note_amplitudes[j]));
-            }
+            memcpy(self->note_amplitudes[j], self->note_amplitudes[j-1], OP_NUM_SOLENOIDS*sizeof(*self->note_amplitudes[j]));
 
           pthread_mutex_unlock(&self->note_amplitudes_mutex);
 
@@ -277,39 +281,36 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
           if(total_energy < 100)
             for(j=0; j<self->window_size; j++)
               self->real[j] = 0;
+<<<<<<< Updated upstream
               
+=======
+
+>>>>>>> Stashed changes
           dft_polar_to_rect(self->real, self->imag, self->window_size);
-  
-          //dft_real_autocorrelate(self->real, self->imag, self->fft_N);
+          dft_real_autocorrelate(self->real, self->imag, self->fft_N);
 
-          dft_real_inverse_dft(self->real, self->imag, self->fft_N);
-          dft_apply_window(self->real, self->window, self->window_size);
-          for(j=self->window_size; j<self->fft_N; j++)
-            self->real[j] = 0;
-          
-          //if(needs_click)
-            //{
-              //self->real[0] = 1;
-              //self->real[self->window_size - 1] = 1;
-             //}
-
-          for(j=0; j<self->window_size-self->hop_size; j++)
-            self->running_output[j] = self->real[j] + self->running_output[j+self->hop_size];
-
-          for(; j<self->window_size; j++)
-            self->running_output[j] = self->real[j];
- 
-          if(!self->did_save)
-            aiffAddFloatingPointSamplesAtPlayhead(self->test_output, self->running_output, self->hop_size, aiffFloatSampleType, aiffYes);
-            
-          if(!self->did_save)
-            if(aiffDurationInSeconds(self->test_input) > 26)
-              {
-                 aiffSaveWithFilename(self->test_input, "test_input.aiff");
-                 aiffSaveWithFilename(self->test_output, "test_output.aiff");
-                 self->did_save = 1;
-                 fprintf(stderr, "saved\r\n");
-              }
+//          dft_real_inverse_dft(self->real, self->imag, self->fft_N);
+//          dft_apply_window(self->real, self->window, self->window_size);
+//          for(j=self->window_size; j<self->fft_N; j++)
+//            self->real[j] = 0;
+//
+//          for(j=0; j<self->window_size-self->hop_size; j++)
+//            self->running_output[j] = self->real[j] + self->running_output[j+self->hop_size];
+//
+//          for(; j<self->window_size; j++)
+//            self->running_output[j] = self->real[j];
+//
+//          if(!self->did_save)
+//            aiffAddFloatingPointSamplesAtPlayhead(self->test_output, self->running_output, self->hop_size, aiffFloatSampleType, aiffYes);
+//
+//          if(!self->did_save)
+//            if(aiffDurationInSeconds(self->test_input) > 26)
+//              {
+//                 aiffSaveWithFilename(self->test_input, "test_input.aiff");
+//                 aiffSaveWithFilename(self->test_output, "test_output.aiff");
+//                 self->did_save = 1;
+//                 fprintf(stderr, "saved\r\n");
+//              }
           
           onprocess(onprocess_self, self->real, self->fft_N / 2);
         }

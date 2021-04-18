@@ -10,7 +10,7 @@ Version 2.0 March 21 2021
 multi-thread support and many small changes
 ----------------------------------------------------------------------*/
 #include <stdlib.h> //calloc
-#include <math.h> //log, exp, etc
+#include <math.h>  //log, exp, etc
 
 #include "Harmonizer.h"
 
@@ -90,7 +90,6 @@ Harmonizer* harmonizer_new(char* folder)
 
   if(self != NULL)
     {
-    /*
       //leanred parameters
       self->layer_1_weights     = matrix_new_from_numpy_file(harmonizer_filename(folder, "layer_1_weights.npy", buffer));
       self->layer_1_biases      = matrix_new_from_numpy_file(harmonizer_filename(folder, "layer_1_biases.npy" , buffer));
@@ -122,18 +121,7 @@ Harmonizer* harmonizer_new(char* folder)
       self->num_layer_3_inputs  = matrix_get_num_cols(self->layer_3_weights);
       self->num_outputs         = matrix_get_num_rows(self->layer_3_weights);
       self->num_audio_inputs    = self->num_layer_1_inputs - self->num_outputs - 1;
-  */
-      //testing only!!!!!!!!!!
-      self->num_audio_inputs = 2048;
-      //testing
-      /*
-      Matrix* counter_weights = matrix_new(matrix_get_num_rows(self->layer_1_weights), 1);
-      matrix_copy_col(self->layer_1_weights, matrix_get_num_cols(self->layer_1_weights)-1, counter_weights, 0);
-      matrix_print(counter_weights);
-      */
-      
-      //new matrices
-      /*
+
       self->audio_features      = matrix_new(self->num_audio_inputs  , 1);
       self->input_vector        = matrix_new(self->num_layer_1_inputs, 1);
       self->layer_1_out         = matrix_new(self->num_layer_2_inputs, 1);
@@ -152,7 +140,7 @@ Harmonizer* harmonizer_new(char* folder)
          (self->lstm_temp_w     == NULL) || (self->lstm_temp_u  == NULL) || (self->layer_3_out == NULL))
          {fprintf(stderr, "error allocating new matrices\r\n");  return harmonizer_destroy(self);}
 
-     //check conformability in matrices read from disk
+     //check conformability of matrices read from disk
       if(!matrix_has_shape(self->layer_1_weights, self->num_layer_2_inputs, self->num_layer_1_inputs) ||
          !matrix_has_shape(self->layer_1_biases , self->num_layer_2_inputs, 1)                        ||
          !matrix_has_shape(self->lstm_Wf        , self->num_layer_3_inputs, self->num_layer_2_inputs) ||
@@ -175,7 +163,7 @@ Harmonizer* harmonizer_new(char* folder)
       self->histogram_coeff = 0.75;
       if(self->autoregressive_histogram == NULL)
         return harmonizer_destroy(self);
-      */
+
       self->filter = organ_pipe_filter_new(self->num_audio_inputs);
       if(self->filter == NULL)
         return harmonizer_destroy(self);
@@ -360,7 +348,7 @@ void harmonizer_process_audio(Harmonizer* self, auSample_t* buffer, int num_fram
 }
 
 /*-----------------------------------------------------------------------*/
-void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+void harmonizer_stft_process_callback_for_testing(void* SELF, dft_sample_t* real, int N)
 {
   Harmonizer* self = SELF;
   static int i = 0;
@@ -525,10 +513,9 @@ void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
 }
 
 /*-----------------------------------------------------------------------*/
-void test_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
 {
   Harmonizer* self = SELF;
-  
   
   int i;
 
@@ -555,7 +542,7 @@ void test_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N
     if(self->notes_changed_callback != NULL)
       self->notes_changed_callback(self->notes_changed_callback_self, &note, 1);
   
-  //fprintf(stderr, "MIDI: %i\r\n", note);
+  fprintf(stderr, "MIDI: %i\r\n", note);
   
   //make output onehot for next input
   //matrix_fill_zeros(outputs);
@@ -607,6 +594,5 @@ void harmonizer_test_io(Harmonizer* self, matrix_val_t* input_arr, matrix_val_t*
   fprintf(stderr, "ACTUAL OUTPUT:\r\n");
   matrix_print(actual_out);
 
-    
   matrix_destroy(target_output);
 }
