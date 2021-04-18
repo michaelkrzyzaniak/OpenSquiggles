@@ -32,7 +32,7 @@
 
 #include "core/AudioSuperclass.h"
 #include "extras/Params.h"
-#include "extras/MKAiff.h"
+#include "core/MKAiff.h"
 #include "core/constants.h"
 #include "../Robot_Communication_Framework/Robot_Communication.h"
 #include "../Beat-and-Tempo-Tracking/src/DFT.h"
@@ -248,7 +248,7 @@ void  main_robot_message_received_callback(void* SELF, char* message, robot_arg_
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-
+   sleep(2);
   //defined globally because reasons
   Sampler_Calibrator* sampler = sampler_calibrator_new();
   if(sampler == NULL)

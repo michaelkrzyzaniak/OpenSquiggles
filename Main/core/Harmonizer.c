@@ -387,7 +387,6 @@ void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
       num_notes = 0;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
-
   if(i==132)
     {
       notes[0] = 63;
@@ -521,6 +520,7 @@ void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
       num_notes = 0;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
+
   ++i;
 }
 
