@@ -11,13 +11,15 @@ multi-thread support and many small changes
 ----------------------------------------------------------------------*/
 #include <stdlib.h> //calloc
 #include <math.h>  //log, exp, etc
+#include <pthread.h>  //thread, mutex
 
-#include "Harmonizer.h"
+#include "LSTM_Harmonizer.h"
+#define MAXNUM_NOTES 10
 
-void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N);
+void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N);
 
 /*--------------------------------------------------------------------*/
-struct opaque_harmonizer_struct
+struct opaque_lstm_harmonizer_struct
 {
   unsigned num_audio_inputs;
   unsigned num_outputs;
@@ -25,11 +27,13 @@ struct opaque_harmonizer_struct
   unsigned num_layer_2_inputs;
   unsigned num_layer_3_inputs;
   unsigned lowest_midi_note;
-  unsigned prev_note_out;
+  //unsigned prev_note_out;
+  int      prev_notes_out[MAXNUM_NOTES];
+  unsigned num_prev_notes_out;
   unsigned note_timer;
   
   void* notes_changed_callback_self;
-  harmonizer_notes_changed_callback_t notes_changed_callback;
+  lstm_harmonizer_notes_changed_callback_t notes_changed_callback;
   
   Organ_Pipe_Filter*   filter;
   
@@ -70,43 +74,45 @@ struct opaque_harmonizer_struct
   
   Matrix* autoregressive_histogram;
   matrix_val_t histogram_coeff;
+  
+  pthread_mutex_t clear_mutex;
 };
 
 /*-----------------------------------------------------------------------*/
-char* harmonizer_filename(char* folder, char* filename, char* buffer)
+char* lstm_harmonizer_filename(char* folder, char* filename, char* buffer)
 {
   sprintf(buffer, "%s/%s", folder, filename);
   return buffer;
 }
 
 /*-----------------------------------------------------------------------*/
-Harmonizer* harmonizer_new(char* folder)
+LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
 {
   int folder_len = strlen(folder);
   int path_len = folder_len + 50;
   char buffer[path_len];
 
-  Harmonizer* self = calloc(1, sizeof(*self));
+  LSTM_Harmonizer* self = calloc(1, sizeof(*self));
 
   if(self != NULL)
     {
       //leanred parameters
-      self->layer_1_weights     = matrix_new_from_numpy_file(harmonizer_filename(folder, "layer_1_weights.npy", buffer));
-      self->layer_1_biases      = matrix_new_from_numpy_file(harmonizer_filename(folder, "layer_1_biases.npy" , buffer));
-      self->lstm_Wf             = matrix_new_from_numpy_file(harmonizer_filename(folder, "Wf.npy", buffer));
-      self->lstm_Wi             = matrix_new_from_numpy_file(harmonizer_filename(folder, "Wi.npy", buffer));
-      self->lstm_Wo             = matrix_new_from_numpy_file(harmonizer_filename(folder, "Wo.npy", buffer));
-      self->lstm_Wg             = matrix_new_from_numpy_file(harmonizer_filename(folder, "Wg.npy", buffer));
-      self->lstm_Uf             = matrix_new_from_numpy_file(harmonizer_filename(folder, "Uf.npy", buffer));
-      self->lstm_Ui             = matrix_new_from_numpy_file(harmonizer_filename(folder, "Ui.npy", buffer));
-      self->lstm_Uo             = matrix_new_from_numpy_file(harmonizer_filename(folder, "Uo.npy", buffer));
-      self->lstm_Ug             = matrix_new_from_numpy_file(harmonizer_filename(folder, "Ug.npy", buffer));
-      self->lstm_bf             = matrix_new_from_numpy_file(harmonizer_filename(folder, "bf.npy", buffer));
-      self->lstm_bi             = matrix_new_from_numpy_file(harmonizer_filename(folder, "bi.npy", buffer));
-      self->lstm_bo             = matrix_new_from_numpy_file(harmonizer_filename(folder, "bo.npy", buffer));
-      self->lstm_bg             = matrix_new_from_numpy_file(harmonizer_filename(folder, "bg.npy", buffer));
-      self->layer_3_weights     = matrix_new_from_numpy_file(harmonizer_filename(folder, "layer_3_weights.npy", buffer));
-      self->layer_3_biases      = matrix_new_from_numpy_file(harmonizer_filename(folder, "layer_3_biases.npy" , buffer));
+      self->layer_1_weights     = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "layer_1_weights.npy", buffer));
+      self->layer_1_biases      = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "layer_1_biases.npy" , buffer));
+      self->lstm_Wf             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Wf.npy", buffer));
+      self->lstm_Wi             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Wi.npy", buffer));
+      self->lstm_Wo             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Wo.npy", buffer));
+      self->lstm_Wg             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Wg.npy", buffer));
+      self->lstm_Uf             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Uf.npy", buffer));
+      self->lstm_Ui             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Ui.npy", buffer));
+      self->lstm_Uo             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Uo.npy", buffer));
+      self->lstm_Ug             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Ug.npy", buffer));
+      self->lstm_bf             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "bf.npy", buffer));
+      self->lstm_bi             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "bi.npy", buffer));
+      self->lstm_bo             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "bo.npy", buffer));
+      self->lstm_bg             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "bg.npy", buffer));
+      self->layer_3_weights     = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "layer_3_weights.npy", buffer));
+      self->layer_3_biases      = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "layer_3_biases.npy" , buffer));
   
       if((self->layer_1_weights == NULL) || (self->layer_1_biases == NULL) || (self->lstm_Wf         == NULL) ||
          (self->lstm_Wi         == NULL) || (self->lstm_Wo        == NULL) || (self->lstm_Wg         == NULL) ||
@@ -114,13 +120,14 @@ Harmonizer* harmonizer_new(char* folder)
          (self->lstm_Ug         == NULL) || (self->lstm_bf        == NULL) || (self->lstm_bi         == NULL) ||
          (self->lstm_bo         == NULL) || (self->lstm_bg        == NULL) || (self->layer_3_weights == NULL) ||
          (self->layer_3_biases  == NULL))
-         {fprintf(stderr, "error reading .npy matrices\r\n");  return harmonizer_destroy(self);}
+         {fprintf(stderr, "error reading .npy matrices\r\n");  return lstm_harmonizer_destroy(self);}
 
       self->num_layer_1_inputs  = matrix_get_num_cols(self->layer_1_weights);
       self->num_layer_2_inputs  = matrix_get_num_rows(self->layer_1_weights);
       self->num_layer_3_inputs  = matrix_get_num_cols(self->layer_3_weights);
       self->num_outputs         = matrix_get_num_rows(self->layer_3_weights);
-      self->num_audio_inputs    = self->num_layer_1_inputs - self->num_outputs - 1;
+      self->num_audio_inputs    = self->num_layer_1_inputs - self->num_outputs;
+      //self->num_audio_inputs    = self->num_layer_1_inputs - self->num_outputs - 1;
 
       self->audio_features      = matrix_new(self->num_audio_inputs  , 1);
       self->input_vector        = matrix_new(self->num_layer_1_inputs, 1);
@@ -138,7 +145,7 @@ Harmonizer* harmonizer_new(char* folder)
          (self->lstm_h_t        == NULL) || (self->lstm_c_t     == NULL) || (self->lstm_f_t    == NULL) ||
          (self->lstm_i_t        == NULL) || (self->lstm_o_t     == NULL) || (self->lstm_g_t    == NULL) ||
          (self->lstm_temp_w     == NULL) || (self->lstm_temp_u  == NULL) || (self->layer_3_out == NULL))
-         {fprintf(stderr, "error allocating new matrices\r\n");  return harmonizer_destroy(self);}
+         {fprintf(stderr, "error allocating new matrices\r\n");  return lstm_harmonizer_destroy(self);}
 
      //check conformability of matrices read from disk
       if(!matrix_has_shape(self->layer_1_weights, self->num_layer_2_inputs, self->num_layer_1_inputs) ||
@@ -157,16 +164,16 @@ Harmonizer* harmonizer_new(char* folder)
          !matrix_has_same_shape_as(self->lstm_bf, self->lstm_bi) ||
          !matrix_has_same_shape_as(self->lstm_bf, self->lstm_bo) ||
          !matrix_has_same_shape_as(self->lstm_bf, self->lstm_bg))
-         {fprintf(stderr, "conformability errors in saved matrices\r\n");  return harmonizer_destroy(self);}
+         {fprintf(stderr, "conformability errors in saved matrices\r\n");  return lstm_harmonizer_destroy(self);}
       
       self->autoregressive_histogram = matrix_new(self->num_outputs, 1);
       self->histogram_coeff = 0.75;
       if(self->autoregressive_histogram == NULL)
-        return harmonizer_destroy(self);
+        return lstm_harmonizer_destroy(self);
 
-      self->filter = organ_pipe_filter_new(self->num_audio_inputs);
+      self->filter = organ_pipe_filter_new(self->num_audio_inputs, ORGAN_PIPE_FILTER_MODE_AUTOCORRELATION);
       if(self->filter == NULL)
-        return harmonizer_destroy(self);
+        return lstm_harmonizer_destroy(self);
         
       self->notes_changed_callback = NULL;
       self->lowest_midi_note = 36;
@@ -175,7 +182,7 @@ Harmonizer* harmonizer_new(char* folder)
 }
 
 /*-----------------------------------------------------------------------*/
-Harmonizer*       harmonizer_destroy               (Harmonizer* self)
+LSTM_Harmonizer*       lstm_harmonizer_destroy               (LSTM_Harmonizer* self)
 {
   if(self != NULL)
     {
@@ -211,11 +218,11 @@ Harmonizer*       harmonizer_destroy               (Harmonizer* self)
       
       free(self);
     }
-  return (Harmonizer* ) NULL;
+  return (LSTM_Harmonizer* ) NULL;
 }
 
 /*-----------------------------------------------------------------------*/
-void harmonizer_set_notes_changed_callback(Harmonizer* self, harmonizer_notes_changed_callback_t callback,  void* callback_self)
+void lstm_harmonizer_set_notes_changed_callback(LSTM_Harmonizer* self, lstm_harmonizer_notes_changed_callback_t callback,  void* callback_self)
 {
   self->notes_changed_callback = callback;
   self->notes_changed_callback_self = callback_self;
@@ -223,25 +230,25 @@ void harmonizer_set_notes_changed_callback(Harmonizer* self, harmonizer_notes_ch
 
 
 /*-----------------------------------------------------------------------*/
-matrix_val_t harmonizer_sigmoid(void* SELF, matrix_val_t x)
+matrix_val_t lstm_harmonizer_sigmoid(void* SELF, matrix_val_t x)
 {
   return (1.0 / (1.0 + exp(-x)));
 }
 
 /*-----------------------------------------------------------------------*/
-matrix_val_t harmonizer_tanh(void* SELF, matrix_val_t x)
+matrix_val_t lstm_harmonizer_tanh(void* SELF, matrix_val_t x)
 {
   return tanh(x);
 }
 
 /*-----------------------------------------------------------------------*/
-matrix_val_t harmonizer_relu(void* SELF, matrix_val_t x)
+matrix_val_t lstm_harmonizer_relu(void* SELF, matrix_val_t x)
 {
   return (x<0) ? 0 : x;
 }
 
 /*-----------------------------------------------------------------------*/
-unsigned harmonizer_argmax(Matrix* input)
+unsigned lstm_harmonizer_argmax(Matrix* input)
 {
   unsigned i, n = matrix_get_num_rows(input);
   matrix_val_t* arr = matrix_get_values_array(input);
@@ -256,7 +263,7 @@ unsigned harmonizer_argmax(Matrix* input)
 
 /*-----------------------------------------------------------------------*/
 /*
-void harmonizer_softmax(Matrix* input, double temperature)
+void lstm_harmonizer_softmax(Matrix* input, double temperature)
 {
   if(temperature < 0.001)
     temperature = 0.001;
@@ -283,74 +290,77 @@ void harmonizer_softmax(Matrix* input, double temperature)
 */
 
 /*-----------------------------------------------------------------------*/
-void harmonizer_init_state(Harmonizer* self)
+void lstm_harmonizer_init_state(LSTM_Harmonizer* self)
 {
-  //pthread mutex lock
+  pthread_mutex_lock(&self->clear_mutex);
   matrix_fill_zeros(self->lstm_h_t);
   matrix_fill_zeros(self->lstm_c_t);
-  matrix_fill_zeros(self->autoregressive_histogram);
-  //pthread mutex unlock
+  //matrix_fill_zeros(self->autoregressive_histogram);
+  pthread_mutex_unlock(&self->clear_mutex);
 }
 
 /*-----------------------------------------------------------------------*/
-Matrix* harmonizer_forward(Harmonizer* self, Matrix* inputs)
+Matrix* lstm_harmonizer_forward(LSTM_Harmonizer* self, Matrix* inputs)
 {
   //linear fully connected layer
   matrix_multiply(self->layer_1_weights, inputs, self->layer_1_out);
   matrix_add(self->layer_1_out, self->layer_1_biases, NULL);
-  matrix_apply_function(self->layer_1_out, harmonizer_relu, self, NULL);
+  matrix_apply_function(self->layer_1_out, lstm_harmonizer_relu, self, NULL);
   
   //LSTM Layer
   //https://en.wikipedia.org/wiki/Long_short-term_memory
   //https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html
+  pthread_mutex_lock(&self->clear_mutex);
   matrix_multiply(self->lstm_Wf, self->layer_1_out, self->lstm_temp_w);
   matrix_multiply(self->lstm_Uf, self->lstm_h_t, self->lstm_temp_u);
   matrix_add(self->lstm_temp_w, self->lstm_temp_u, self->lstm_f_t);
   matrix_add(self->lstm_f_t, self->lstm_bf, NULL);
-  matrix_apply_function(self->lstm_f_t, harmonizer_sigmoid, self, NULL);
+  matrix_apply_function(self->lstm_f_t, lstm_harmonizer_sigmoid, self, NULL);
   
   matrix_multiply(self->lstm_Wi, self->layer_1_out, self->lstm_temp_w);
   matrix_multiply(self->lstm_Ui, self->lstm_h_t, self->lstm_temp_u);
   matrix_add(self->lstm_temp_w, self->lstm_temp_u, self->lstm_i_t);
   matrix_add(self->lstm_i_t, self->lstm_bi, NULL);
-  matrix_apply_function(self->lstm_i_t, harmonizer_sigmoid, self, NULL);
+  matrix_apply_function(self->lstm_i_t, lstm_harmonizer_sigmoid, self, NULL);
 
   matrix_multiply(self->lstm_Wo, self->layer_1_out, self->lstm_temp_w);
   matrix_multiply(self->lstm_Uo, self->lstm_h_t, self->lstm_temp_u);
   matrix_add(self->lstm_temp_w, self->lstm_temp_u, self->lstm_o_t);
   matrix_add(self->lstm_o_t, self->lstm_bo, NULL);
-  matrix_apply_function(self->lstm_o_t, harmonizer_sigmoid, self, NULL);
+  matrix_apply_function(self->lstm_o_t, lstm_harmonizer_sigmoid, self, NULL);
 
   matrix_multiply(self->lstm_Wg, self->layer_1_out, self->lstm_temp_w);
   matrix_multiply(self->lstm_Ug, self->lstm_h_t, self->lstm_temp_u);
   matrix_add(self->lstm_temp_w, self->lstm_temp_u, self->lstm_g_t);
   matrix_add(self->lstm_g_t, self->lstm_bg, NULL);
-  matrix_apply_function(self->lstm_g_t, harmonizer_tanh, self, NULL);
+  matrix_apply_function(self->lstm_g_t, lstm_harmonizer_tanh, self, NULL);
   
   matrix_multiply_pointwise(self->lstm_f_t, self->lstm_c_t, NULL);
   matrix_multiply_pointwise(self->lstm_i_t, self->lstm_g_t, NULL);
   matrix_add(self->lstm_f_t, self->lstm_i_t, self->lstm_c_t);
   
-  matrix_apply_function(self->lstm_c_t, harmonizer_tanh, self, self->lstm_h_t);
+  matrix_apply_function(self->lstm_c_t, lstm_harmonizer_tanh, self, self->lstm_h_t);
   matrix_multiply_pointwise(self->lstm_h_t, self->lstm_o_t, NULL);
   
   //Final linear fully connected layer
   matrix_multiply(self->layer_3_weights, self->lstm_h_t, self->layer_3_out);
+  pthread_mutex_unlock(&self->clear_mutex);
+  
   matrix_add(self->layer_3_out, self->layer_3_biases, NULL);
   
   return self->layer_3_out;
 }
 
 /*-----------------------------------------------------------------------*/
-void harmonizer_process_audio(Harmonizer* self, auSample_t* buffer, int num_frames)
+void lstm_harmonizer_process_audio(LSTM_Harmonizer* self, auSample_t* buffer, int num_frames)
 {
-  organ_pipe_filter_process(self->filter, buffer, num_frames, harmonizer_stft_process_callback, self);
+  organ_pipe_filter_process(self->filter, buffer, num_frames, lstm_harmonizer_stft_process_callback, self);
 }
 
 /*-----------------------------------------------------------------------*/
-void harmonizer_stft_process_callback_for_testing(void* SELF, dft_sample_t* real, int N)
+void lstm_harmonizer_stft_process_callback_for_testing(void* SELF, dft_sample_t* real, int N)
 {
-  Harmonizer* self = SELF;
+  LSTM_Harmonizer* self = SELF;
   static int i = 0;
   int notes[10];
   int num_notes = 0;
@@ -513,26 +523,90 @@ void harmonizer_stft_process_callback_for_testing(void* SELF, dft_sample_t* real
 }
 
 /*-----------------------------------------------------------------------*/
-void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+int lstm_harmonizer_check_notes_changed(LSTM_Harmonizer* self, int curr_notes[MAXNUM_NOTES], unsigned num_curr_notes)
 {
-  Harmonizer* self = SELF;
+  int i, did_change = 0;
+  
+  if(num_curr_notes != self->num_prev_notes_out)
+    did_change = 1;
+  
+  self->num_prev_notes_out = num_curr_notes;
+  for(i-=0; i<num_curr_notes; i++)
+    {
+      if(curr_notes[i] != self->prev_notes_out[i])
+        did_change = 1;
+      self->prev_notes_out[i] = curr_notes[i];
+    }
+  return did_change;
+}
+
+/*-----------------------------------------------------------------------*/
+void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+{
+  LSTM_Harmonizer* self = SELF;
+
+  int      i;
+  int      curr_notes[MAXNUM_NOTES] = {0};
+  unsigned num_curr_notes = 0;
+
+  for(i=0; i<N; i++)
+    matrix_set_value(self->input_vector, i, 0, real[i]);
+
+  matrix_copy_partial(self->layer_3_out, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
+  
+  Matrix* outputs = lstm_harmonizer_forward(self, self->input_vector);
+  
+  //todo: when training model we do not need to explicitly signal silence, then get rid of this line
+  matrix_set_value(outputs, self->num_outputs-1, 0, 0);
+  
+  for(i=0; i<self->num_outputs; i++)
+    {
+      if(matrix_get_value(outputs, i, 0, NULL) > 0.1)
+        {
+          if(num_curr_notes < (MAXNUM_NOTES-1))
+            curr_notes[num_curr_notes++] = i + self->lowest_midi_note;
+          matrix_set_value(outputs, i, 0, 1);
+        }
+      else
+        matrix_set_value(outputs, i, 0, 0);
+    }
+  
+  if(lstm_harmonizer_check_notes_changed(self, curr_notes, num_curr_notes))
+    {
+      if(self->notes_changed_callback != NULL)
+        self->notes_changed_callback(self->notes_changed_callback_self, curr_notes, num_curr_notes);
+      
+      fprintf(stderr, "MIDI: ");
+      for(i=0; i<num_curr_notes; i++)
+        fprintf(stderr, "%i  ", curr_notes[i]);
+      fprintf(stderr, "\r\n");
+    }
+}
+
+/*-----------------------------------------------------------------------*/
+void lstm_harmonizer_stft_process_monophonic_callback(void* SELF, dft_sample_t* real, int N)
+{
+  LSTM_Harmonizer* self = SELF;
   
   int i;
 
   for(i=0; i<N; i++)
     matrix_set_value(self->input_vector, i, 0, real[i]);
 
-  matrix_copy_partial(self->autoregressive_histogram, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
-  //matrix_copy_partial(self->layer_3_out, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
-  matrix_set_value(self->input_vector, self->num_audio_inputs+self->num_outputs, 0, self->note_timer);
+  //matrix_copy_partial(self->autoregressive_histogram, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
+  matrix_copy_partial(self->layer_3_out, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
+  //matrix_set_value(self->input_vector, self->num_audio_inputs+self->num_outputs, 0, self->note_timer);
   
-  Matrix* outputs = harmonizer_forward(self, self->input_vector);
-  //harmonizer_softmax_with_temperature(outputs, 0.01);
-  int  chosen_output_index = harmonizer_argmax(outputs);
-  int note = 0;
-  if(chosen_output_index < matrix_get_num_rows(outputs)-1)
-    note = self->lowest_midi_note + chosen_output_index;
-
+  Matrix* outputs = lstm_harmonizer_forward(self, self->input_vector);
+  //lstm_harmonizer_softmax_with_temperature(outputs, 0.01);
+  
+  
+  
+  //int  chosen_output_index = lstm_harmonizer_argmax(outputs);
+  //int note = 0;
+  //if(chosen_output_index < matrix_get_num_rows(outputs)-1)
+    //note = self->lowest_midi_note + chosen_output_index;
+/*
   if(note == self->prev_note_out)
     ++self->note_timer;
   else
@@ -541,28 +615,28 @@ void harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
   if(self->prev_note_out != note)
     if(self->notes_changed_callback != NULL)
       self->notes_changed_callback(self->notes_changed_callback_self, &note, 1);
-  
-  fprintf(stderr, "MIDI: %i\r\n", note);
+*/
+  //fprintf(stderr, "MIDI: %i\r\n", note);
   
   //make output onehot for next input
   //matrix_fill_zeros(outputs);
   //matrix_set_value(outputs, chosen_output_index, 0, 1);
   //self->prev_note_out = note;
   
-  matrix_multiply_scalar(self->autoregressive_histogram, self->histogram_coeff, NULL);
-  matrix_set_value      (self->autoregressive_histogram, chosen_output_index, 0, 1.0);
-  self->prev_note_out = note;
+  //matrix_multiply_scalar(self->autoregressive_histogram, self->histogram_coeff, NULL);
+  //matrix_set_value      (self->autoregressive_histogram, chosen_output_index, 0, 1.0);
+  //self->prev_note_out = note;
 }
 
 /*-----------------------------------------------------------------------*/
-Organ_Pipe_Filter* harmonizer_get_organ_pipe_filter(Harmonizer* self)
+Organ_Pipe_Filter* lstm_harmonizer_get_organ_pipe_filter(LSTM_Harmonizer* self)
 {
   return self->filter;
 }
 
 /*-----------------------------------------------------------------------*/
 #include "Timestamp.h"
-void harmonizer_test_io(Harmonizer* self, matrix_val_t* input_arr, matrix_val_t* output_arr)
+void lstm_harmonizer_test_io(LSTM_Harmonizer* self, matrix_val_t* input_arr, matrix_val_t* output_arr)
 {
   Matrix* target_output = matrix_new_copy(self->layer_3_out);
   matrix_set_values_array(target_output, output_arr);
@@ -576,17 +650,17 @@ void harmonizer_test_io(Harmonizer* self, matrix_val_t* input_arr, matrix_val_t*
 
   timestamp_microsecs_t start_time = timestamp_get_current_time();
   for(i=0; i<num_tests; i++)
-    actual_out = harmonizer_forward(self, self->input_vector);
+    actual_out = lstm_harmonizer_forward(self, self->input_vector);
   timestamp_microsecs_t end_time = timestamp_get_current_time();
   
   fprintf(stderr, "%i timesteps in %f secs\r\n", num_tests, (end_time-start_time) / 1000000.0);
   */
 
-  //harmonizer_forward(self, self->input_vector);
-  harmonizer_forward(self, self->input_vector);
-  harmonizer_forward(self, self->input_vector);
-  harmonizer_forward(self, self->input_vector);
-  Matrix* actual_out = harmonizer_forward(self, self->input_vector);
+  //lstm_harmonizer_forward(self, self->input_vector);
+  lstm_harmonizer_forward(self, self->input_vector);
+  lstm_harmonizer_forward(self, self->input_vector);
+  lstm_harmonizer_forward(self, self->input_vector);
+  Matrix* actual_out = lstm_harmonizer_forward(self, self->input_vector);
 
   fprintf(stderr, "TARGET OUTPUT:\r\n");
   matrix_print(target_output);

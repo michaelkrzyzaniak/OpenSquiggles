@@ -10,8 +10,8 @@ extern "C"{
 
 typedef struct OpaqueHarmonizerControllerStruct HarmonizerController;
 
-HarmonizerController*       harmonizer_controller_new                        ();
-int                         harmonizer_controller_audio_callback             (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
+HarmonizerController*       harmonizer_controller_new   ();
+void                        harmonizer_controller_clear  (HarmonizerController*  self);
 
 //Microphone*  mic_destroy             (Microphone*      self      );
 //call with self->destroy(self);

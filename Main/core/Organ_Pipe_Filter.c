@@ -11,13 +11,18 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self);
 //must be at least 2
 #define QUEUE_LENGTH 6
 
+//#define TEST_RECORD_MODE
+//#define TEST_RECORD_SECONDS 10
+
 /*--------------------------------------------------------------------*/
 struct Opaque_Organ_Pipe_Filter_Struct
 {
   int           window_size;
   int           fft_N;
+  int           fft_N_over_2;
   int           overlap;
   int           hop_size;
+  int           return_size;
   int           sample_counter;
   int           input_index;
   dft_sample_t* window;
@@ -32,63 +37,81 @@ struct Opaque_Organ_Pipe_Filter_Struct
   pthread_mutex_t note_amplitudes_mutex;
   float note_amplitudes[QUEUE_LENGTH][OP_NUM_SOLENOIDS];
   
-  //int did_save;
-  //MKAiff* test_input;
-  //MKAiff* test_output;
+  organ_pipe_filter_mode_t mode;
+  
+#if defined TEST_RECORD_MODE
+  int did_save;
+  MKAiff* test_input;
+  MKAiff* test_output;
+#endif
 };
-
+  
 /*--------------------------------------------------------------------*/
-Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/)
+Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/, organ_pipe_filter_mode_t mode)
 {
   Organ_Pipe_Filter* self = calloc(1, sizeof(*self));
   if(self != NULL)
     {
       int i;
-      
+      self->mode                 = mode;
       self->window_size          = window_size;
-      self->fft_N                = 2 * window_size;
       
+      if(self->mode <= ORGAN_PIPE_FILTER_MODE_RESYNTHESIZED_AUDIO)
+        self->fft_N              = window_size;
+      else
+        self->fft_N              = 2 * window_size;
+      
+      self->fft_N_over_2         = self->fft_N >> 1;
       self->overlap              = 2;
-
       self->hop_size             = window_size / self->overlap;
+      
+      if(self->mode <= ORGAN_PIPE_FILTER_MODE_DFT)
+        self->return_size        = self->fft_N_over_2;
+      else
+        self->return_size        = self->window_size;
+      
       self->sample_counter       = 0;
-
       self->input_index          = 0;
 
       self->window               = calloc(self->window_size, sizeof(*(self->window)));
       self->running_input        = calloc(self->window_size, sizeof(*(self->running_input)));
-      self->running_output       = calloc(self->fft_N      , sizeof(*(self->running_input)));
+      if(self->mode == ORGAN_PIPE_FILTER_MODE_RESYNTHESIZED_AUDIO)
+        self->running_output     = calloc(self->fft_N      , sizeof(*(self->running_input)));
       self->real                 = calloc(self->fft_N      , sizeof(*(self->real)));
       self->imag                 = calloc(self->fft_N      , sizeof(*(self->imag)));
 
       if(self->window           == NULL) return organ_pipe_filter_destroy(self);
       if(self->running_input    == NULL) return organ_pipe_filter_destroy(self);
-      if(self->running_output   == NULL) return organ_pipe_filter_destroy(self);
+      if(self->mode == ORGAN_PIPE_FILTER_MODE_RESYNTHESIZED_AUDIO)
+        if(self->running_output   == NULL) return organ_pipe_filter_destroy(self);
       if(self->real             == NULL) return organ_pipe_filter_destroy(self);
       if(self->imag             == NULL) return organ_pipe_filter_destroy(self);
 
-      //half sine for reconstruction
-      //dft_init_half_sine_window(self->window, self->window_size);
-      dft_init_hamming_window(self->window, self->window_size);
-      
+      if(self->mode == ORGAN_PIPE_FILTER_MODE_RESYNTHESIZED_AUDIO)
+        dft_init_half_sine_window(self->window, self->window_size);
+      else
+        dft_init_hann_window(self->window, self->window_size);
+
       self->noise = calloc(self->fft_N, sizeof(*(self->noise)));
       for(i=0; i<OP_NUM_SOLENOIDS; i++)
         {
-          self->filters[i] = calloc(self->fft_N, sizeof(*(self->filters[i])));
+          self->filters[i] = calloc(self->fft_N_over_2, sizeof(*(self->filters[i])));
           if(self->filters[i] == NULL)
             return organ_pipe_filter_destroy(self);
         }
-    }
-  
-  if(!organ_pipe_filter_init_filters(self))
-    {
-      fprintf(stderr, "Unable to find calibration samples for self-filterng. Try running opc first\r\n");
-      return organ_pipe_filter_destroy(self);
-    }
 
-  //self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, 120);
-  //self->test_output = aiffWithDurationInSeconds(1, 44100, 16, 120);
-  
+      if(!organ_pipe_filter_init_filters(self))
+        {
+          fprintf(stderr, "Unable to find calibration samples for self-filterng. Try running opc first\r\n");
+          return organ_pipe_filter_destroy(self);
+        }
+    
+#if defined TEST_RECORD_MODE
+      self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, TEST_RECORD_SECONDS+1);
+      self->test_output = aiffWithDurationInSeconds(1, 44100, 16, TEST_RECORD_SECONDS+1);
+#endif
+    }
+    
   return self;
 }
 
@@ -153,18 +176,18 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self)
           
           dft_apply_window(self->real, self->window, self->window_size);
           dft_real_forward_dft(self->real, self->imag, self->fft_N);
-          dft_rect_to_polar(self->real, self->imag, self->fft_N);
+          dft_rect_to_polar(self->real, self->imag, self->fft_N_over_2);
 
           ++num_windows;
 
           if(num_windows == 1)
-            memcpy(filter, self->real, self->fft_N * sizeof(*self->real));
+            memcpy(filter, self->real, self->fft_N_over_2 * sizeof(*self->real));
           else
-            for(j=0; j<self->window_size; j++)
+            for(j=0; j<self->fft_N_over_2; j++)
               filter[j] += (self->real[j] - filter[j]) / (double)num_windows;
-
+        }
       if(i>=0)
-        for(j=0; j<self->window_size; j++)
+        for(j=0; j<self->fft_N_over_2; j++)
           {
             filter[j] -= self->noise[j];
             if(filter[j] < 0)
@@ -212,19 +235,20 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
           for(j=self->window_size; j<self->fft_N; j++)
             self->real[j] = 0;
 
-          //if(!self->did_save)
-            //aiffAppendFloatingPointSamples(self->test_input, self->real, self->hop_size, aiffFloatSampleType);
-            
+#if defined TEST_RECORD_MODE
+          if(!self->did_save)
+            aiffAppendFloatingPointSamples(self->test_input, self->real, self->hop_size, aiffFloatSampleType);
+#endif
+
           dft_apply_window(self->real, self->window, self->window_size);
           dft_real_forward_dft(self->real, self->imag, self->fft_N);
+          dft_rect_to_polar(self->real, self->imag, self->fft_N_over_2);
 
-          dft_rect_to_polar(self->real, self->imag, self->window_size);
-  
           pthread_mutex_lock(&self->note_amplitudes_mutex);
 
-          for(k=1; k<self->window_size; k++)
+          for(k=1; k<self->fft_N_over_2; k++)
             self->real[k] -= self->noise[k];
-          
+
           for(j=0; j<OP_NUM_SOLENOIDS; j++)
             {
               amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j]
@@ -232,7 +256,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
                         + self->note_amplitudes[QUEUE_LENGTH-3][j];
               if(amplitude > 0)
                 //don't filter the DC offset
-                for(k=1; k<self->window_size; k++)
+                for(k=1; k<self->fft_N_over_2; k++)
                   self->real[k] -= amplitude * self->filters[j][k];
             }
 
@@ -241,44 +265,58 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
 
           pthread_mutex_unlock(&self->note_amplitudes_mutex);
 
+          //noise suppression
           float total_energy = 0;
-          for(j=1; j<self->window_size; j++)
+          for(j=1; j<self->fft_N_over_2; j++)
             {
               if(self->real[j] < 0.1)
                 self->real[j] = 0;
               total_energy += self->real[j];
             }
-          if(total_energy < 100)
-            for(j=0; j<self->window_size; j++)
+            
+          //noise gate
+          if(total_energy < 50)
+            for(j=0; j<self->fft_N_over_2; j++)
               self->real[j] = 0;
 
-          dft_polar_to_rect(self->real, self->imag, self->window_size);
-          dft_real_autocorrelate(self->real, self->imag, self->fft_N);
+          if(self->mode == ORGAN_PIPE_FILTER_MODE_AUTOCORRELATION)
+            {
+              for(j=0; j<self->fft_N_over_2; j++)
+                {
+                  self->real[j] *= self->real[j];
+                  self->imag[j] = 0;
+                }
+              dft_polar_to_rect(self->real, self->imag, self->fft_N_over_2);
+              dft_real_inverse_dft(self->real, self->imag, self->fft_N);
+            }
+          else if(self->mode == ORGAN_PIPE_FILTER_MODE_RESYNTHESIZED_AUDIO)
+            {
+              dft_polar_to_rect(self->real, self->imag, self->fft_N_over_2);
+              dft_real_inverse_dft(self->real, self->imag, self->fft_N);
+              dft_apply_window(self->real, self->window, self->window_size);
+              
+              for(j=0; j<self->window_size-self->hop_size; j++)
+                self->running_output[j] = self->real[j] + self->running_output[j+self->hop_size];
 
-//          dft_real_inverse_dft(self->real, self->imag, self->fft_N);
-//          dft_apply_window(self->real, self->window, self->window_size);
-//          for(j=self->window_size; j<self->fft_N; j++)
-//            self->real[j] = 0;
-//
-//          for(j=0; j<self->window_size-self->hop_size; j++)
-//            self->running_output[j] = self->real[j] + self->running_output[j+self->hop_size];
-//
-//          for(; j<self->window_size; j++)
-//            self->running_output[j] = self->real[j];
-//
-//          if(!self->did_save)
-//            aiffAddFloatingPointSamplesAtPlayhead(self->test_output, self->running_output, self->hop_size, aiffFloatSampleType, aiffYes);
-//
-//          if(!self->did_save)
-//            if(aiffDurationInSeconds(self->test_input) > 26)
-//              {
-//                 aiffSaveWithFilename(self->test_input, "test_input.aiff");
-//                 aiffSaveWithFilename(self->test_output, "test_output.aiff");
-//                 self->did_save = 1;
-//                 fprintf(stderr, "saved\r\n");
-//              }
-          
-          onprocess(onprocess_self, self->real, self->fft_N / 2);
+              for(; j<self->window_size; j++)
+                self->running_output[j] = self->real[j];
+#if defined TEST_RECORD_MODE
+              if(!self->did_save)
+                aiffAddFloatingPointSamplesAtPlayhead(self->test_output, self->running_output, self->hop_size, aiffFloatSampleType, aiffYes);
+#endif
+            }
+
+#if defined TEST_RECORD_MODE
+          if(!self->did_save)
+            if(aiffDurationInSeconds(self->test_input) > TEST_RECORD_SECONDS)
+              {
+                 aiffSaveWithFilename(self->test_input, "test_input.aiff");
+                 aiffSaveWithFilename(self->test_output, "test_output.aiff");
+                 self->did_save = 1;
+                 fprintf(stderr, "saved\r\n");
+              }
+#endif
+          onprocess(onprocess_self, self->real, self->return_size);
         }
     }
 }

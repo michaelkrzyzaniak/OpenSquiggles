@@ -211,6 +211,7 @@ Audio* auDestroy(Audio* self)
 /*auDestroy-----------------------------------------------*/
 Audio*  auSubclassDestroy    (Audio* self)
 {
+  
   Audio* result = NULL;
   
   if(self != NULL)

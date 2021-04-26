@@ -32,7 +32,7 @@
 
 #include "core/AudioSuperclass.h"
 #include "extras/Params.h"
-#include "extras/MKAiff.h"
+#include "core/MKAiff.h"
 #include "core/constants.h"
 #include "../Robot_Communication_Framework/Robot_Communication.h"
 #include "../Beat-and-Tempo-Tracking/src/DFT.h"

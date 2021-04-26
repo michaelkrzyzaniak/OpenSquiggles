@@ -9,9 +9,8 @@ Written by Michael Krzyzaniak
 Version 2.0 March 21 2021
 multi-thread support and many small changes
 ----------------------------------------------------------------------*/
-
-#ifndef __HARMONIZER__
-#define __HARMONIZER__
+#ifndef __MONO_HARMONIZER__
+#define __MONO_HARMONIZER__
   
 #if defined(__cplusplus)
 extern "C"{
@@ -23,17 +22,17 @@ extern "C"{
 
 #include <stdio.h>
 
-typedef void (*harmonizer_notes_changed_callback_t)(void* SELF, int* midi_notes, int num_notes);
+typedef void (*mono_harmonizer_notes_changed_callback_t)(void* SELF, int* midi_notes, int num_notes);
 
-typedef struct opaque_harmonizer_struct Harmonizer;
+typedef struct opaque_mono_harmonizer_struct Mono_Harmonizer;
 
-Harmonizer* harmonizer_new                      (char* folder);
-Harmonizer* harmonizer_destroy                  (Harmonizer* self);
-void        harmonizer_set_notes_changed_callback(Harmonizer* self, harmonizer_notes_changed_callback_t callback,  void* callback_self);
-void harmonizer_process_audio(Harmonizer* self, auSample_t* buffer, int num_frames);
-Organ_Pipe_Filter* harmonizer_get_organ_pipe_filter(Harmonizer* self);
+Mono_Harmonizer* mono_harmonizer_new                      (char* folder);
+Mono_Harmonizer* mono_harmonizer_destroy                  (Mono_Harmonizer* self);
+void mono_harmonizer_set_notes_changed_callback(Mono_Harmonizer* self, mono_harmonizer_notes_changed_callback_t callback,  void* callback_self);
+void mono_harmonizer_process_audio(Mono_Harmonizer* self, auSample_t* buffer, int num_frames);
+Organ_Pipe_Filter* mono_harmonizer_get_organ_pipe_filter(Mono_Harmonizer* self);
+void mono_harmonizer_init_state(Mono_Harmonizer* self);
 
-void harmonizer_test_io(Harmonizer* self, matrix_val_t* input, matrix_val_t* output);
 
 #if defined(__cplusplus)
 }

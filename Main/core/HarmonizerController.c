@@ -8,38 +8,41 @@
  */
 
 #include "HarmonizerController.h"
-#include "Harmonizer.h"
+#include "Poly_Harmonizer.h"
 #include "Beep.h"
 #include "constants.h"
 #include "../extras/Params.h"
+
 
 HarmonizerController* harmonizer_controller_destroy (HarmonizerController* self);
 void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_note, int num_notes);
 int harmonizer_controller_init_midi_note_params(HarmonizerController* self);
 void harmonizer_controller_message_recd_from_robot(void* self, char* message, robot_arg_t args[], int num_args);
+int harmonizer_controller_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_channels);
 
 /*--------------------------------------------------------------------*/
 struct OpaqueHarmonizerControllerStruct
 {
 
-  AUDIO_GUTS               ;
-  Harmonizer* harmonizer   ;
-  Beep*  beep              ;
-  int sounding_notes[OP_NUM_SOLENOIDS];
-  int midi_notes[OP_NUM_SOLENOIDS];
-  Params* params           ;
-  Robot*  robot            ;
+  AUDIO_GUTS;
+  Poly_Harmonizer* harmonizer;
+  Beep*            beep;
+  int              sounding_notes[OP_NUM_SOLENOIDS];
+  int              midi_notes[OP_NUM_SOLENOIDS];
+  Params*          params;
+  Robot*           robot;
 };
 
 /*--------------------------------------------------------------------*/
 HarmonizerController* harmonizer_controller_new ()
 {
-  HarmonizerController* self = (HarmonizerController*) auAlloc(sizeof(*self), harmonizer_controller_audio_callback, NO, 2, 44100, 512, 4);
+  HarmonizerController* self = (HarmonizerController*) auAlloc(sizeof(*self), harmonizer_controller_audio_callback, NO, 1, 44100, 512, 6);
   if(self != NULL)
     {
       self->destroy = (Audio* (*)(Audio*))harmonizer_controller_destroy;
 
-      self->harmonizer = harmonizer_new("matrices/Multiple_F0");
+      //self->harmonizer = poly_harmonizer_new("matrices/Multiple_F0");
+      self->harmonizer = poly_harmonizer_new(44100);
       if(self->harmonizer == NULL)
         return (HarmonizerController*)auDestroy((Audio*)self);
         
@@ -47,7 +50,7 @@ HarmonizerController* harmonizer_controller_new ()
       //if(self->beep == NULL)
         //return (HarmonizerController*)auDestroy((Audio*)self);
         
-      harmonizer_set_notes_changed_callback(self->harmonizer, harmonizer_controller_notes_changed_callback, self);
+      poly_harmonizer_set_notes_changed_callback(self->harmonizer, harmonizer_controller_notes_changed_callback, self);
 
       
       char *filename_string;
@@ -78,14 +81,25 @@ HarmonizerController* harmonizer_controller_new ()
 /*--------------------------------------------------------------------*/
 HarmonizerController* harmonizer_controller_destroy (HarmonizerController* self)
 {
+  auDestroy((Audio*)self);
   if(self != NULL)
     {
-      harmonizer_destroy(self->harmonizer);
-      robot_destroy(self->robot);
+      if(self->robot != NULL)
+        robot_send_message(self->robot, robot_cmd_all_notes_off);
+      
+      self->harmonizer = poly_harmonizer_destroy(self->harmonizer);
+      self->robot = robot_destroy(self->robot);
       auDestroy((Audio*)self->beep);
     }
-    
+  
   return (HarmonizerController*) NULL;
+}
+
+/*--------------------------------------------------------------------*/
+void harmonizer_controller_clear  (HarmonizerController*  self)
+{
+  robot_send_message(self->robot, robot_cmd_all_notes_off);
+  poly_harmonizer_init_state(self->harmonizer);
 }
 
 /*--------------------------------------------------------------------*/
@@ -153,6 +167,11 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
     
   for(i=0; i<num_notes; i++)
     {
+      while(midi_notes[i] > 76)
+        midi_notes[i] -= 12;
+      while (midi_notes[i] < 52)
+        midi_notes[i] += 12;
+        
       int solenoid = harmonizer_controller_midi_to_solenoid_number(self, midi_notes[i]);
       
       if(solenoid >= 0)
@@ -166,7 +185,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
     else
       robot_send_message(self->robot, robot_cmd_note_off, i);
 
-  Organ_Pipe_Filter* filter = harmonizer_get_organ_pipe_filter(self->harmonizer);
+  Organ_Pipe_Filter* filter = poly_harmonizer_get_organ_pipe_filter(self->harmonizer);
   organ_pipe_filter_notify_sounding_notes(filter, self->sounding_notes);
   
   if(self->beep)
@@ -190,7 +209,7 @@ int harmonizer_controller_audio_callback(void* SELF, auSample_t* buffer, int num
       buffer[frame] = samp;
   }
 
-  harmonizer_process_audio(self->harmonizer, buffer, num_frames);
+  poly_harmonizer_process_audio(self->harmonizer, buffer, num_frames);
 
   return  num_frames;
 }

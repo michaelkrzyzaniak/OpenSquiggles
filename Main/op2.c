@@ -10,19 +10,22 @@
 ----------------------------------------------------------------------*/
 
 //OSX compile with:
-//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2 -o op2
+//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c lib/dywapitchtrack/src/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2 -o op2
 
 //Linux compile with:
 //sudo apt-get install libasound2-dev
-//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o op2
+//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c lib/dywapitchtrack/src/*.c -lasound -lm -lpthread -lrt -O2 -o op2
 
 #include "core/Matrix.h"
 #include "core/Timestamp.h"
-#include "core/Harmonizer.h"
+//#include "core/Harmonizer.h"
 #include "core/HarmonizerController.h"
 
 
 #include <stdio.h>
+
+void  make_stdin_cannonical_again();
+void i_hate_canonical_input_processing(void);
 
 /*
 #include <math.h> //testing
@@ -116,12 +119,28 @@ int main(int argc, char* argv[])
     }
   else
     {
+      i_hate_canonical_input_processing();
       auPlay((Audio*)controller);
       for(;;)
-        sleep(1);
+        {
+          char c = getchar();
+          switch(c)
+            {
+              case 'q':
+                goto out;
+                break;
+              case 'c':
+                harmonizer_controller_clear(controller);
+                break;
+              default: break;
+            
+            }
+        }
+      out:
+      make_stdin_cannonical_again();
     }
   
-  //controller = (HarmonizerController*)auDestroy((Audio*)controller);
+  controller = (HarmonizerController*)auSubclassDestroy((Audio*)controller);
   return 0;
 }
 
@@ -170,3 +189,40 @@ int _main(void)
 }
 
 */
+
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+#include <termios.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+struct termios old_terminal_attributes;
+
+void i_hate_canonical_input_processing(void)
+{
+  int error;
+  struct termios new_terminal_attributes;
+  
+  int fd = fcntl(STDIN_FILENO,  F_DUPFD, 0);
+  
+  error = tcgetattr(fd, &(old_terminal_attributes));
+  if(error == -1) {  fprintf(stderr, "Error getting serial terminal attributes\r\n"); return;}
+  
+  new_terminal_attributes = old_terminal_attributes;
+  
+  cfmakeraw(&new_terminal_attributes);
+  
+  error = tcsetattr(fd, TCSANOW, &new_terminal_attributes);
+  if(error == -1) {  fprintf(stderr,  "Error setting serial attributes\r\n"); return; }
+}
+
+/*--------------------------------------------------------------------*/
+void make_stdin_cannonical_again()
+{
+  int fd = fcntl(STDIN_FILENO,  F_DUPFD, 0);
+  
+  if (tcsetattr(fd, TCSANOW, &old_terminal_attributes) == -1)
+    fprintf(stderr,  "Error setting serial attributes\r\n");
+}

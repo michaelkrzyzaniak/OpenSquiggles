@@ -12,12 +12,22 @@ extern "C"{
 #include "../../Beat-and-Tempo-Tracking/src/DFT.h"
 #include "constants.h"
 
-
 /*--------------------------------------------------------------------*/
+typedef enum organ_pipe_filter_mode_enum
+{
+  /* DFT size window_size */
+  ORGAN_PIPE_FILTER_MODE_DFT,
+  ORGAN_PIPE_FILTER_MODE_RESYNTHESIZED_AUDIO,
+  /* DFT size 2*window_size */
+  ORGAN_PIPE_FILTER_MODE_PADDED_DFT,
+  ORGAN_PIPE_FILTER_MODE_AUTOCORRELATION,
+}organ_pipe_filter_mode_t;
+
+
 typedef struct Opaque_Organ_Pipe_Filter_Struct Organ_Pipe_Filter;
 typedef void (*organ_pipe_filter_onprocess_t)(void* onprocess_self, dft_sample_t* real, int N);
 
-Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/);
+Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/, organ_pipe_filter_mode_t mode);
 Organ_Pipe_Filter* organ_pipe_filter_destroy(Organ_Pipe_Filter* self);
 void organ_pipe_filter_notify_sounding_notes(Organ_Pipe_Filter* self, int sounding_notes[OP_NUM_SOLENOIDS]);
 void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input, int len, organ_pipe_filter_onprocess_t onprocess, void* onprocess_self);
