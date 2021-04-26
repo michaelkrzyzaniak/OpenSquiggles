@@ -248,7 +248,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
 
           for(k=1; k<self->fft_N_over_2; k++)
             self->real[k] -= self->noise[k];
-
+/*
           for(j=0; j<OP_NUM_SOLENOIDS; j++)
             {
               amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j]
@@ -259,7 +259,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
                 for(k=1; k<self->fft_N_over_2; k++)
                   self->real[k] -= amplitude * self->filters[j][k];
             }
-
+*/
           for(j=QUEUE_LENGTH-1; j>0; j--)
             memcpy(self->note_amplitudes[j], self->note_amplitudes[j-1], OP_NUM_SOLENOIDS*sizeof(*self->note_amplitudes[j]));
 
