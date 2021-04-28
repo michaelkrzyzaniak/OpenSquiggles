@@ -8,7 +8,6 @@
  */
 
 #include "HarmonizerController.h"
-#include "Poly_Harmonizer.h"
 #include "Beep.h"
 #include "constants.h"
 #include "../extras/Params.h"
@@ -190,6 +189,12 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
   
   if(self->beep)
     beep_set_notes(self->beep, midi_notes, num_notes);
+}
+
+/*--------------------------------------------------------------------*/
+Poly_Harmonizer* harmonizer_controller_get_harmonizer(HarmonizerController*  self)
+{
+  return self->harmonizer;
 }
 
 /*--------------------------------------------------------------------*/

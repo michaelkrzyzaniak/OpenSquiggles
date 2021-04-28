@@ -27,73 +27,267 @@
 void  make_stdin_cannonical_again();
 void i_hate_canonical_input_processing(void);
 
-/*
-#include <math.h> //testing
-#include <stdlib.h> //testing
-#include <string.h> //testing
-#include "DFT.h"
+HarmonizerController* global_controller;
 
-int main(void)
+typedef void   (*double_setter)(void* self, double val);
+typedef double (*double_getter)(void* self);
+typedef void   (*int_setter)   (void* self, int val);
+typedef void*  (*int_setter_o) (void* self, int val);
+typedef int    (*int_getter)   (void* self);
+typedef int    (*enter_funct)  (void* self, int val);
+typedef void   (*funct)        (void);
+
+typedef struct parameter_struct
 {
-  int window_size = 2048;
-  int fft_N = window_size * 2;
-  
-  float* window = calloc(window_size, sizeof(*window));
-  float* real   = calloc(fft_N, sizeof(*real));
-  float* imag   = calloc(fft_N, sizeof(*imag));
-  
-  float sample_rate = 44100;
-  float cps;
-  float freq;
-  float phase;
-  
-  int i, trial;
-  
-  float ratio = 0;
-  
-  for(trial = 0; trial <= 100; trial++)
-    {
-      phase = 0;
-      cps = dft_frequency_of_bin(250, sample_rate, fft_N);
-      freq = cps * 2 * M_PI / sample_rate;
-  
-      memset(real, 0, fft_N * sizeof(*real));
-      memset(imag, 0, fft_N * sizeof(*imag));
-  
-      for(i=0; i<floor(window_size*ratio); i++)
-        {
-          real[i] = cos(phase);
-          phase += freq;
-        }
+  funct  set;
+  funct  get;
+  funct  enter;
+  void*  self;
+  char   type;
+  double init;
+  double increment;
+  char   name[128];
+}param_t;
 
-      cps = dft_frequency_of_bin(666, sample_rate, fft_N);
-      freq = cps * 2 * M_PI / sample_rate;
-  
-      for(;i<window_size; i++)
-        {
-          real[i] = cos(phase);
-          phase += freq;
-        }
-
-      dft_init_hamming_window(window, window_size);
-      dft_apply_window(real, window, window_size);
-      dft_real_forward_dft(real, imag, fft_N);
-  
-      dft_rect_to_polar(real, imag, fft_N);
-  
-      fprintf(stderr, "%i\t%f\t%f\t%f\r\n", trial, real[250], real[666], real[250] + real[666]);
-  
-      ratio += 0.01;
-      //for(i=0; i<window_size; i++)
-        //fprintf(stderr, "%f\r\n", real[i]);
-    }
+/*--------------------------------------------------------------------*/
+void indent(int level)
+{
+  fprintf(stderr, "\033[F\r\033[2K");
+  int i;
+  for(i=0; i<level; i++)
+    fprintf(stderr, "\t");
 }
-*/
+
+
+/*--------------------------------------------------------------------*/
+int cycle_through_paramaters_and_get_input(const char* object_name, param_t* params, int num_params, const char* submenu_message, int indent_level)
+{
+  int param_index = 0;
+  int exit_code = 1;
+  char c;
+  double val, increment;
+  
+  fprintf(stderr, "\r\n\r\n");
+  indent(indent_level);
+  fprintf(stderr, "%s:\r\n\r\n", submenu_message);
+  
+ 
+  /* simulate left arrow press to trigger display of first paramater */
+  ungetc('D', stdin);
+  
+  for(;;)
+    {
+      c = getchar();
+      increment = 0;
+      param_t p = params[param_index];
+      switch(c)
+        {
+          case 'C':
+            ++param_index;
+            if(param_index >= num_params) param_index = num_params - 1;
+            p = params[param_index];
+            break;
+          case 'D':
+            --param_index;
+            if(param_index < 0) param_index = 0;
+            p = params[param_index];
+            break;
+          case 'B':
+            increment = -p.increment;
+            break;
+          case 'A':
+            increment = p.increment;
+            break;
+
+          case 'd':
+            if(p.type == 'i')
+              ((int_setter) p.set)(p.self, p.init);
+            else if(p.type == 'd')
+              ((double_setter) p.set)(p.self, p.init);
+            break;
+
+          case '\r':
+          //case '\\':
+            if((p.enter != NULL))
+              exit_code = ((enter_funct)p.enter)(p.self, indent_level+1);
+              if(exit_code == -1)
+                goto out;
+            continue;
+
+
+          case 'c':
+            harmonizer_controller_clear(global_controller);
+            continue;
+
+          case 'Q':
+            exit_code = -1;
+            /* cascade */
+          case 'q':
+            goto out;
+            break;
+
+          default: continue;
+        }
+
+
+      if(p.type == 'i')
+        {
+          val = ((int_getter) p.get)(p.self);
+          ((int_setter) p.set)(p.self, val + increment);
+          val = ((int_getter) p.get)(p.self);
+        
+          indent(indent_level);
+          fprintf(stderr, " -- %s(%s, %lf);\r\n", p.name, object_name, val);
+        }
+      else if(p.type == 'd')
+        {
+          val = ((double_getter) p.get)(p.self);
+          ((double_setter) p.set)(p.self, val + increment);
+           val = ((double_getter) p.get)(p.self);
+          indent(indent_level);
+          fprintf(stderr, " -- %s(%s, %lf);\r\n", p.name, object_name, val);
+        }
+      else if(p.type == 'o')
+        {
+
+        }
+      else if(p.type == 'e')
+        {
+          indent(indent_level);
+          fprintf(stderr, " -- [ENTER] %s\r\n", p.name);
+        }
+
+    }
+  
+ out:
+  fprintf(stderr, "\033[F\r\033[2K\033[F\r\033[2K\033[F\r\033[2K");
+  return exit_code;
+}
+
+/*--------------------------------------------------------------------*/
+int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Harmonizer* harmonizer, Organ_Pipe_Filter* filter)
+{
+    param_t params[] =
+    {
+      {
+        .set = (funct)organ_pipe_filter_set_reduction_coefficient,
+        .get = (funct)organ_pipe_filter_get_reduction_coefficient,
+        .enter = NULL,
+        .self = filter,
+        .type = 'd',
+        .init = ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT,
+        .increment = 0.05,
+        .name = "organ_pipe_filter_set_reduction_coefficient",
+       },
+      {
+        .set = (funct)organ_pipe_filter_set_gate_coefficient,
+        .get = (funct)organ_pipe_filter_get_gate_coefficient,
+        .enter = NULL,
+        .self = filter,
+        .type = 'd',
+        .init = ORGAN_PIPE_FILTER_DEFAULT_GATE_COEFFICIENT,
+        .increment = 0.05,
+        .name = "organ_pipe_filter_set_gate_coefficient",
+      },
+      {
+        .set = (funct)organ_pipe_filter_set_noise_cancel_coefficient,
+        .get = (funct)organ_pipe_filter_get_noise_cancel_coefficient,
+        .enter = NULL,
+        .self = filter,
+        .type = 'd',
+        .init = ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_COEFFICIENT,
+        .increment = 0.05,
+        .name = "organ_pipe_filter_set_noise_cancel_coefficient",
+      },
+      {
+        .set = (funct)poly_harmonizer_set_on_for,
+        .get = (funct)poly_harmonizer_get_on_for,
+        .enter = NULL,
+        .self = harmonizer,
+        .type = 'i',
+        .init = POLY_HARMONIZER_DEFAULT_ON_FOR,
+        .increment = 1,
+        .name = "poly_harmonizer_set_on_for",
+       },
+      {
+        .set = (funct)poly_harmonizer_set_off_for,
+        .get = (funct)poly_harmonizer_get_off_for,
+        .enter = NULL,
+        .self = harmonizer,
+        .type = 'i',
+        .init = POLY_HARMONIZER_DEFAULT_OFF_FOR,
+        .increment = 1,
+        .name = "poly_harmonizer_set_off_for",
+      },
+      {
+        .set = (funct)poly_harmonizer_set_min_note,
+        .get = (funct)poly_harmonizer_get_min_note,
+        .enter = NULL,
+        .self = harmonizer,
+        .type = 'd',
+        .init = POLY_HARMONIZER_DEFAULT_MIN_NOTE,
+        .increment = 1,
+        .name = "poly_harmonizer_set_min_note",
+      },
+      {
+        .set = (funct)poly_harmonizer_set_max_note,
+        .get = (funct)poly_harmonizer_get_max_note,
+        .enter = NULL,
+        .self = harmonizer,
+        .type = 'd',
+        .init = POLY_HARMONIZER_DEFAULT_MAX_NOTE,
+        .increment = 1,
+        .name = "poly_harmonizer_set_max_note",
+       },
+      {
+        .set = (funct)poly_harmonizer_set_resolution,
+        .get = (funct)poly_harmonizer_get_resolution,
+        .enter = NULL,
+        .self = harmonizer,
+        .type = 'd',
+        .init = POLY_HARMONIZER_DEFAULT_RESOLUTION,
+        .increment = 1,
+        .name = "poly_harmonizer_set_resolution",
+      },
+      {
+        .set = (funct)poly_harmonizer_set_max_polyphony,
+        .get = (funct)poly_harmonizer_get_max_polyphony,
+        .enter = NULL,
+        .self = harmonizer,
+        .type = 'i',
+        .init = POLY_HARMONIZER_DEFAULT_MAX_POLYPHONY,
+        .increment = 1,
+        .name = "poly_harmonizer_set_max_polyphony",
+      },
+      {
+        .set = (funct)poly_harmonizer_set_delta,
+        .get = (funct)poly_harmonizer_get_delta,
+        .enter = NULL,
+        .self = harmonizer,
+        .type = 'd',
+        .init = POLY_HARMONIZER_DEFAULT_DELTA,
+        .increment = 0.1,
+        .name = "poly_harmonizer_set_delta",
+      },
+      {
+        .set = (funct)poly_harmonizer_set_M,
+        .get = (funct)poly_harmonizer_get_M,
+        .enter = NULL,
+        .self = harmonizer,
+        .type = 'i',
+        .init = POLY_HARMONIZER_DEFAULT_M,
+        .increment = 1,
+        .name = "poly_harmonizer_set_M",
+      }
+    };
+  int num_params = sizeof(params) / sizeof(params[0]);
+  return cycle_through_paramaters_and_get_input("self", params, num_params, "MAIN MENU", indent_level);
+}
 
 int main(int argc, char* argv[])
 {
-  HarmonizerController* controller = harmonizer_controller_new();
-  if(controller == NULL)
+  global_controller = harmonizer_controller_new();
+  if(global_controller == NULL)
     {perror("unable to create Harmonizer Controller"); return -1;}
   
   if(argc > 1)
@@ -107,7 +301,7 @@ int main(int argc, char* argv[])
               double aiff_secs = aiffDurationInSeconds(aiff);
               fprintf(stderr, "processing %s -- %.1f secs -- %i channels ...\r\n", *argv, aiff_secs, aiffNumChannels(aiff));
               timestamp_microsecs_t start = timestamp_get_current_time();
-              auProcessOffline((Audio*)controller, aiff);
+              auProcessOffline((Audio*)global_controller, aiff);
               timestamp_microsecs_t end = timestamp_get_current_time();
               double process_secs = (end-start)/1000000.0;
               fprintf(stderr, "Done in %.2f seconds -- %.2f%% realtime\r\n", process_secs, 100*process_secs/aiff_secs);
@@ -120,75 +314,21 @@ int main(int argc, char* argv[])
   else
     {
       i_hate_canonical_input_processing();
-      auPlay((Audio*)controller);
-      for(;;)
-        {
-          char c = getchar();
-          switch(c)
-            {
-              case 'q':
-                goto out;
-                break;
-              case 'c':
-                harmonizer_controller_clear(controller);
-                break;
-              default: break;
-            
-            }
-        }
-      out:
+      auPlay((Audio*)global_controller);
+      
+      Poly_Harmonizer* harmonizer = harmonizer_controller_get_harmonizer(global_controller);
+      Organ_Pipe_Filter* filter = poly_harmonizer_get_organ_pipe_filter(harmonizer);
+      
+      enter_main_menu(global_controller, 0, harmonizer, filter);
+
       make_stdin_cannonical_again();
     }
   
-  controller = (HarmonizerController*)auSubclassDestroy((Audio*)controller);
+  global_controller = (HarmonizerController*)auSubclassDestroy((Audio*)global_controller);
   return 0;
 }
 
-/*
-int _main(void)
-{
-  unsigned num_tests = 100;
-  unsigned a_rows = 2411;
-  unsigned a_cols = 1235;
-  unsigned b_cols = 1;
 
-  Matrix* a = matrix_new(a_rows, a_cols);
-  Matrix* b = matrix_new(a_cols, b_cols);
-  Matrix* result_1 = matrix_new(a_rows, b_cols);
-  Matrix* result_2 = matrix_new(a_rows, b_cols);
-  
-  matrix_fill_random_flat(a);
-  matrix_fill_random_flat(b);
-  
-  
-  int i;
-  
-  timestamp_microsecs_t start_1 = timestamp_get_current_time();
-  for(i=0;  i<num_tests; i++)
-    matrix_multiply(a, b, result_1);
-  timestamp_microsecs_t end_1 = timestamp_get_current_time();
-
-  timestamp_microsecs_t start_2 = timestamp_get_current_time();
-  for(i=0;  i<num_tests; i++)
-    matrix_multiply_multithread(a, b, result_2);
-  timestamp_microsecs_t end_2 = timestamp_get_current_time();
-  
-  //matrix_print(a);
-  //matrix_print(b);
-  //matrix_print(result_1);
-  //matrix_print(result_2);
-
-  if(matrix_is_pointwise_equal(result_1, result_2))
-    fprintf(stderr, "equal\r\n");
-  else
-    fprintf(stderr, "not equal\r\n");
-    
-  fprintf(stderr, "speed_ratio: %02f\r\n", (double)(end_1-start_1) / (double)(end_2-start_2));
-  
-  return 0;
-}
-
-*/
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/

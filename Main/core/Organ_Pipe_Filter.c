@@ -38,6 +38,12 @@ struct Opaque_Organ_Pipe_Filter_Struct
   float note_amplitudes[QUEUE_LENGTH][OP_NUM_SOLENOIDS];
   
   organ_pipe_filter_mode_t mode;
+  double reduction_coefficient;
+  double gate_coefficient;
+  double noise_cancel_coefficient;
+  
+  double avg_background_noise_energy_per_window;
+  double avg_background_noise_energy_per_bin;
   
 #if defined TEST_RECORD_MODE
   int did_save;
@@ -105,6 +111,10 @@ Organ_Pipe_Filter* organ_pipe_filter_new(int window_size /*power of 2 please*/, 
           fprintf(stderr, "Unable to find calibration samples for self-filterng. Try running opc first\r\n");
           return organ_pipe_filter_destroy(self);
         }
+
+      self->reduction_coefficient  = ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT;
+      self->gate_coefficient       = ORGAN_PIPE_FILTER_DEFAULT_GATE_COEFFICIENT;
+      self->noise_cancel_coefficient = ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_COEFFICIENT;
     
 #if defined TEST_RECORD_MODE
       self->test_input  = aiffWithDurationInSeconds(1, 44100, 16, TEST_RECORD_SECONDS+1);
@@ -193,11 +203,17 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self)
             if(filter[j] < 0)
               filter[j] = 0;
           }
-
+      
       aiff = aiffDestroy(aiff);
       if(num_windows == 0)
         return 0;
     }
+    
+  self->avg_background_noise_energy_per_window = 0;
+  for(i=1; i<self->fft_N_over_2; i++)
+    self->avg_background_noise_energy_per_window += self->filters[0][i];
+  
+  self->avg_background_noise_energy_per_bin = self->avg_background_noise_energy_per_window / (double)(self->fft_N_over_2 - 1);
   
   return 1;
 }
@@ -212,6 +228,45 @@ void organ_pipe_filter_notify_sounding_notes(Organ_Pipe_Filter* self, int soundi
     self->note_amplitudes[0][i] = sounding_notes[i] * 1/3.0;
   
   pthread_mutex_unlock(&self->note_amplitudes_mutex);
+}
+
+/*--------------------------------------------------------------------*/
+void   organ_pipe_filter_set_reduction_coefficient(Organ_Pipe_Filter* self, double coeff)
+{
+  if(coeff < 0) coeff = 0;
+  self->reduction_coefficient = coeff;
+}
+
+/*--------------------------------------------------------------------*/
+double organ_pipe_filter_get_reduction_coefficient(Organ_Pipe_Filter* self)
+{
+  return self->reduction_coefficient;
+}
+
+/*--------------------------------------------------------------------*/
+void   organ_pipe_filter_set_gate_coefficient(Organ_Pipe_Filter* self, double coeff)
+{
+  if(coeff < 0) coeff = 0;
+  self->gate_coefficient = coeff;
+}
+
+/*--------------------------------------------------------------------*/
+double organ_pipe_filter_get_gate_coefficient(Organ_Pipe_Filter* self)
+{
+  return self->gate_coefficient;
+}
+
+/*--------------------------------------------------------------------*/
+void   organ_pipe_filter_set_noise_cancel_coefficient(Organ_Pipe_Filter* self, double coeff)
+{
+  if(coeff < 0) coeff = 0;
+  self->noise_cancel_coefficient = coeff;
+}
+
+/*--------------------------------------------------------------------*/
+double organ_pipe_filter_get_noise_cancel_coefficient(Organ_Pipe_Filter* self)
+{
+  return self->noise_cancel_coefficient;
 }
 
 /*--------------------------------------------------------------------*/
@@ -254,6 +309,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
               amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j]
                         + self->note_amplitudes[QUEUE_LENGTH-2][j]
                         + self->note_amplitudes[QUEUE_LENGTH-3][j];
+              amplitude *= self->reduction_coefficient;
               if(amplitude > 0)
                 //don't filter the DC offset
                 for(k=1; k<self->fft_N_over_2; k++)
@@ -269,13 +325,15 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
           float total_energy = 0;
           for(j=1; j<self->fft_N_over_2; j++)
             {
-              if(self->real[j] < 0.1)
+              //if(self->real[j] < 0.1)
+              if(self->real[j] < (self->noise_cancel_coefficient * self->avg_background_noise_energy_per_bin))
                 self->real[j] = 0;
               total_energy += self->real[j];
             }
-            
+
           //noise gate
-          if(total_energy < 50)
+          //if(total_energy < 50)
+          if(total_energy < (self->gate_coefficient * self->avg_background_noise_energy_per_window))
             for(j=0; j<self->fft_N_over_2; j++)
               self->real[j] = 0;
 

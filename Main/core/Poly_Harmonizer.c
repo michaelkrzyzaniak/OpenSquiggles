@@ -15,16 +15,12 @@ Written by Michael Krzyzaniak
 
 #include "Poly_Harmonizer.h"
 
+//#define WINDOW_SIZE 4096
 #define WINDOW_SIZE 2048
 #define NUM_BANDS   30
 
-#define MAX_POLYPHONY 6
-
-#define MIN_NOTE      36
-#define MAX_NOTE      96
-//#define MIN_NOTE      52
-//#define MAX_NOTE      76
-#define NOTE_RANGE    (MAX_NOTE - MIN_NOTE)
+#define MAX_MAX_POLYPHONY 20
+#define MAX_MAX_NOTE_RANGE 127
 
 #define MIDI2CPS(x)  (440 * pow(2, ((x)-69) / 12.0))
 #define CPS2MIDI(x) ((int)round(69 + 12.0 * log2((x) / 440.0)))
@@ -45,7 +41,11 @@ struct opaque_poly_harmonizer_struct
   double sample_rate;
   double tau_min;
   double tau_max;
-  double tau_prec;
+  int min_note;
+  int max_note;
+  int note_range;
+  int max_polyphony;
+  double resolution;
   int M;
   int K;
   double alpha;
@@ -56,8 +56,8 @@ struct opaque_poly_harmonizer_struct
   
   int on_for;
   int off_for;
-  int on_count[NOTE_RANGE];
-  int prev_notes[MAX_POLYPHONY];
+  int on_count[MAX_MAX_NOTE_RANGE];
+  int prev_notes[MAX_MAX_POLYPHONY];
   int num_prev_notes;
   
   //pthread_mutex_t clear_mutex;
@@ -78,17 +78,21 @@ Poly_Harmonizer* poly_harmonizer_new(double sample_rate)
       
       //fft bins: tau_min: 195.0 tau_max: 3.7; (self->K / tau)
       //periods: tau_min: 21.0 tau_max: 1102.5;
-      self->tau_min  = self->sample_rate / MIDI2CPS(MAX_NOTE);
-      self->tau_max  = self->sample_rate / MIDI2CPS(MIN_NOTE);
-      self->tau_prec = 1;//0.5;
-      self->M = 20;
+      self->tau_min  = self->sample_rate / MIDI2CPS(self->max_note);
+      self->tau_max  = self->sample_rate / MIDI2CPS(self->min_note);
+      poly_harmonizer_set_resolution(self, POLY_HARMONIZER_DEFAULT_RESOLUTION);
+      self->min_note = POLY_HARMONIZER_DEFAULT_MIN_NOTE;
+      self->max_note = POLY_HARMONIZER_DEFAULT_MAX_NOTE;
+      self->note_range = self->max_note - self->min_note;
+      self->max_polyphony = POLY_HARMONIZER_DEFAULT_MAX_POLYPHONY;
+      self->M = POLY_HARMONIZER_DEFAULT_M;
       self->K = 2*WINDOW_SIZE;
       self->alpha = 27;
       self->beta  = 230;
-      self->delta = 1;
+      self->delta = POLY_HARMONIZER_DEFAULT_DELTA;
       
-      self->on_for  = 2;
-      self->off_for = 2;
+      self->on_for  = POLY_HARMONIZER_DEFAULT_ON_FOR;
+      self->off_for = POLY_HARMONIZER_DEFAULT_OFF_FOR;
       
       if(WINDOW_SIZE == 4096)
         {
@@ -152,6 +156,126 @@ void poly_harmonizer_init_state(Poly_Harmonizer* self)
 Organ_Pipe_Filter* poly_harmonizer_get_organ_pipe_filter(Poly_Harmonizer* self)
 {
   return self->filter;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_on_for (Poly_Harmonizer* self, int on_for)
+{
+  if(on_for < 1) on_for = 1;
+  self->on_for = on_for;
+}
+
+/*-----------------------------------------------------------------------*/
+int     poly_harmonizer_get_on_for (Poly_Harmonizer* self)
+{
+  return self->on_for;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_off_for(Poly_Harmonizer* self, int off_for)
+{
+  if(off_for < 1) off_for = 1;
+  self->off_for = off_for;
+}
+
+/*-----------------------------------------------------------------------*/
+int     poly_harmonizer_get_off_for(Poly_Harmonizer* self)
+{
+  return self->off_for;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_min_note(Poly_Harmonizer* self, double min_note)
+{
+  if(min_note < 0)
+    min_note = 0;
+  if(min_note > self->max_note)
+    min_note = self->max_note;
+  if((self->max_note - min_note) > MAX_MAX_NOTE_RANGE)
+    min_note = self->max_note - MAX_MAX_NOTE_RANGE;
+  self->min_note = min_note;
+  self->note_range = self->max_note - self->min_note;
+}
+
+/*-----------------------------------------------------------------------*/
+double  poly_harmonizer_get_min_note(Poly_Harmonizer* self)
+{
+  return self->min_note;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_max_note(Poly_Harmonizer* self, double max_note)
+{
+  if(max_note < self->min_note)
+    max_note = self->min_note;
+  if(max_note > 127)
+    max_note = 127;
+  if((max_note - self->min_note) > MAX_MAX_NOTE_RANGE)
+    max_note = self->min_note + MAX_MAX_NOTE_RANGE;
+  self->max_note = max_note;
+  self->note_range = self->max_note - self->min_note;
+}
+
+/*-----------------------------------------------------------------------*/
+double  poly_harmonizer_get_max_note(Poly_Harmonizer* self)
+{
+  return self->max_note;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_resolution(Poly_Harmonizer* self, double divisions_per_half_step)
+{
+  if(divisions_per_half_step <= 1) divisions_per_half_step = 1;
+  
+  self->resolution = 1.0/divisions_per_half_step;
+}
+
+/*-----------------------------------------------------------------------*/
+double  poly_harmonizer_get_resolution(Poly_Harmonizer* self)
+{
+  return 1.0/self->resolution;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_max_polyphony(Poly_Harmonizer* self, int polyphony)
+{
+  if(polyphony < 0) polyphony = 0;
+  if(polyphony > MAX_MAX_POLYPHONY) polyphony = MAX_MAX_POLYPHONY;
+  self->max_polyphony = polyphony;
+}
+
+/*-----------------------------------------------------------------------*/
+int     poly_harmonizer_get_max_polyphony(Poly_Harmonizer* self)
+{
+  return self->max_polyphony;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_delta(Poly_Harmonizer* self, double delta)
+{
+  if(delta < 0) delta = 0;
+  //if(delta > 1) delta = 1;
+  
+  self->delta = delta;
+}
+
+/*-----------------------------------------------------------------------*/
+double  poly_harmonizer_get_delta(Poly_Harmonizer* self)
+{
+  return self->delta;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_M(Poly_Harmonizer* self, int M)
+{
+  if(M<1) M=1;
+  self->M = M;
+}
+
+/*-----------------------------------------------------------------------*/
+int     poly_harmonizer_get_M(Poly_Harmonizer* self)
+{
+  return self->M;
 }
 
 /*-----------------------------------------------------------------------*/
@@ -250,7 +374,8 @@ double poly_harmonizer_salience(Poly_Harmonizer* self, dft_sample_t* Y, double t
       if(k_max > self->band_center_freq_indices[NUM_BANDS])
         k_max = self->band_center_freq_indices[NUM_BANDS];
 
-      //double check bounds on loop, should always have mK/sample_rate
+      //fprintf(stderr, "\tm: %i\tk_min: %i\t k_max: %i\r\n", m, k_min-self->band_center_freq_indices[1], k_max-self->band_center_freq_indices[1]);
+
       for(k=k_min; k<=k_max; k++)
         if(Y[k] > max_Y_k)
           max_Y_k = Y[k];
@@ -272,7 +397,7 @@ double poly_harmonizer_get_max_salience(Poly_Harmonizer* self, dft_sample_t* Y, 
   double s_max_q_best;
   double max_salience = 0;
   
-  while((tau_up_q_best - tau_low_q_best) > self->tau_prec)
+  while((tau_up_q_best - tau_low_q_best) > self->resolution)
     {
       tau_low_Q = (tau_low_q_best + tau_up_q_best) / 2.0;
       tau_up_Q = tau_up_q_best;
@@ -294,53 +419,6 @@ double poly_harmonizer_get_max_salience(Poly_Harmonizer* self, dft_sample_t* Y, 
   return (tau_low_q_best + tau_up_q_best) / 2.0;
 }
 
-
-/*-----------------------------------------------------------------------*/
-double __poly_harmonizer_get_max_salience_direct(Poly_Harmonizer* self, dft_sample_t* Y, double* returned_salience)
-{
-  int min_bin  = self->K / self->tau_max;
-  int max_bin  = self->K / self->tau_min;
-  int num_bins = max_bin - min_bin;
-  double salience;
-  int i, m, k;
-
-  int argmax_salience = max_bin;
-  int max_salience = 0;
-
-  double f = self->sample_rate;
-  double g_tau_m;
-  
-  
-  for(i=0; i<=num_bins; i++)
-    {
-      salience = 0;
-      
-      //double tau = self->K / (double)(i+min_bin);
-      //double f_over_tau = f / tau;
-      //double f_over_tau_plus_alpha = f_over_tau + self->alpha;
-      
-      for(m=1; m<=self->M; m++)
-        {
-          g_tau_m = 1/(double)m;
-          k = m * (i+min_bin);
-          
-          if((k >= self->band_center_freq_indices[1]) && (k <= self->band_center_freq_indices[NUM_BANDS]))
-            salience += g_tau_m * Y[k];
-          else break;
-        }
-     
-      if(salience > max_salience)
-        {
-          argmax_salience = i;
-          max_salience = salience;
-        }
-    }
-  
-  
-  *returned_salience = max_salience;
-  return self->K / (double)(min_bin+argmax_salience);
-}
-
 /*-----------------------------------------------------------------------*/
 double poly_harmonizer_get_max_salience_direct(Poly_Harmonizer* self, dft_sample_t* Y, double* returned_salience)
 {
@@ -355,7 +433,7 @@ double poly_harmonizer_get_max_salience_direct(Poly_Harmonizer* self, dft_sample
   double g_tau_m;
   double f_over_tau_plus_alpha;
   
-  for(i=MIN_NOTE; i<=MAX_NOTE; i+=self->tau_prec)
+  for(i=self->min_note; i<=self->max_note; i+=self->resolution)
     {
       salience = 0;
       //hz could be pre-computed;
@@ -367,10 +445,7 @@ double poly_harmonizer_get_max_salience_direct(Poly_Harmonizer* self, dft_sample
       
       for(m=1; m<=self->M; m++)
         {
-          //g_tau_m = 1/(double)m;
           g_tau_m = f_over_tau_plus_alpha / (m * hz + self->beta);
-          
-          
           k = round(m * bin);
           
           if((k >= self->band_center_freq_indices[1]) && (k <= self->band_center_freq_indices[NUM_BANDS]))
@@ -434,7 +509,6 @@ int poly_harmonizer_iterative_estimation_and_cancellation(Poly_Harmonizer* self,
           k_min = round(m * self->K / tau);
           
           //search for local maximum
-
           while(k_min > self->band_center_freq_indices[1])
             if(Y[k_min] <= Y[k_min-1])
               --k_min;
@@ -473,7 +547,8 @@ int poly_harmonizer_iterative_estimation_and_cancellation(Poly_Harmonizer* self,
 
           for(k=k_min; k<=k_max; k++)
             {
-              Y[k] = 0;
+              Y[k] *= self->delta;
+              //Y[k] *= g_tau_m * self->delta;
               //Y[k] -= Y[k] * g_tau_m * self->delta;
               if(Y[k] < 0) Y[k] = 0;
             }
@@ -511,26 +586,26 @@ void poly_harmonizer_stft_process_callback(void* SELF, dft_sample_t* magnitude, 
   if(N != WINDOW_SIZE) return;
 
   int i, k;
-  float freqs[MAX_POLYPHONY];
-  int current_notes[MAX_POLYPHONY];
+  float freqs[self->max_polyphony];
+  int current_notes[self->max_polyphony];
   int num_current_notes=0;
-  int many_hot_output[NOTE_RANGE] = {0};
+  int many_hot_output[MAX_MAX_NOTE_RANGE] = {0};
   
   poly_harmonizer_spectral_whitening(self, magnitude, N);
 
-  int num_notes = poly_harmonizer_iterative_estimation_and_cancellation(self, magnitude, freqs, MAX_POLYPHONY);
+  int num_notes = poly_harmonizer_iterative_estimation_and_cancellation(self, magnitude, freqs, self->max_polyphony);
  
  
   for(i=0; i<num_notes; i++)
     {
       int note = CPS2MIDI(freqs[i]);
-      if((note < MIN_NOTE) || (note > MAX_NOTE))
+      if((note < self->min_note) || (note > self->max_note))
         continue;
       
-      many_hot_output[note - MIN_NOTE] = 1;
+      many_hot_output[note - self->min_note] = 1;
     }
  
-  for(i=0; i<NOTE_RANGE; i++)
+  for(i=0; i<self->note_range; i++)
     {
       if(many_hot_output[i])
         {
@@ -538,18 +613,18 @@ void poly_harmonizer_stft_process_callback(void* SELF, dft_sample_t* magnitude, 
           if(self->on_count[i] > self->on_for)
             self->on_count[i] = self->on_for;
             
-          if((self->on_count[i] == self->on_for) || poly_harmonizer_array_contains_int(self, self->prev_notes, self->num_prev_notes, i + MIN_NOTE))
-            if(num_current_notes<NOTE_RANGE-1)
-              current_notes[num_current_notes++] = i + MIN_NOTE;
+          if((self->on_count[i] == self->on_for) || poly_harmonizer_array_contains_int(self, self->prev_notes, self->num_prev_notes, i + self->min_note))
+            if(num_current_notes<self->note_range-1)
+              current_notes[num_current_notes++] = i + self->min_note;
         }
       else
         {
           self->on_count[i] -= 1;
           if(self->on_count[i] <= 0)
             self->on_count[i] = 0;
-          else if(poly_harmonizer_array_contains_int(self, self->prev_notes, self->num_prev_notes, i + MIN_NOTE))
-            if(num_current_notes<NOTE_RANGE-1)
-              current_notes[num_current_notes++] = i + MIN_NOTE;
+          else if(poly_harmonizer_array_contains_int(self, self->prev_notes, self->num_prev_notes, i + self->min_note))
+            if(num_current_notes<self->note_range-1)
+              current_notes[num_current_notes++] = i + self->min_note;
         }
     }
  

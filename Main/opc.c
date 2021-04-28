@@ -170,6 +170,40 @@ Params* main_init_params(const char* home)
 }
 
 /*--------------------------------------------------------------------*/
+double main_poor_mans_max_salience(auSample_t* spectrum)
+{
+  double min_note = 36;
+  double max_note = 96;
+  double increment = 0.1;
+  int M = 5;
+  double note;
+  int m;
+  double salience, max_salience=0, max_midi=min_note;
+  
+  for(note=min_note; note<=max_note; note+=increment)
+    {
+      double freq = AU_MIDI2CPS(note);
+      double tau = SAMPLE_RATE / freq;
+      
+      salience = 0;
+      
+      for(m=1; m<=M; m++)
+        {
+          int bin = round(m * DFT_LENGTH / tau);
+          if((bin > 1) && (bin < DFT_LENGTH/2))
+            salience += 1.0/(double)m * spectrum[bin];
+        }
+      
+      if(salience > max_salience)
+        {
+          max_salience = salience;
+          max_midi = note;
+        }
+    }
+  return max_midi;
+}
+
+/*--------------------------------------------------------------------*/
 void main_notify_when_done_recording (void* SELF, MKAiff* aiff, unsigned samples_clipped)
 {
   globals_t* globals = (globals_t*)SELF;
@@ -200,7 +234,11 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff, unsigned samples
       dft_real_forward_dft(globals->real, globals->imag, DFT_LENGTH);
       dft_rect_to_polar(globals->real, globals->imag, DFT_LENGTH/2);
   
+      double midi_note = main_poor_mans_max_salience(globals->real);
+      int midi = round(midi_note);
+  
       //actual pipes range from 52 to 75
+      /*
       int start_midi = 36;
       int end_midi = 96;
   
@@ -220,14 +258,14 @@ void main_notify_when_done_recording (void* SELF, MKAiff* aiff, unsigned samples
   
       double freq_range_min = dft_frequency_of_bin(argmax-0.5, SAMPLE_RATE, DFT_LENGTH);
       double freq_range_max = dft_frequency_of_bin(argmax+0.5, SAMPLE_RATE, DFT_LENGTH);
-    
+      */
     
       asprintf(&filename_string, "%s/%s/solenoid_%i_sample.aiff", globals->home, OP_PARAMS_DIR, globals->i);
       asprintf(&param_string, "solenoid_%i_note", globals->i);
       params_init_int(globals->params, param_string, -1);
       params_set_int(globals->params, param_string, midi);
   
-      fprintf(stderr, "Solenoid: %i\tnote: %i (%.2f - %.2f)\tpeak amplitude: %.2f\t%u samples clipped\r\n", globals->i, midi, AU_CPS2MIDI(freq_range_min), AU_CPS2MIDI(freq_range_max), max_sample, samples_clipped);
+      fprintf(stderr, "Solenoid: %i\tnote: %i (%0.1f +- 0.1)\tpeak amplitude: %.2f\t%u samples clipped\r\n", globals->i, midi, midi_note, max_sample, samples_clipped);
       
       free(param_string);
     }
