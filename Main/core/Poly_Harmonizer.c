@@ -97,7 +97,7 @@ Poly_Harmonizer* poly_harmonizer_new(double sample_rate)
       if(WINDOW_SIZE == 4096)
         {
           self->alpha = 52;
-          self->delta = 0.89;
+          self->delta = POLY_HARMONIZER_DEFAULT_DELTA; //0.89
         }
       
       poly_harmonizer_init_band_center_freqs(self);

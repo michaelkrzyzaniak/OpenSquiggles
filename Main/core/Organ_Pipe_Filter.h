@@ -12,9 +12,9 @@ extern "C"{
 #include "../../Beat-and-Tempo-Tracking/src/DFT.h"
 #include "constants.h"
 
-#define ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT    1.0
-#define ORGAN_PIPE_FILTER_DEFAULT_GATE_COEFFICIENT         2.0
-#define ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_COEFFICIENT 1.0
+#define ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT    0.5
+#define ORGAN_PIPE_FILTER_DEFAULT_GATE_COEFFICIENT         0.1
+#define ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_COEFFICIENT 0.0
 
 /*--------------------------------------------------------------------*/
 typedef enum organ_pipe_filter_mode_enum

@@ -16,6 +16,8 @@
 //sudo apt-get install libasound2-dev
 //gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c lib/dywapitchtrack/src/*.c -lasound -lm -lpthread -lrt -O2 -o op2
 
+//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o op2
+
 #include "core/Matrix.h"
 #include "core/Timestamp.h"
 //#include "core/Harmonizer.h"
