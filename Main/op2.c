@@ -10,7 +10,7 @@
 ----------------------------------------------------------------------*/
 
 //OSX compile with:
-//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c lib/dywapitchtrack/src/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2 -o op2
+//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -framework CoreMidi -framework Carbon -framework AudioToolbox -O2 -o op2
 
 //Linux compile with:
 //sudo apt-get install libasound2-dev
@@ -182,24 +182,24 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .name = "organ_pipe_filter_set_reduction_coefficient",
        },
       {
-        .set = (funct)organ_pipe_filter_set_gate_coefficient,
-        .get = (funct)organ_pipe_filter_get_gate_coefficient,
+        .set = (funct)organ_pipe_filter_set_gate_thresh,
+        .get = (funct)organ_pipe_filter_get_gate_thresh,
         .enter = NULL,
         .self = filter,
         .type = 'd',
-        .init = ORGAN_PIPE_FILTER_DEFAULT_GATE_COEFFICIENT,
-        .increment = 0.05,
-        .name = "organ_pipe_filter_set_gate_coefficient",
+        .init = ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH,
+        .increment = 5,
+        .name = "organ_pipe_filter_set_gate_thresh",
       },
       {
-        .set = (funct)organ_pipe_filter_set_noise_cancel_coefficient,
-        .get = (funct)organ_pipe_filter_get_noise_cancel_coefficient,
+        .set = (funct)organ_pipe_filter_set_noise_cancel_thresh,
+        .get = (funct)organ_pipe_filter_get_noise_cancel_thresh,
         .enter = NULL,
         .self = filter,
         .type = 'd',
-        .init = ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_COEFFICIENT,
+        .init = ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_THRESH,
         .increment = 0.05,
-        .name = "organ_pipe_filter_set_noise_cancel_coefficient",
+        .name = "organ_pipe_filter_set_noise_cancel_thresh",
       },
       {
         .set = (funct)poly_harmonizer_set_on_for,

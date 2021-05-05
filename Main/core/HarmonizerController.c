@@ -166,7 +166,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
     
   for(i=0; i<num_notes; i++)
     {
-      while(midi_notes[i] > 76)
+      while(midi_notes[i] > 75)
         midi_notes[i] -= 12;
       while (midi_notes[i] < 52)
         midi_notes[i] += 12;

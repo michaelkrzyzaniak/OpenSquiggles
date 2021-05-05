@@ -13,8 +13,8 @@ extern "C"{
 #include "constants.h"
 
 #define ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT    0.5
-#define ORGAN_PIPE_FILTER_DEFAULT_GATE_COEFFICIENT         0.1
-#define ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_COEFFICIENT 0.0
+#define ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH              50
+#define ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_THRESH      0.1
 
 /*--------------------------------------------------------------------*/
 typedef enum organ_pipe_filter_mode_enum
@@ -41,12 +41,12 @@ void   organ_pipe_filter_set_reduction_coefficient(Organ_Pipe_Filter* self, doub
 double organ_pipe_filter_get_reduction_coefficient(Organ_Pipe_Filter* self);
 
 /* >= 0 this is multiplied by the ambient noise level to get the actual gate threshold */
-void   organ_pipe_filter_set_gate_coefficient(Organ_Pipe_Filter* self, double coeff);
-double organ_pipe_filter_get_gate_coefficient(Organ_Pipe_Filter* self);
+void   organ_pipe_filter_set_gate_thresh(Organ_Pipe_Filter* self, double thresh);
+double organ_pipe_filter_get_gate_thresh(Organ_Pipe_Filter* self);
 
 /* >= 0 this is multiplied by the average noise level; any fft bin below this value after filtering will be set to 0 */
-void   organ_pipe_filter_set_noise_cancel_coefficient(Organ_Pipe_Filter* self, double coeff);
-double organ_pipe_filter_get_noise_cancel_coefficient(Organ_Pipe_Filter* self);
+void   organ_pipe_filter_set_noise_cancel_thresh(Organ_Pipe_Filter* self, double thresh);
+double organ_pipe_filter_get_noise_cancel_thresh(Organ_Pipe_Filter* self);
 
 #if defined(__cplusplus)
 }

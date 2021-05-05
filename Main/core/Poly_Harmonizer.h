@@ -23,7 +23,7 @@ extern "C"{
 #define POLY_HARMONIZER_DEFAULT_MAX_NOTE 96
 #define POLY_HARMONIZER_DEFAULT_RESOLUTION  3.0
 #define POLY_HARMONIZER_DEFAULT_MAX_POLYPHONY 6
-#define POLY_HARMONIZER_DEFAULT_DELTA  1
+#define POLY_HARMONIZER_DEFAULT_DELTA  0
 #define POLY_HARMONIZER_DEFAULT_M 20
 
 typedef void (*poly_harmonizer_notes_changed_callback_t)(void* SELF, int* midi_notes, int num_notes);
