@@ -188,7 +188,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .self = filter,
         .type = 'd',
         .init = ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH,
-        .increment = 5,
+        .increment = 1,
         .name = "organ_pipe_filter_set_gate_thresh",
       },
       {

@@ -13,7 +13,7 @@ extern "C"{
 #include "constants.h"
 
 #define ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT    0.5
-#define ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH              50
+#define ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH              5
 #define ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_THRESH      0.1
 
 /*--------------------------------------------------------------------*/

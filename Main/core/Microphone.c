@@ -54,7 +54,7 @@ struct OpaqueMicrophoneStruct
   Click*  click            ;
   Robot*  robot            ;
   int     silent_beat_count;
-  int      count_out_n;
+  int     count_out_n      ;
   
   int     play_beat_bell   ;
   
@@ -96,8 +96,8 @@ Microphone* mic_new()
       self->destroy = mic_destroy;
 #endif
       self->click = click_new();
-      if(self->click == NULL)
-        return (Microphone*)auDestroy((Audio*)self);
+      //if(self->click == NULL)
+        //return (Microphone*)auDestroy((Audio*)self);
     
       self->robot = robot_new(mic_message_recd_from_robot, self);
       if(self->robot == NULL)
@@ -169,7 +169,8 @@ Microphone* mic_new()
   //there should be a play callback that I can intercept and do this there.
       sleep(1);
       robot_send_message(self->robot, robot_cmd_get_firmware_version);
-      auPlay((Audio*)self->click);
+      if(self->click != NULL)
+        auPlay((Audio*)self->click);
     }
   return self;
 }
@@ -188,7 +189,8 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
     //{
       //if(self->play_beat_bell)
         //{
-          //click_click(self->click, 0.5);
+          //if(self->click != NULL)
+          //  click_click(self->click, 0.5);
           //robot_send_message(self->robot, robot_cmd_tap, 1.0 /*strength*/);
           //fprintf(stderr, "onset\r\n");
         //}
@@ -235,7 +237,8 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
   
   if(self->play_beat_bell)
     {
-      click_klop(self->click, 0.5);
+      if(self->click != NULL)
+        click_klop(self->click, 0.5);
       robot_send_message(self->robot, robot_cmd_bell, 1.0 /*strength*/);
       //fprintf(stderr, "beat\r\n");
     }
@@ -403,7 +406,8 @@ void* mic_rhythm_thread_run_loop (void* SELF)
         if(self->beat_clock >= self->rhythm_onsets[self->rhythm_onsets_index].beat_time)
           {
             int timbre = self->rhythm_onsets[self->rhythm_onsets_index].timbre_class;
-            click_click(self->click, self->rhythm_onsets[self->rhythm_onsets_index].strength);
+            if(self->click != NULL)
+              click_click(self->click, self->rhythm_onsets[self->rhythm_onsets_index].strength);
             if(timbre < 0)
               robot_send_message(self->robot, robot_cmd_tap, self->rhythm_onsets[self->rhythm_onsets_index].strength);
             else
