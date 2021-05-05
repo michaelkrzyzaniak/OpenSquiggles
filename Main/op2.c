@@ -198,7 +198,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .self = filter,
         .type = 'd',
         .init = ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_THRESH,
-        .increment = 0.05,
+        .increment = 0.005,
         .name = "organ_pipe_filter_set_noise_cancel_thresh",
       },
       {
