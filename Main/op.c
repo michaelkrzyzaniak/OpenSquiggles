@@ -43,7 +43,7 @@ void make_stdin_cannonical_again();
 #define  OSC_SEND_PORT   9000
 #define  OSC_RECV_PORT   9001
 
-#define PARAMS_PATH ".squiggles_notes.xml" //it will go in home directory
+#define PARAMS_PATH ".squiggles_notes/squiggles_notes.xml" //it will go in home directory
 #define NUM_SOLENOIDS 8
 
 /*--------------------------------------------------------------------*/
