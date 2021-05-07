@@ -42,7 +42,6 @@ void make_stdin_cannonical_again();
 #define  OSC_VALUES_BUFFER_SIZE 64
 #define  OSC_SEND_PORT   9000
 #define  OSC_RECV_PORT   9001
-#define  OSC_ONSET_BUFFER_SIZE 64 //no bigger than OSC_VALUES_BUFFER_SIZE
 
 #define PARAMS_PATH ".squiggles_notes.xml" //it will go in home directory
 #define NUM_SOLENOIDS 8
@@ -136,37 +135,37 @@ OSC_Responder*      osc_responder_destroy (OSC_Responder* self)
     {
       /* free any malloc-ed instance variables here */
     
-      fprintf(stderr, "Here Free 1");
+      fprintf(stderr, "Here Free 1\r\n");
       if(self->osc_recv_thread != 0)
         {
           pthread_cancel(self->osc_recv_thread);
           
-          fprintf(stderr, "Here Free 1.5");
+          fprintf(stderr, "Here Free 1.5\r\n");
           pthread_join(self->osc_recv_thread, NULL);
         }
       
-      fprintf(stderr, "Here Free 2");
+      fprintf(stderr, "Here Free 2\r\n");
       if(self->osc_send_buffer != NULL)
         free(self->osc_send_buffer);
         
-      fprintf(stderr, "Here Free 2");
+      fprintf(stderr, "Here Free 2\r\n");
       if(self->osc_recv_buffer != NULL)
         free(self->osc_recv_buffer);
         
-      fprintf(stderr, "Here Free 3");
+      fprintf(stderr, "Here Free 3\r\n");
       if(self->net != NULL)
         net_disconnect(self->net);
         
-      fprintf(stderr, "Here Free 4");
+      fprintf(stderr, "Here Free 4\r\n");
       net_destroy(self->net);
       
-      fprintf(stderr, "Here Free 5");
+      fprintf(stderr, "Here Free 5\r\n");
       robot_destroy(self->robot);
       
-      fprintf(stderr, "Here Free 6");
+      fprintf(stderr, "Here Free 6\r\n");
       params_destroy(self->params);
       
-      fprintf(stderr, "Here Free 7");
+      fprintf(stderr, "Here Free 7\r\n");
       free(self);
     }
   return (OSC_Responder*) NULL;
@@ -181,11 +180,13 @@ void* osc_responder_recv_thread_run_loop(void* SELF)
   
   for(;;)
   {
-    int num_valid_bytes = net_udp_receive (self->net, self->osc_recv_buffer, OSC_BUFFER_SIZE, senders_address);
+    int num_valid_bytes = net_udp_receive(self->net, self->osc_recv_buffer, OSC_BUFFER_SIZE, senders_address);
+    //fprintf(stderr, "-->  net_udp_receive %i bytes\r\n", num_valid_bytes);
     if(num_valid_bytes < 0)
       continue; //return NULL ?
   
     int num_osc_values = oscParse(self->osc_recv_buffer, num_valid_bytes, &osc_address, &osc_type_tag, self->osc_values_buffer, OSC_VALUES_BUFFER_SIZE);
+    //fprintf(stderr, "-->  osc_parse %s %s [%i values]\r\n", osc_address, osc_type_tag, num_osc_values);
     if(num_osc_values < 0)
         continue;
     
@@ -196,6 +197,7 @@ void* osc_responder_recv_thread_run_loop(void* SELF)
         for(i=0; i<num_osc_values; i++)
           {
             int stream = oscValueAsInt(self->osc_values_buffer[i], osc_type_tag[i]);
+            //fprintf(stderr, "     --> %02X\r\n", (unsigned char)stream);
             if ((stream >= 0) && (stream <= 0xFF))
               midi_parse((uint8_t)stream);
           }
