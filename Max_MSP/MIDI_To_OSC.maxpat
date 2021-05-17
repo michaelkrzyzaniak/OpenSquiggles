@@ -4,7 +4,7 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 1,
-			"revision" : 8,
+			"revision" : 11,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
@@ -447,7 +447,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 105.0, 240.0, 104.0, 22.0 ],
-					"text" : "/midi 131 55 0"
+					"text" : "/midi 128 56 0"
 				}
 
 			}
@@ -459,7 +459,7 @@
 					"numoutlets" : 3,
 					"outlettype" : [ "bang", "bang", "int" ],
 					"patching_rect" : [ 60.0, 270.0, 40.0, 22.0 ],
-					"text" : "uzi 2"
+					"text" : "uzi 1"
 				}
 
 			}

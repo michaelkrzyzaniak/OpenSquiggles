@@ -13,7 +13,7 @@ Written by Michael Krzyzaniak
 #include <math.h>  //log, exp, etc
 //#include <pthread.h>  //thread, mutex
 
-#include "../lib/dywapitchtrack/src/dywapitchtrack.h"
+#include "../extras/dywapitchtrack.h"
 #include "Mono_Harmonizer.h"
 
 #define WINDOW_SIZE 2048
@@ -38,7 +38,7 @@ struct opaque_mono_harmonizer_struct
 
 
 /*-----------------------------------------------------------------------*/
-Mono_Harmonizer* mono_harmonizer_new(char* folder)
+Mono_Harmonizer* mono_harmonizer_new()
 {
   Mono_Harmonizer* self = calloc(1, sizeof(*self));
 

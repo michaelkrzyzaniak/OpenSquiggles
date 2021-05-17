@@ -14,9 +14,7 @@
 
 //Linux compile with:
 //sudo apt-get install libasound2-dev
-//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c lib/dywapitchtrack/src/*.c -lasound -lm -lpthread -lrt -O2 -o op2
-
-//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o op2
+//gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c-lasound -lm -lpthread -lrt -O2 -o op2
 
 #include "core/Matrix.h"
 #include "core/Timestamp.h"
@@ -26,7 +24,7 @@
 
 #include <stdio.h>
 
-void  make_stdin_cannonical_again();
+void make_stdin_cannonical_again();
 void i_hate_canonical_input_processing(void);
 
 HarmonizerController* global_controller;
@@ -167,45 +165,89 @@ int cycle_through_paramaters_and_get_input(const char* object_name, param_t* par
 }
 
 /*--------------------------------------------------------------------*/
-int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Harmonizer* harmonizer, Organ_Pipe_Filter* filter)
+int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Harmonizer* harmonizer_1, Mono_Harmonizer* harmonizer_2)
 {
+    Organ_Pipe_Filter* filter_1 = poly_harmonizer_get_organ_pipe_filter(harmonizer_1);
+    Organ_Pipe_Filter* filter_2 = mono_harmonizer_get_organ_pipe_filter(harmonizer_2);
+    
     param_t params[] =
     {
+      {
+        .set = (funct)harmonizer_controller_set_harmonizer,
+        .get = (funct)harmonizer_controller_get_harmonizer,
+        .enter = NULL,
+        .self = controller,
+        .type = 'i',
+        .init = 1,
+        .increment = 1,
+        .name = "harmonizer_controller_set_harmonizer",
+       },
       {
         .set = (funct)organ_pipe_filter_set_reduction_coefficient,
         .get = (funct)organ_pipe_filter_get_reduction_coefficient,
         .enter = NULL,
-        .self = filter,
+        .self = filter_1,
         .type = 'd',
         .init = ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT,
         .increment = 0.05,
-        .name = "organ_pipe_filter_set_reduction_coefficient",
+        .name = "organ_pipe_filter_set_reduction_coefficient_1",
        },
       {
         .set = (funct)organ_pipe_filter_set_gate_thresh,
         .get = (funct)organ_pipe_filter_get_gate_thresh,
         .enter = NULL,
-        .self = filter,
+        .self = filter_1,
         .type = 'd',
         .init = ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH,
         .increment = 1,
-        .name = "organ_pipe_filter_set_gate_thresh",
+        .name = "organ_pipe_filter_set_gate_thresh_1",
       },
       {
         .set = (funct)organ_pipe_filter_set_noise_cancel_thresh,
         .get = (funct)organ_pipe_filter_get_noise_cancel_thresh,
         .enter = NULL,
-        .self = filter,
+        .self = filter_1,
         .type = 'd',
         .init = ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_THRESH,
         .increment = 0.005,
-        .name = "organ_pipe_filter_set_noise_cancel_thresh",
+        .name = "organ_pipe_filter_set_noise_cancel_thresh_1",
       },
+      {
+        .set = (funct)organ_pipe_filter_set_reduction_coefficient,
+        .get = (funct)organ_pipe_filter_get_reduction_coefficient,
+        .enter = NULL,
+        .self = filter_2,
+        .type = 'd',
+        .init = ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT,
+        .increment = 0.05,
+        .name = "organ_pipe_filter_set_reduction_coefficient_2",
+       },
+      {
+        .set = (funct)organ_pipe_filter_set_gate_thresh,
+        .get = (funct)organ_pipe_filter_get_gate_thresh,
+        .enter = NULL,
+        .self = filter_2,
+        .type = 'd',
+        .init = ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH,
+        .increment = 1,
+        .name = "organ_pipe_filter_set_gate_thresh_2",
+      },
+      {
+        .set = (funct)organ_pipe_filter_set_noise_cancel_thresh,
+        .get = (funct)organ_pipe_filter_get_noise_cancel_thresh,
+        .enter = NULL,
+        .self = filter_2,
+        .type = 'd',
+        .init = ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_THRESH,
+        .increment = 0.005,
+        .name = "organ_pipe_filter_set_noise_cancel_thresh_2",
+      },
+
       {
         .set = (funct)poly_harmonizer_set_on_for,
         .get = (funct)poly_harmonizer_get_on_for,
         .enter = NULL,
-        .self = harmonizer,
+        .self = harmonizer_1,
         .type = 'i',
         .init = POLY_HARMONIZER_DEFAULT_ON_FOR,
         .increment = 1,
@@ -215,7 +257,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .set = (funct)poly_harmonizer_set_off_for,
         .get = (funct)poly_harmonizer_get_off_for,
         .enter = NULL,
-        .self = harmonizer,
+        .self = harmonizer_1,
         .type = 'i',
         .init = POLY_HARMONIZER_DEFAULT_OFF_FOR,
         .increment = 1,
@@ -225,7 +267,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .set = (funct)poly_harmonizer_set_min_note,
         .get = (funct)poly_harmonizer_get_min_note,
         .enter = NULL,
-        .self = harmonizer,
+        .self = harmonizer_1,
         .type = 'd',
         .init = POLY_HARMONIZER_DEFAULT_MIN_NOTE,
         .increment = 1,
@@ -235,7 +277,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .set = (funct)poly_harmonizer_set_max_note,
         .get = (funct)poly_harmonizer_get_max_note,
         .enter = NULL,
-        .self = harmonizer,
+        .self = harmonizer_1,
         .type = 'd',
         .init = POLY_HARMONIZER_DEFAULT_MAX_NOTE,
         .increment = 1,
@@ -245,7 +287,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .set = (funct)poly_harmonizer_set_resolution,
         .get = (funct)poly_harmonizer_get_resolution,
         .enter = NULL,
-        .self = harmonizer,
+        .self = harmonizer_1,
         .type = 'd',
         .init = POLY_HARMONIZER_DEFAULT_RESOLUTION,
         .increment = 1,
@@ -255,7 +297,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .set = (funct)poly_harmonizer_set_max_polyphony,
         .get = (funct)poly_harmonizer_get_max_polyphony,
         .enter = NULL,
-        .self = harmonizer,
+        .self = harmonizer_1,
         .type = 'i',
         .init = POLY_HARMONIZER_DEFAULT_MAX_POLYPHONY,
         .increment = 1,
@@ -265,7 +307,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .set = (funct)poly_harmonizer_set_delta,
         .get = (funct)poly_harmonizer_get_delta,
         .enter = NULL,
-        .self = harmonizer,
+        .self = harmonizer_1,
         .type = 'd',
         .init = POLY_HARMONIZER_DEFAULT_DELTA,
         .increment = 0.1,
@@ -275,7 +317,7 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .set = (funct)poly_harmonizer_set_M,
         .get = (funct)poly_harmonizer_get_M,
         .enter = NULL,
-        .self = harmonizer,
+        .self = harmonizer_1,
         .type = 'i',
         .init = POLY_HARMONIZER_DEFAULT_M,
         .increment = 1,
@@ -318,10 +360,10 @@ int main(int argc, char* argv[])
       i_hate_canonical_input_processing();
       auPlay((Audio*)global_controller);
       
-      Poly_Harmonizer* harmonizer = harmonizer_controller_get_harmonizer(global_controller);
-      Organ_Pipe_Filter* filter = poly_harmonizer_get_organ_pipe_filter(harmonizer);
+      Poly_Harmonizer* harmonizer_1 = harmonizer_controller_get_harmonizer_1(global_controller);
+      Mono_Harmonizer* harmonizer_2 = harmonizer_controller_get_harmonizer_2(global_controller);
       
-      enter_main_menu(global_controller, 0, harmonizer, filter);
+      enter_main_menu(global_controller, 0, harmonizer_1, harmonizer_2);
 
       make_stdin_cannonical_again();
     }

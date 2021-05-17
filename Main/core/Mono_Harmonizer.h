@@ -26,7 +26,7 @@ typedef void (*mono_harmonizer_notes_changed_callback_t)(void* SELF, int* midi_n
 
 typedef struct opaque_mono_harmonizer_struct Mono_Harmonizer;
 
-Mono_Harmonizer* mono_harmonizer_new                      (char* folder);
+Mono_Harmonizer* mono_harmonizer_new                      ();
 Mono_Harmonizer* mono_harmonizer_destroy                  (Mono_Harmonizer* self);
 void mono_harmonizer_set_notes_changed_callback(Mono_Harmonizer* self, mono_harmonizer_notes_changed_callback_t callback,  void* callback_self);
 void mono_harmonizer_process_audio(Mono_Harmonizer* self, auSample_t* buffer, int num_frames);
