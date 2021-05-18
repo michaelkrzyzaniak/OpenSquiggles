@@ -135,15 +135,6 @@ void __mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int
   self->prev_note = current_note;
 }
 
-Solenoid: 0	note: 70 (70.1 +- 0.1)	peak amplitude: 0.19	0 samples clipped
-Solenoid: 1	note: 68 (68.0 +- 0.1)	peak amplitude: 0.17	0 samples clipped
-Solenoid: 2	note: 60 (59.9 +- 0.1)	peak amplitude: 0.24	0 samples clipped
-Solenoid: 3	note: 55 (55.1 +- 0.1)	peak amplitude: 0.11	0 samples clipped
-Solenoid: 4	note: 54 (54.0 +- 0.1)	peak amplitude: 0.20	0 samples clipped
-Solenoid: 5	note: 61 (61.0 +- 0.1)	peak amplitude: 0.24	0 samples clipped
-Solenoid: 6	note: 65 (65.0 +- 0.1)	peak amplitude: 0.19	0 samples clipped
-Solenoid: 7	note: 71 (71.0 +- 0.1)	peak amplitude: 0.21	0 samples clipped
-
 /*-----------------------------------------------------------------------*/
 void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
 {
