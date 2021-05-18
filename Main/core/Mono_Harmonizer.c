@@ -135,6 +135,15 @@ void __mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int
   self->prev_note = current_note;
 }
 
+Solenoid: 0	note: 70 (70.1 +- 0.1)	peak amplitude: 0.19	0 samples clipped
+Solenoid: 1	note: 68 (68.0 +- 0.1)	peak amplitude: 0.17	0 samples clipped
+Solenoid: 2	note: 60 (59.9 +- 0.1)	peak amplitude: 0.24	0 samples clipped
+Solenoid: 3	note: 55 (55.1 +- 0.1)	peak amplitude: 0.11	0 samples clipped
+Solenoid: 4	note: 54 (54.0 +- 0.1)	peak amplitude: 0.20	0 samples clipped
+Solenoid: 5	note: 61 (61.0 +- 0.1)	peak amplitude: 0.24	0 samples clipped
+Solenoid: 6	note: 65 (65.0 +- 0.1)	peak amplitude: 0.19	0 samples clipped
+Solenoid: 7	note: 71 (71.0 +- 0.1)	peak amplitude: 0.21	0 samples clipped
+
 /*-----------------------------------------------------------------------*/
 void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
 {
@@ -146,7 +155,7 @@ void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N
   
   if(i==0)
     {
-      notes[0] = 74;
+      notes[0] = 70;
       num_notes = 1;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
@@ -159,38 +168,38 @@ void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N
     }
   else if(i==88)
     {
-      notes[0] = 74;
+      notes[0] = 60;
       num_notes = 1;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
 
   if(i==132)
     {
-      notes[0] = 63;
+      notes[0] = 55;
       num_notes = 1;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
   else if(i==176)
     {
-      notes[0] = 57;
+      notes[0] = 54;
       num_notes = 1;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
   else if(i==220)
     {
-      notes[0] = 54;
+      notes[0] = 61;
       num_notes = 1;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
   else if(i==264)
     {
-      notes[0] = 61;
+      notes[0] = 65;
       num_notes = 1;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
   else if(i==308)
     {
-      notes[0] = 65;
+      notes[0] = 71;
       num_notes = 1;
       self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
     }
