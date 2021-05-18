@@ -9,7 +9,7 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self);
 //note is turned on to show up in the audio, so
 //delay by 4 and crossfade in the 5th and 6th frame
 //must be at least 2
-#define QUEUE_LENGTH 6
+#define QUEUE_LENGTH 3
 
 #define TEST_RECORD_MODE
 #define TEST_RECORD_SECONDS 10
@@ -303,7 +303,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
 
           for(j=0; j<OP_NUM_SOLENOIDS; j++)
             {
-              amplitude = self->note_amplitudes[0][j];
+              amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j];
               //amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j]
               //          + self->note_amplitudes[QUEUE_LENGTH-2][j]
               //          + self->note_amplitudes[QUEUE_LENGTH-3][j];
