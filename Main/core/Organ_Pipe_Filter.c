@@ -11,8 +11,8 @@ int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self);
 //must be at least 2
 #define QUEUE_LENGTH 6
 
-//#define TEST_RECORD_MODE
-//#define TEST_RECORD_SECONDS 10
+#define TEST_RECORD_MODE
+#define TEST_RECORD_SECONDS 10
 
 /*--------------------------------------------------------------------*/
 struct Opaque_Organ_Pipe_Filter_Struct
@@ -46,6 +46,7 @@ struct Opaque_Organ_Pipe_Filter_Struct
   int did_save;
   MKAiff* test_input;
   MKAiff* test_output;
+  int click_count;
 #endif
 };
   
@@ -215,9 +216,14 @@ void organ_pipe_filter_notify_sounding_notes(Organ_Pipe_Filter* self, int soundi
   pthread_mutex_lock(&self->note_amplitudes_mutex);
   
   int i;
+  //for(i=0; i<OP_NUM_SOLENOIDS; i++)
+    //self->note_amplitudes[0][i] = sounding_notes[i] * 1/3.0;
+
   for(i=0; i<OP_NUM_SOLENOIDS; i++)
-    self->note_amplitudes[0][i] = sounding_notes[i] * 1/3.0;
+    self->note_amplitudes[0][i] = sounding_notes[i];
   
+  self->click_count = 2;
+
   pthread_mutex_unlock(&self->note_amplitudes_mutex);
 }
 
@@ -297,10 +303,11 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
 
           for(j=0; j<OP_NUM_SOLENOIDS; j++)
             {
-              amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j]
-                        + self->note_amplitudes[QUEUE_LENGTH-2][j]
-                        + self->note_amplitudes[QUEUE_LENGTH-3][j];
-              amplitude *= self->reduction_coefficient;
+              amplitude = self->note_amplitudes[0][j];
+              //amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j]
+              //          + self->note_amplitudes[QUEUE_LENGTH-2][j]
+              //          + self->note_amplitudes[QUEUE_LENGTH-3][j];
+              //amplitude *= self->reduction_coefficient;
               if(amplitude > 0)
                 //don't filter the DC offset
                 for(k=1; k<self->fft_N_over_2; k++)
@@ -345,13 +352,23 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
               dft_apply_window(self->real, self->window, self->window_size);
               
               for(j=0; j<self->window_size-self->hop_size; j++)
-                self->running_output[j] = self->real[j] + self->running_output[j+self->hop_size];
-
+                {
+                  self->real[j] += self->running_output[j+self->hop_size];
+                  self->running_output[j] = self->real[j];
+                }
               for(; j<self->window_size; j++)
                 self->running_output[j] = self->real[j];
 #if defined TEST_RECORD_MODE
               if(!self->did_save)
-                aiffAddFloatingPointSamplesAtPlayhead(self->test_output, self->running_output, self->hop_size, aiffFloatSampleType, aiffYes);
+                {
+                  if(self->click_count > 0)
+                    {
+                      --self->click_count;
+                      self->real[0] = 1.0;
+                      
+                    }
+                  aiffAddFloatingPointSamplesAtPlayhead(self->test_output, self->real, self->hop_size, aiffFloatSampleType, aiffYes);
+                }
 #endif
             }
 

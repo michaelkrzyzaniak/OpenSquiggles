@@ -19,7 +19,7 @@ extern "C"{
 /*--------------------------------------------------------------------*/
 typedef enum organ_pipe_filter_mode_enum
 {
-  /* DFT size window_size */
+  /* DFT size = window_size */
   ORGAN_PIPE_FILTER_MODE_DFT,
   ORGAN_PIPE_FILTER_MODE_RESYNTHESIZED_AUDIO,
   /* DFT size 2*window_size */

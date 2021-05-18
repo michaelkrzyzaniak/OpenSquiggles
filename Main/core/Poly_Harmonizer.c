@@ -499,8 +499,8 @@ int poly_harmonizer_iterative_estimation_and_cancellation(Poly_Harmonizer* self,
         
       double f_over_tau = f / tau;
       double f_over_tau_plus_alpha = f_over_tau + self->alpha;
-      double K_over_tau_plus_delta_tau_over_2  = self->K / (tau + delta_tau_over_2);
-      double K_over_tau_minus_delta_tau_over_2 = self->K / (tau - delta_tau_over_2);
+      //double K_over_tau_plus_delta_tau_over_2  = self->K / (tau + delta_tau_over_2);
+      //double K_over_tau_minus_delta_tau_over_2 = self->K / (tau - delta_tau_over_2);
       double S_j;
         
       for(m=1; m<=self->M; m++)

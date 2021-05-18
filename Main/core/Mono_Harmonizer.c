@@ -99,7 +99,7 @@ void mono_harmonizer_process_audio(Mono_Harmonizer* self, auSample_t* buffer, in
 }
 
 /*-----------------------------------------------------------------------*/
-void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+void __mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
 {
   Mono_Harmonizer* self = SELF;
   
@@ -133,4 +133,71 @@ void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N
         self->notes_changed_callback(self->notes_changed_callback_self, &current_note, num_curr_notes);
     }
   self->prev_note = current_note;
+}
+
+/*-----------------------------------------------------------------------*/
+void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+{
+  Mono_Harmonizer* self = SELF;
+  static int i = 0;
+  int notes[10];
+  int num_notes = 0;
+  //74, 68, 63, 57, 54, 61, 65, 70
+  
+  if(i==0)
+    {
+      notes[0] = 74;
+      num_notes = 1;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+
+  else if(i==44)
+    {
+      notes[0] = 68;
+      num_notes = 1;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+  else if(i==88)
+    {
+      notes[0] = 74;
+      num_notes = 1;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+
+  if(i==132)
+    {
+      notes[0] = 63;
+      num_notes = 1;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+  else if(i==176)
+    {
+      notes[0] = 57;
+      num_notes = 1;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+  else if(i==220)
+    {
+      notes[0] = 54;
+      num_notes = 1;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+  else if(i==264)
+    {
+      notes[0] = 61;
+      num_notes = 1;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+  else if(i==308)
+    {
+      notes[0] = 65;
+      num_notes = 1;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+  else if(i==352)
+    {
+      num_notes = 0;
+      self->notes_changed_callback(self->notes_changed_callback_self, notes, num_notes);
+    }
+  ++i;
 }
