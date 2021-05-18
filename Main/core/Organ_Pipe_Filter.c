@@ -222,7 +222,7 @@ void organ_pipe_filter_notify_sounding_notes(Organ_Pipe_Filter* self, int soundi
   for(i=0; i<OP_NUM_SOLENOIDS; i++)
     self->note_amplitudes[0][i] = sounding_notes[i];
   
-  self->click_count = 2;
+  self->click_count = 4;
 
   pthread_mutex_unlock(&self->note_amplitudes_mutex);
 }
