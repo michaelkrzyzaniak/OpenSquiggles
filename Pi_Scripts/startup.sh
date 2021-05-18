@@ -14,4 +14,6 @@ gcc op.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Trackin
 sudo cp ./op /usr/local/bin/op
 gcc opc.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o opc
 sudo cp ./opc /usr/local/bin/opc
+gcc op2.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o op2
+sudo cp ./op2 /usr/local/bin/op2
 #/home/pi/Dr_Squiggles/Main/a.out

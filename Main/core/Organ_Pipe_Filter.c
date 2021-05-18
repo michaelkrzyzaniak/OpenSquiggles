@@ -5,14 +5,15 @@
 #include <pthread.h>
 
 int organ_pipe_filter_init_filters(Organ_Pipe_Filter* self);
-//empirically it takes about 5 or 6 frames from the time a
-//note is turned on to show up in the audio, so
-//delay by 4 and crossfade in the 5th and 6th frame
-//must be at least 2
+//empirically on raspi it takes about 3 windows from the time a
+//note is turned before it shows up in the audio, so turn the
+//filter on in the 3rd frame. On OSX it takes longer
+//and has more uncertainty so it won't work well there
+//todo: make this adjustable via getter and setter functions
 #define QUEUE_LENGTH 3
 
-#define TEST_RECORD_MODE
-#define TEST_RECORD_SECONDS 10
+//#define TEST_RECORD_MODE
+//#define TEST_RECORD_SECONDS 10
 
 /*--------------------------------------------------------------------*/
 struct Opaque_Organ_Pipe_Filter_Struct
@@ -221,8 +222,10 @@ void organ_pipe_filter_notify_sounding_notes(Organ_Pipe_Filter* self, int soundi
 
   for(i=0; i<OP_NUM_SOLENOIDS; i++)
     self->note_amplitudes[0][i] = sounding_notes[i];
-  
+
+#if defined TEST_RECORD_MODE
   self->click_count = 4;
+#endif
 
   pthread_mutex_unlock(&self->note_amplitudes_mutex);
 }

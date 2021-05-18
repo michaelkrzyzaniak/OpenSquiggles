@@ -51,7 +51,7 @@ HarmonizerController* harmonizer_controller_new ()
       if(self->harmonizer_2 == NULL)
         return (HarmonizerController*)auDestroy((Audio*)self);
         
-      self->harmonizer = 2;
+      self->harmonizer = 1;
       self->beep = beep_new();
       //if(self->beep == NULL)
         //return (HarmonizerController*)auDestroy((Audio*)self);

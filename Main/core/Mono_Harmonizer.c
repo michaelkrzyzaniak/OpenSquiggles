@@ -99,7 +99,7 @@ void mono_harmonizer_process_audio(Mono_Harmonizer* self, auSample_t* buffer, in
 }
 
 /*-----------------------------------------------------------------------*/
-void __mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
 {
   Mono_Harmonizer* self = SELF;
   
@@ -136,7 +136,7 @@ void __mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int
 }
 
 /*-----------------------------------------------------------------------*/
-void mono_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+void mono_harmonizer_stft_process_callback_for_testing(void* SELF, dft_sample_t* real, int N)
 {
   Mono_Harmonizer* self = SELF;
   static int i = 0;
