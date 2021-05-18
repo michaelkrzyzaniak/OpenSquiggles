@@ -310,7 +310,7 @@ void organ_pipe_filter_process(Organ_Pipe_Filter* self, dft_sample_t* real_input
               //amplitude = self->note_amplitudes[QUEUE_LENGTH-1][j]
               //          + self->note_amplitudes[QUEUE_LENGTH-2][j]
               //          + self->note_amplitudes[QUEUE_LENGTH-3][j];
-              //amplitude *= self->reduction_coefficient;
+              amplitude *= self->reduction_coefficient;
               if(amplitude > 0)
                 //don't filter the DC offset
                 for(k=1; k<self->fft_N_over_2; k++)
