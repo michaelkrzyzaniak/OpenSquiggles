@@ -12,8 +12,8 @@ extern "C"{
 #include "../../Beat-and-Tempo-Tracking/src/DFT.h"
 #include "constants.h"
 
-#define ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT    0.5
-#define ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH              5
+#define ORGAN_PIPE_FILTER_DEFAULT_REDUCTION_COEFFICIENT    0.3
+#define ORGAN_PIPE_FILTER_DEFAULT_GATE_THRESH              40
 #define ORGAN_PIPE_FILTER_DEFAULT_NOISE_CANCEL_THRESH      0.1
 
 /*--------------------------------------------------------------------*/
