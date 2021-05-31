@@ -173,7 +173,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
   int i;
   for(i=0; i<OP_NUM_SOLENOIDS; i++)
     self->sounding_notes[i] = 0;
- 
+  /*
   int harmony_notes[8];
   int num_harmony_notes = 0;
   
@@ -233,18 +233,18 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 68;
       num_harmony_notes = 4;
     }
+  */
     
-    
-  //for(i=0; i<num_notes; i++)
-  for(i=0; i<num_harmony_notes; i++)
+  for(i=0; i<num_notes; i++)
+  //for(i=0; i<num_harmony_notes; i++)
     {
       while(midi_notes[i] > 75)
         midi_notes[i] -= 12;
       while (midi_notes[i] < 52)
         midi_notes[i] += 12;
         
-      //int solenoid = harmonizer_controller_midi_to_solenoid_number(self, midi_notes[i]);
-      int solenoid = harmonizer_controller_midi_to_solenoid_number(self, harmony_notes[i]);
+      int solenoid = harmonizer_controller_midi_to_solenoid_number(self, midi_notes[i]);
+      //int solenoid = harmonizer_controller_midi_to_solenoid_number(self, harmony_notes[i]);
       
       if(solenoid >= 0)
         self->sounding_notes[solenoid] = 1;
@@ -265,11 +265,9 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
     
   organ_pipe_filter_notify_sounding_notes(filter, self->sounding_notes);
   
-  fprintf(stderr, "num_harmony_notes: %i\r\n", num_harmony_notes);
-  
   if(self->beep)
-     beep_set_notes(self->beep, harmony_notes, num_harmony_notes);
-    //beep_set_notes(self->beep, midi_notes, num_notes);
+    //beep_set_notes(self->beep, harmony_notes, num_harmony_notes);
+    beep_set_notes(self->beep, midi_notes, num_notes);
 }
 
 /*--------------------------------------------------------------------*/
