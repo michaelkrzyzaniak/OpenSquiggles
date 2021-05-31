@@ -173,7 +173,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
   int i;
   for(i=0; i<OP_NUM_SOLENOIDS; i++)
     self->sounding_notes[i] = 0;
-  /*
+
   int harmony_notes[8];
   int num_harmony_notes = 0;
   
@@ -181,70 +181,81 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
     {
       num_harmony_notes = 0;
     }
-  else if((midi_notes[0]%12) == (57%12)) //A
+  else if(midi_notes[0] == 76)
     {
-      harmony_notes[0] = 57;
-      harmony_notes[1] = 64;
-      harmony_notes[2] = 73;
-      num_harmony_notes = 3;
-    }
-  else if((midi_notes[0]%12) == (59%12)) //B
-    {
-      harmony_notes[0] = 59;
-      harmony_notes[1] = 62;
-      harmony_notes[2] = 66;
-      harmony_notes[2] = 71;
-      num_harmony_notes = 4;
-    }
-  else if((midi_notes[0]%12) == (61%12)) //C#
-    {
-      harmony_notes[0] = 61;
-      harmony_notes[1] = 64;
-      harmony_notes[2] = 69;
-      num_harmony_notes = 3;
-    }
-  else if((midi_notes[0]%12) == (62%12)) //D
-    {
-      harmony_notes[0] = 62;
-      harmony_notes[1] = 66;
-      harmony_notes[2] = 69;
-      num_harmony_notes = 3;
-    }
-  else if((midi_notes[0]%12) == (64%12)) //E
-    {
-      harmony_notes[0] = 59;
-      harmony_notes[1] = 62;
-      harmony_notes[2] = 64;
-      harmony_notes[2] = 68;
-      num_harmony_notes = 4;
-    }
-  else if((midi_notes[0]%12) == (66%12)) //F#
-    {
-      harmony_notes[0] = 57;
-      harmony_notes[1] = 61;
-      harmony_notes[2] = 66;
-      num_harmony_notes = 3;
-    }
-  else if((midi_notes[0]%12) == (68%12)) //G#
-    {
-      harmony_notes[0] = 56;
+      harmony_notes[0] = 52;
       harmony_notes[1] = 59;
+      harmony_notes[2] = 64;
+      harmony_notes[3] = 68;
+      num_harmony_notes = 4;
+    }
+  else if(midi_notes[0] == 83)
+    {
+      harmony_notes[0] = 53;
+      harmony_notes[1] = 57;
+      harmony_notes[2] = 62;
+      harmony_notes[3] = 71;
+      num_harmony_notes = 4;
+    }
+  else if(midi_notes[0] == 91)
+    {
+      harmony_notes[0] = 55;
+      harmony_notes[1] = 59;
+      harmony_notes[2] = 64;
+      harmony_notes[3] = 71;
+      num_harmony_notes = 4;
+    }
+  else if(midi_notes[0] == 96)
+    {
+      harmony_notes[0] = 57;
+      harmony_notes[1] = 60;
+      harmony_notes[2] = 64;
+      harmony_notes[3] = 69;
+      num_harmony_notes = 4;
+    }
+  else if(midi_notes[0] == 92)
+    {
+      harmony_notes[0] = 59;
+      harmony_notes[1] = 62;
       harmony_notes[2] = 65;
       harmony_notes[3] = 68;
       num_harmony_notes = 4;
     }
-  */
-    
-  for(i=0; i<num_notes; i++)
-  //for(i=0; i<num_harmony_notes; i++)
+  else if(midi_notes[0] == 88)
+    {
+      harmony_notes[0] = 58;
+      harmony_notes[1] = 61;
+      harmony_notes[2] = 64;
+      harmony_notes[3] = 66;
+      num_harmony_notes = 4;
+    }
+  else if(midi_notes[0] == 79)
+    {
+      harmony_notes[0] = 58;
+      harmony_notes[1] = 61;
+      harmony_notes[2] = 63;
+      harmony_notes[3] = 67;
+      num_harmony_notes = 4;
+    }
+  else if(midi_notes[0] == 84)
+    {
+      harmony_notes[0] = 56;
+      harmony_notes[1] = 60;
+      harmony_notes[2] = 63;
+      harmony_notes[3] = 68;
+      num_harmony_notes = 4;
+    }
+
+  //for(i=0; i<num_notes; i++)
+  for(i=0; i<num_harmony_notes; i++)
     {
       while(midi_notes[i] > 75)
         midi_notes[i] -= 12;
       while (midi_notes[i] < 52)
         midi_notes[i] += 12;
         
-      int solenoid = harmonizer_controller_midi_to_solenoid_number(self, midi_notes[i]);
-      //int solenoid = harmonizer_controller_midi_to_solenoid_number(self, harmony_notes[i]);
+      //int solenoid = harmonizer_controller_midi_to_solenoid_number(self, midi_notes[i]);
+      int solenoid = harmonizer_controller_midi_to_solenoid_number(self, harmony_notes[i]);
       
       if(solenoid >= 0)
         self->sounding_notes[solenoid] = 1;
@@ -266,8 +277,8 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
   organ_pipe_filter_notify_sounding_notes(filter, self->sounding_notes);
   
   if(self->beep)
-    //beep_set_notes(self->beep, harmony_notes, num_harmony_notes);
-    beep_set_notes(self->beep, midi_notes, num_notes);
+    beep_set_notes(self->beep, harmony_notes, num_harmony_notes);
+    //beep_set_notes(self->beep, midi_notes, num_notes);
 }
 
 /*--------------------------------------------------------------------*/
