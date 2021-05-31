@@ -245,7 +245,11 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 68;
       num_harmony_notes = 4;
     }
-
+  else
+    {
+      harmony_notes[0] = midi_notes[0];
+      num_harmony_notes = 1;
+    }
   //for(i=0; i<num_notes; i++)
   for(i=0; i<num_harmony_notes; i++)
     {
