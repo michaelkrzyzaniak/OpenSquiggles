@@ -181,7 +181,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
     {
       num_harmony_notes = 0;
     }
-  else if(midi_notes[0] == 76)
+  else if(midi_notes[num_notes-1] == 76)
     {
       harmony_notes[0] = 52;
       harmony_notes[1] = 59;
@@ -189,7 +189,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 68;
       num_harmony_notes = 4;
     }
-  else if(midi_notes[0] == 83)
+  else if(midi_notes[num_notes-1] == 83)
     {
       harmony_notes[0] = 53;
       harmony_notes[1] = 57;
@@ -197,7 +197,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 71;
       num_harmony_notes = 4;
     }
-  else if(midi_notes[0] == 91)
+  else if(midi_notes[num_notes-1] == 91)
     {
       harmony_notes[0] = 55;
       harmony_notes[1] = 59;
@@ -205,7 +205,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 71;
       num_harmony_notes = 4;
     }
-  else if(midi_notes[0] == 96)
+  else if(midi_notes[num_notes-1] == 96)
     {
       harmony_notes[0] = 57;
       harmony_notes[1] = 60;
@@ -213,7 +213,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 69;
       num_harmony_notes = 4;
     }
-  else if(midi_notes[0] == 92)
+  else if(midi_notes[num_notes-1] == 92)
     {
       harmony_notes[0] = 59;
       harmony_notes[1] = 62;
@@ -221,7 +221,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 68;
       num_harmony_notes = 4;
     }
-  else if(midi_notes[0] == 88)
+  else if(midi_notes[num_notes-1] == 88)
     {
       harmony_notes[0] = 58;
       harmony_notes[1] = 61;
@@ -229,7 +229,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 66;
       num_harmony_notes = 4;
     }
-  else if(midi_notes[0] == 79)
+  else if(midi_notes[num_notes-1] == 79)
     {
       harmony_notes[0] = 58;
       harmony_notes[1] = 61;
@@ -237,7 +237,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[3] = 67;
       num_harmony_notes = 4;
     }
-  else if(midi_notes[0] == 84)
+  else if(midi_notes[num_notes-1] == 84)
     {
       harmony_notes[0] = 56;
       harmony_notes[1] = 60;
