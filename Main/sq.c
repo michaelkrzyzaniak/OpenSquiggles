@@ -30,6 +30,87 @@ int enter_rhythm_submenu(Microphone* mic, int indent_level);
 
 BTT* global_beat_tracker;
 
+
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+//todo: make this into its own class in a separate file
+#define  OSC_BUFFER_SIZE 512
+#define  OSC_VALUES_BUFFER_SIZE 64
+#define  OSC_SEND_PORT   7001
+#define  OSC_RECV_PORT   7000
+
+#include <pthread.h>
+#include "extras/Network.h"
+#include "extras/OSC.h"
+
+void*           main_recv_thread_run_loop(void* SELF);
+Network*        net;
+oscValue_t*     osc_values_buffer;
+char*           osc_recv_buffer;
+pthread_t       osc_recv_thread;
+
+int main_init_osc_communication(void* SELF)
+{
+  //osc_send_buffer = calloc(1, OSC_BUFFER_SIZE);
+  //if(!osc_send_buffer) return 0;
+  osc_recv_buffer = calloc(1, OSC_BUFFER_SIZE);
+  if(!osc_recv_buffer) return 0;
+  osc_values_buffer = calloc(sizeof(*osc_values_buffer), OSC_VALUES_BUFFER_SIZE);
+  if(!osc_values_buffer) return 0;
+
+  net  = net_new();
+  if(!net) return 0;
+  if(!net_udp_connect(net, OSC_RECV_PORT))
+    return 0;
+    
+  int error = pthread_create(&osc_recv_thread, NULL, main_recv_thread_run_loop, SELF);
+  if(error != 0)
+    return 0;
+
+  return 1;
+}
+
+/*--------------------------------------------------------------------*/
+void*  main_recv_thread_run_loop(void* SELF)
+{
+  Microphone*  mic   = SELF;
+  BTT*         btt   = mic_get_btt(mic);
+  Robot*       robot = mic_get_robot(mic);
+  
+  char senders_address[16];
+  char *osc_address, *osc_type_tag;
+  
+  for(;;)
+  {
+    int num_valid_bytes = net_udp_receive(net, osc_recv_buffer, OSC_BUFFER_SIZE, senders_address);
+    if(num_valid_bytes < 0)
+      continue; //return NULL ?
+    int num_osc_values = oscParse(osc_recv_buffer, num_valid_bytes, &osc_address, &osc_type_tag, osc_values_buffer, OSC_VALUES_BUFFER_SIZE);
+  
+    uint32_t address_hash = oscHash((unsigned char*)osc_address);
+    if(address_hash == 4009690692) // '/play_tapping'
+      {
+        btt_set_tracking_mode(btt, BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING);
+        btt_init_tempo(btt, 96 /*0 to clear tempo*/);
+        auPlay((Audio*)mic);
+      }
+    else if(address_hash == 79269778) // '/pause_tapping'
+      {
+         auPause((Audio*)mic);
+         //btt_clear(btt);
+      }
+  }
+}
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+
+
+
+
 typedef void   (*double_setter)(void* self, double val);
 typedef double (*double_getter)(void* self);
 typedef void   (*int_setter)   (void* self, int val);
@@ -882,6 +963,9 @@ int main(void)
   Microphone*  mic = mic_new();
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
   /* mic_new might print Arduino firmware version */
+  
+  if(!main_init_osc_communication(mic))
+    {perror("Unable to init OSC communication\r\n"); exit(-1);}
  
   fprintf(stderr, "Raspi is running software version %s\r\n\r\n", __SQ_VERSION__);
   fprintf(stderr, " -- 'Q' to quit\r\n");
@@ -916,6 +1000,7 @@ int main(void)
   //btt_set_max_tempo(global_beat_tracker, 160);
   
   auPlay((Audio*)mic);
+  
 
   param_t params[] =
     {

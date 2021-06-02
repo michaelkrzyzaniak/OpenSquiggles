@@ -29,6 +29,78 @@ void i_hate_canonical_input_processing(void);
 
 HarmonizerController* global_controller;
 
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+//todo: make this into its own class in a separate file
+#define  OSC_BUFFER_SIZE 512
+#define  OSC_VALUES_BUFFER_SIZE 64
+#define  OSC_SEND_PORT   7001
+#define  OSC_RECV_PORT   7000
+
+#include <pthread.h>
+#include "extras/Network.h"
+#include "extras/OSC.h"
+
+void*           main_recv_thread_run_loop(void* SELF);
+Network*        net;
+oscValue_t*     osc_values_buffer;
+char*           osc_recv_buffer;
+pthread_t       osc_recv_thread;
+
+int main_init_osc_communication()
+{
+  //osc_send_buffer = calloc(1, OSC_BUFFER_SIZE);
+  //if(!osc_send_buffer) return 0;
+  osc_recv_buffer = calloc(1, OSC_BUFFER_SIZE);
+  if(!osc_recv_buffer) return 0;
+  osc_values_buffer = calloc(sizeof(*osc_values_buffer), OSC_VALUES_BUFFER_SIZE);
+  if(!osc_values_buffer) return 0;
+
+  net  = net_new();
+  if(!net) return 0;
+  if(!net_udp_connect(net, OSC_RECV_PORT))
+    return 0;
+    
+  int error = pthread_create(&osc_recv_thread, NULL, main_recv_thread_run_loop, NULL);
+  if(error != 0)
+    return 0;
+
+  return 1;
+}
+
+/*--------------------------------------------------------------------*/
+void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
+{
+  char senders_address[16];
+  char *osc_address, *osc_type_tag;
+  
+  for(;;)
+  {
+    int num_valid_bytes = net_udp_receive(net, osc_recv_buffer, OSC_BUFFER_SIZE, senders_address);
+    if(num_valid_bytes < 0)
+      continue; //return NULL ?
+    int num_osc_values = oscParse(osc_recv_buffer, num_valid_bytes, &osc_address, &osc_type_tag, osc_values_buffer, OSC_VALUES_BUFFER_SIZE);
+  
+    uint32_t address_hash = oscHash((unsigned char*)osc_address);
+    if(address_hash == 1249153092) // '/play_organ'
+      {
+        auPlay((Audio*)global_controller);
+      }
+    else if(address_hash == 1531530642) // '/pause_organ'
+      {
+         auPause((Audio*)global_controller);
+         harmonizer_controller_clear(global_controller);
+      }
+  }
+}
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+
+
 typedef void   (*double_setter)(void* self, double val);
 typedef double (*double_getter)(void* self);
 typedef void   (*int_setter)   (void* self, int val);
@@ -331,8 +403,12 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
 int main(int argc, char* argv[])
 {
   global_controller = harmonizer_controller_new();
+  
   if(global_controller == NULL)
     {perror("unable to create Harmonizer Controller"); return -1;}
+  
+  if(!main_init_osc_communication())
+    {perror("unable to init OSC communication"); return -1;}
   
   if(argc > 1)
     {

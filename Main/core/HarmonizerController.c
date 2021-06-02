@@ -107,6 +107,8 @@ HarmonizerController* harmonizer_controller_destroy (HarmonizerController* self)
 void harmonizer_controller_clear  (HarmonizerController*  self)
 {
   robot_send_message(self->robot, robot_cmd_all_notes_off);
+  if(self->beep)
+    beep_set_notes(self->beep, NULL, 0);
   poly_harmonizer_init_state(self->harmonizer_1);
   mono_harmonizer_init_state(self->harmonizer_2);
 }
