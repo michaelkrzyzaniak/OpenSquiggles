@@ -187,12 +187,12 @@ int main(int argc, char* argv[])
   if(!main_init_osc_communication(NULL))
     {perror("unable to init OSC communication"); return -1;}
   
-  fprintf(stderr, "Send OSC messages '/sq', '/op' or './op2' on port %i to run any of those programs. Send '/quit' to quit them. Press q to quit this program\r\n", OSC_RECV_PORT);
+  fprintf(stderr, "Send OSC messages '/sq', '/op' or './op2' on port %i to run any of those programs. Send '/quit' to quit them. Press e to exit this program\r\n", OSC_RECV_PORT);
   
   i_hate_canonical_input_processing();
   
   for(;;)
-    if(getchar() == 'q')
+    if(getchar() == 'e')
       break;
   
  out:
