@@ -74,7 +74,7 @@ HarmonizerController* harmonizer_controller_new ()
       if(self->robot == NULL)
         return (HarmonizerController*)auDestroy((Audio*)self);
       
-      sleep(1);
+      //sleep(1);
       robot_send_message(self->robot, robot_cmd_get_firmware_version);
       robot_send_message(self->robot, robot_cmd_set_sustain_mode, 1);
       
