@@ -13,7 +13,7 @@
 //gcc cmd.c extras/*.c -o cmd
 
 //Linux compile with:
-//gcc cmd.c extras/*.c -o cmd
+//gcc cmd.c extras/*.c -lm -lpthread -o cmd
 
 int  system2(const char * command, int * infp, int * outfp);
 void i_hate_canonical_input_processing(void);
