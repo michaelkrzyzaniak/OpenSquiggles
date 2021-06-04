@@ -70,6 +70,7 @@ void q()
     fprintf(in, "q");
     fflush(in);
     fprintf(stderr, "q()\r\n");
+    sleep(1);
     //fclose(in);
   }
 }
