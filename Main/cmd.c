@@ -113,19 +113,19 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
     if(address_hash == 193346984) // '/sq'
       {
         q();
-        current_pid = system2("./sq", &process_stdin, &process_stdout);
+        current_pid = system2("sq", &process_stdin, &process_stdout);
         fprintf(stderr, "sq\r\n");
       }
     else if(address_hash == 193346357) // '/op'
       {
         q();
-        current_pid = system2("./op", &process_stdin, &process_stdout);
+        current_pid = system2("op", &process_stdin, &process_stdout);
         fprintf(stderr, "op\r\n");
       }
     else if(address_hash == 2085462503) // '/op2'
       {
         q();
-        current_pid = system2("./op2", &process_stdin, &process_stdout);
+        current_pid = system2("op2", &process_stdin, &process_stdout);
         fprintf(stderr, "op2\r\n");
       }
     else if(address_hash == 101684563) // '/quit'
