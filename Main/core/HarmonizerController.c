@@ -183,15 +183,13 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
     {
       num_harmony_notes = 0;
     }
-  
-  /*
   else if(midi_notes[num_notes-1] == 76)
     {
       harmony_notes[0] = 52;
       harmony_notes[1] = 59;
       harmony_notes[2] = 64;
       harmony_notes[3] = 68;
-      num_harmony_notes = 4;
+      num_harmony_notes = 1;
     }
   else if(midi_notes[num_notes-1] == 83)
     {
@@ -199,7 +197,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[1] = 57;
       harmony_notes[2] = 62;
       harmony_notes[3] = 71;
-      num_harmony_notes = 4;
+      num_harmony_notes = 1;
     }
   else if(midi_notes[num_notes-1] == 91)
     {
@@ -207,7 +205,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[1] = 59;
       harmony_notes[2] = 64;
       harmony_notes[3] = 71;
-      num_harmony_notes = 4;
+      num_harmony_notes = 1;
     }
   else if(midi_notes[num_notes-1] == 96)
     {
@@ -215,7 +213,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[1] = 60;
       harmony_notes[2] = 64;
       harmony_notes[3] = 69;
-      num_harmony_notes = 4;
+      num_harmony_notes = 1;
     }
   else if(midi_notes[num_notes-1] == 92)
     {
@@ -223,7 +221,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[1] = 62;
       harmony_notes[2] = 65;
       harmony_notes[3] = 68;
-      num_harmony_notes = 4;
+      num_harmony_notes = 1;
     }
   else if(midi_notes[num_notes-1] == 88)
     {
@@ -231,7 +229,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[1] = 61;
       harmony_notes[2] = 64;
       harmony_notes[3] = 66;
-      num_harmony_notes = 4;
+      num_harmony_notes = 1;
     }
   else if(midi_notes[num_notes-1] == 79)
     {
@@ -239,7 +237,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[1] = 61;
       harmony_notes[2] = 63;
       harmony_notes[3] = 67;
-      num_harmony_notes = 4;
+      num_harmony_notes = 1;
     }
   else if(midi_notes[num_notes-1] == 84)
     {
@@ -247,12 +245,11 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[1] = 60;
       harmony_notes[2] = 63;
       harmony_notes[3] = 68;
-      num_harmony_notes = 4;
+      num_harmony_notes = 1;
     }
-  */
   else
     {
-      harmony_notes[0] = midi_notes[num_notes-1];
+      harmony_notes[0] = midi_notes[0];
       num_harmony_notes = 1;
     }
   //for(i=0; i<num_notes; i++)
