@@ -33,14 +33,16 @@ void make_stdin_cannonical_again();
 #include <unistd.h> //sleep()
 #include <stdio.h> //sleep()
 #include <fcntl.h> //open close
+#include <signal.h> //kill
 #include <sys/types.h>
 #include <unistd.h> //fork()
 #include <pthread.h>
 #include "extras/Network.h"
 #include "extras/OSC.h"
 
-int process_stdin = -1;
+int process_stdin  = -1;
 int process_stdout = -1;
+int current_pid    = -1;
 
 void*           main_recv_thread_run_loop(void* SELF);
 Network*        net;
@@ -51,11 +53,24 @@ pthread_t       osc_recv_thread;
 /*--------------------------------------------------------------------*/
 void q()
 {
+  if(current_pid < 0) return;
+ 
+ fprintf(stderr, "current pid %i\r\n", current_pid);
+ 
+  if(kill(current_pid, 0) < 0)
+    {
+      fprintf(stderr, "no proceess\r\n");
+      return;
+    }
+  
   FILE* in = fdopen(process_stdin, "w");
   if(in != NULL)
   {
+    fprintf(stderr, "q() ... ");
     fprintf(in, "q");
-    fclose(in);
+    fflush(in);
+    fprintf(stderr, "q()\r\n");
+    //fclose(in);
   }
 }
 
@@ -98,24 +113,25 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
     if(address_hash == 193346984) // '/sq'
       {
         q();
-        system2("sq", &process_stdin, &process_stdout);
+        current_pid = system2("./sq", &process_stdin, &process_stdout);
         fprintf(stderr, "sq\r\n");
       }
     else if(address_hash == 193346357) // '/op'
       {
         q();
-        system2("op", &process_stdin, &process_stdout);
+        current_pid = system2("./op", &process_stdin, &process_stdout);
         fprintf(stderr, "op\r\n");
       }
     else if(address_hash == 2085462503) // '/op2'
       {
         q();
-        system2("op2", &process_stdin, &process_stdout);
+        current_pid = system2("./op2", &process_stdin, &process_stdout);
         fprintf(stderr, "op2\r\n");
       }
     else if(address_hash == 101684563) // '/quit'
       {
         q();
+        current_pid = -1;
         fprintf(stderr, "/quit\r\n");
       }
   }
@@ -187,15 +203,15 @@ int main(int argc, char* argv[])
   if(!main_init_osc_communication(NULL))
     {perror("unable to init OSC communication"); return -1;}
   
-  fprintf(stderr, "Send OSC messages '/sq', '/op' or './op2' on port %i to run any of those programs. Send '/quit' to quit them. Press e to exit this program\r\n", OSC_RECV_PORT);
+  fprintf(stderr, "Send OSC messages '/sq', '/op' or './op2' on port %i to run any of those programs. Send '/quit' to quit them. Press q to quit this program\r\n", OSC_RECV_PORT);
   
   i_hate_canonical_input_processing();
   
   for(;;)
-    if(getchar() == 'e')
+    if(getchar() == 'q')
       break;
   
- out:
+
   q();
   make_stdin_cannonical_again();
   
