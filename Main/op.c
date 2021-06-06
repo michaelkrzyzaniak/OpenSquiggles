@@ -283,7 +283,7 @@ void osc_responder_midi_mode_change_event_handler(midi_channel_t  chan, midi_mod
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  //i_hate_canonical_input_processing();
+  i_hate_canonical_input_processing();
 
   //defined globally because reasons
   responder = osc_responder_new();

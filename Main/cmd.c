@@ -40,9 +40,16 @@ void make_stdin_cannonical_again();
 #include "extras/Network.h"
 #include "extras/OSC.h"
 
+#define PROGRAM_QUIT 0
+#define PROGRAM_OP   1
+#define PROGRAM_OP2  2
+#define PROGRAM_SQ   3
+
+
 int process_stdin  = -1;
 int process_stdout = -1;
 int current_pid    = -1;
+int current_program = PROGRAM_QUIT;
 
 void*           main_recv_thread_run_loop(void* SELF);
 Network*        net;
@@ -54,24 +61,20 @@ pthread_t       osc_recv_thread;
 void q()
 {
   if(current_pid < 0) return;
- 
- fprintf(stderr, "current pid %i\r\n", current_pid);
- 
-  if(kill(current_pid, 0) < 0)
-    {
-      fprintf(stderr, "no proceess\r\n");
-      return;
-    }
   
   FILE* in = fdopen(process_stdin, "w");
   if(in != NULL)
   {
-    fprintf(stderr, "q() ... ");
     fprintf(in, "q");
     fflush(in);
-    fprintf(stderr, "q()\r\n");
-    sleep(1);
-    //fclose(in);
+
+    int i;
+    for(i=0; i<1000; i++)
+      {
+        if(current_pid < 0)
+          break;
+        usleep(1000);
+      }
   }
 }
 
@@ -113,27 +116,43 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
     uint32_t address_hash = oscHash((unsigned char*)osc_address);
     if(address_hash == 193346984) // '/sq'
       {
-        q();
-        current_pid = system2("sq", &process_stdin, &process_stdout);
-        fprintf(stderr, "sq\r\n");
-      }
+        if(current_program != PROGRAM_SQ)
+          {
+            q();
+            current_program = PROGRAM_SQ;
+            current_pid = system2("sq", &process_stdin, &process_stdout);
+            fprintf(stderr, "sq ... ");
+          }
+        }
     else if(address_hash == 193346357) // '/op'
       {
-        q();
-        current_pid = system2("op", &process_stdin, &process_stdout);
-        fprintf(stderr, "op\r\n");
+        if(current_program != PROGRAM_OP)
+          {
+            q();
+            current_program = PROGRAM_OP;
+            current_pid = system2("op", &process_stdin, &process_stdout);
+            fprintf(stderr, "op ... ");
+          }
       }
     else if(address_hash == 2085462503) // '/op2'
       {
-        q();
-        current_pid = system2("op2", &process_stdin, &process_stdout);
-        fprintf(stderr, "op2\r\n");
+        if(current_program != PROGRAM_OP2)
+          {
+            q();
+            current_program = PROGRAM_OP2;
+            current_pid = system2("op2", &process_stdin, &process_stdout);
+            fprintf(stderr, "op2 ... ");
+          }
       }
     else if(address_hash == 101684563) // '/quit'
       {
-        q();
-        current_pid = -1;
-        fprintf(stderr, "/quit\r\n");
+        if(current_program != PROGRAM_QUIT)
+          {
+            q();
+            current_pid = -1;
+            current_program = PROGRAM_QUIT;
+            fprintf(stderr, "/quit\r\n");
+          }
       }
   }
 }
@@ -198,13 +217,49 @@ int system2(const char * command, int * infp, int * outfp)
     return pid;
 }
 
+
 /*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+void sig_handler(int signo)
+{
+  if (signo == SIGCHLD)
+    {
+      process_stdin  = -1;
+      process_stdout = -1;
+      current_pid    = -1;
+      current_program = PROGRAM_QUIT;
+      fprintf(stderr, "terminated\r\n");
+    }
+
+  //happens when calling fflush on process that has terminated
+  if (signo == SIGPIPE)
+    fprintf(stderr, "received SIGPIPE\r\n");
+}
+
+/*--------------------------------------------------------------------*/
+void init_signal_handlers()
+{
+  if(signal(SIGCHLD, sig_handler) == SIG_ERR)
+     fprintf(stderr, "cannot handle SIGCHLD\r\n");
+  if(signal(SIGPIPE, sig_handler) == SIG_ERR)
+     fprintf(stderr, "cannot handle SIGPIPE\r\n");
+ 
+  //if(signal(SIGUSR1, sig_handler) == SIG_ERR)
+    //fprintf(stderr, "cannot handle SIGUSR1\r\n");
+  //if(signal(SIGUSR2, sig_handler) == SIG_ERR)
+    //fprintf(stderr, "cannot handle SIGUSR2\r\n");
+}
+/*--------------------------------------------------------------------*/
+
 int main(int argc, char* argv[])
 {
+  init_signal_handlers();
   if(!main_init_osc_communication(NULL))
     {perror("unable to init OSC communication"); return -1;}
   
-  fprintf(stderr, "Send OSC messages '/sq', '/op' or './op2' on port %i to run any of those programs. Send '/quit' to quit them. Press q to quit this program\r\n", OSC_RECV_PORT);
+  fprintf(stderr, "Send OSC messages '/sq', '/op' or '/op2' on port %i to run any of those programs. Send '/quit' to quit them. Press q to quit this program\r\n", OSC_RECV_PORT);
   
   i_hate_canonical_input_processing();
   
