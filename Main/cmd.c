@@ -69,11 +69,23 @@ void q()
     fflush(in);
 
     int i;
+
     for(i=0; i<1000; i++)
       {
         if(current_pid < 0)
           break;
         usleep(1000);
+      }
+
+    if(i == 1000)
+      {
+        kill(current_pid, SIGKILL);
+        for(i=0; i<1000; i++)
+          {
+            if(current_pid < 0)
+              break;
+            usleep(1000);
+          }
       }
   }
 }
@@ -119,6 +131,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
         if(current_program != PROGRAM_SQ)
           {
             q();
+            if(current_pid > 0) continue;
             current_program = PROGRAM_SQ;
             current_pid = system2("sq", &process_stdin, &process_stdout);
             fprintf(stderr, "sq ... ");
@@ -129,6 +142,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
         if(current_program != PROGRAM_OP)
           {
             q();
+            if(current_pid > 0) continue;
             current_program = PROGRAM_OP;
             current_pid = system2("op", &process_stdin, &process_stdout);
             fprintf(stderr, "op ... ");
@@ -139,6 +153,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
         if(current_program != PROGRAM_OP2)
           {
             q();
+            if(current_pid > 0) continue;
             current_program = PROGRAM_OP2;
             current_pid = system2("op2", &process_stdin, &process_stdout);
             fprintf(stderr, "op2 ... ");
@@ -149,7 +164,8 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
         if(current_program != PROGRAM_QUIT)
           {
             q();
-            current_pid = -1;
+            if(current_pid > 0) continue;
+            //current_pid = -1;
             current_program = PROGRAM_QUIT;
             fprintf(stderr, "/quit\r\n");
           }
@@ -190,7 +206,7 @@ int system2(const char * command, int * infp, int * outfp)
         close(p_stdout[0]);
         dup2(p_stdout[1], 1);
         dup2(open("/dev/null", O_RDONLY), 2);
-        /// Close all other descriptors for the safety sake.
+        // Close all other descriptors for the safety sake.
         for (int i = 3; i < 4096; ++i)
             close(i);
 
