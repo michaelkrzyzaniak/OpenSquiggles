@@ -200,7 +200,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[2] = 62;
       harmony_notes[3] = 71;
       
-      harmony_notes[0] = 59 ;
+      harmony_notes[0] = 59;
       num_harmony_notes = 1;
     }
   else if(midi_notes[num_notes-1] == 91)
