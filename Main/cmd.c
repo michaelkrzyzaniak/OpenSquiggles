@@ -136,7 +136,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
             q();
             if(current_pid > 0) continue;
             current_program = PROGRAM_SQ;
-            current_pid = system2("./sq", &process_stdin, &process_stdout);
+            current_pid = system2("sq", &process_stdin, &process_stdout);
             fprintf(stderr, "sq ... ");
           }
         }
@@ -147,7 +147,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
             q();
             if(current_pid > 0) continue;
             current_program = PROGRAM_OP;
-            current_pid = system2("./op", &process_stdin, &process_stdout);
+            current_pid = system2("op", &process_stdin, &process_stdout);
             fprintf(stderr, "op ... ");
           }
       }
@@ -158,7 +158,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
             q();
             if(current_pid > 0) continue;
             current_program = PROGRAM_OP2;
-            current_pid = system2("./op2", &process_stdin, &process_stdout);
+            current_pid = system2("op2", &process_stdin, &process_stdout);
             fprintf(stderr, "op2 ... ");
           }
       }
