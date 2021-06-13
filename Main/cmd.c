@@ -56,6 +56,7 @@ Network*        net;
 oscValue_t*     osc_values_buffer;
 char*           osc_recv_buffer;
 pthread_t       osc_recv_thread;
+//pthread_mutex_t osc_mutex;
 
 /*--------------------------------------------------------------------*/
 void q()
@@ -69,6 +70,7 @@ void q()
     fflush(in);
 
     int i;
+    fprintf(stderr, "q-ing PID %i ... ", current_pid);
 
     for(i=0; i<1000; i++)
       {
@@ -79,6 +81,7 @@ void q()
 
     if(i == 1000)
       {
+        fprintf(stderr, "killing PID %i ... ", current_pid);
         kill(current_pid, SIGKILL);
         for(i=0; i<1000; i++)
           {
@@ -133,7 +136,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
             q();
             if(current_pid > 0) continue;
             current_program = PROGRAM_SQ;
-            current_pid = system2("sq", &process_stdin, &process_stdout);
+            current_pid = system2("./sq", &process_stdin, &process_stdout);
             fprintf(stderr, "sq ... ");
           }
         }
@@ -144,7 +147,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
             q();
             if(current_pid > 0) continue;
             current_program = PROGRAM_OP;
-            current_pid = system2("op", &process_stdin, &process_stdout);
+            current_pid = system2("./op", &process_stdin, &process_stdout);
             fprintf(stderr, "op ... ");
           }
       }
@@ -155,7 +158,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
             q();
             if(current_pid > 0) continue;
             current_program = PROGRAM_OP2;
-            current_pid = system2("op2", &process_stdin, &process_stdout);
+            current_pid = system2("./op2", &process_stdin, &process_stdout);
             fprintf(stderr, "op2 ... ");
           }
       }
@@ -205,7 +208,7 @@ int system2(const char * command, int * infp, int * outfp)
         dup2(p_stdin[0], 0);
         close(p_stdout[0]);
         dup2(p_stdout[1], 1);
-        dup2(open("/dev/null", O_RDONLY), 2);
+        //dup2(open("/dev/null", O_RDONLY), 2);
         // Close all other descriptors for the safety sake.
         for (int i = 3; i < 4096; ++i)
             close(i);
@@ -255,17 +258,33 @@ void sig_handler(int signo)
 }
 
 /*--------------------------------------------------------------------*/
+void sigaction_handler(int signo, siginfo_t *info, void *_ucontext)
+{
+  //ucontext_t* ucontext = *_ucontext;
+  if (signo == SIGCHLD)
+    {
+      process_stdin  = -1;
+      process_stdout = -1;
+      current_pid    = -1;
+      current_program = PROGRAM_QUIT;
+      fprintf(stderr, "errno: %i\tcode: %i\tstatus:%i\r\n", info->si_errno, info->si_code, info->si_status);
+    }
+}
+
+/*--------------------------------------------------------------------*/
 void init_signal_handlers()
 {
-  if(signal(SIGCHLD, sig_handler) == SIG_ERR)
-     fprintf(stderr, "cannot handle SIGCHLD\r\n");
+  //if(signal(SIGCHLD, sig_handler) == SIG_ERR)
+    // fprintf(stderr, "cannot handle SIGCHLD\r\n");
   if(signal(SIGPIPE, sig_handler) == SIG_ERR)
      fprintf(stderr, "cannot handle SIGPIPE\r\n");
- 
-  //if(signal(SIGUSR1, sig_handler) == SIG_ERR)
-    //fprintf(stderr, "cannot handle SIGUSR1\r\n");
-  //if(signal(SIGUSR2, sig_handler) == SIG_ERR)
-    //fprintf(stderr, "cannot handle SIGUSR2\r\n");
+  
+  struct sigaction new_action;
+  new_action.sa_sigaction = sigaction_handler;
+  sigemptyset (&new_action.sa_mask);
+  new_action.sa_flags = SA_SIGINFO; //SA_NOCLDSTOP , SA_NOCLDSTOP
+  
+  sigaction (SIGCHLD, &new_action, NULL);
 }
 /*--------------------------------------------------------------------*/
 

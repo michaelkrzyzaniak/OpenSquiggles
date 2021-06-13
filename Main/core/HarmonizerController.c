@@ -96,7 +96,7 @@ HarmonizerController* harmonizer_controller_destroy (HarmonizerController* self)
       
       self->harmonizer_1 = poly_harmonizer_destroy(self->harmonizer_1);
       self->harmonizer_2 = mono_harmonizer_destroy(self->harmonizer_2);
-      self->robot = robot_destroy(self->robot);
+      //self->robot = robot_destroy(self->robot);
       auDestroy((Audio*)self->beep);
     }
   

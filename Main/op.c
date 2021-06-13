@@ -133,39 +133,23 @@ OSC_Responder*      osc_responder_destroy (OSC_Responder* self)
 {
   if(self != NULL)
     {
-      /* free any malloc-ed instance variables here */
-    
-      fprintf(stderr, "Here Free 1\r\n");
       if(self->osc_recv_thread != 0)
         {
           pthread_cancel(self->osc_recv_thread);
-          
-          fprintf(stderr, "Here Free 1.5\r\n");
           pthread_join(self->osc_recv_thread, NULL);
         }
-      
-      fprintf(stderr, "Here Free 2\r\n");
-      if(self->osc_send_buffer != NULL)
-        free(self->osc_send_buffer);
-        
-      fprintf(stderr, "Here Free 2\r\n");
-      if(self->osc_recv_buffer != NULL)
-        free(self->osc_recv_buffer);
-        
-      fprintf(stderr, "Here Free 3\r\n");
-      if(self->net != NULL)
-        net_disconnect(self->net);
-        
-      fprintf(stderr, "Here Free 4\r\n");
+
       net_destroy(self->net);
       
-      fprintf(stderr, "Here Free 5\r\n");
-      robot_destroy(self->robot);
-      
-      fprintf(stderr, "Here Free 6\r\n");
+      if(self->osc_send_buffer != NULL)
+        free(self->osc_send_buffer);
+
+      if(self->osc_recv_buffer != NULL)
+        free(self->osc_recv_buffer);
+
+      //robot_destroy(self->robot);
+
       params_destroy(self->params);
-      
-      fprintf(stderr, "Here Free 7\r\n");
       free(self);
     }
   return (OSC_Responder*) NULL;
@@ -298,7 +282,7 @@ int main(void)
   robot_send_message(responder->robot, robot_cmd_set_sustain_mode, 0);
   responder = osc_responder_destroy(responder);
   
-  //make_stdin_cannonical_again();
+  make_stdin_cannonical_again();
 }
 
 /*--------------------------------------------------------------------*/
