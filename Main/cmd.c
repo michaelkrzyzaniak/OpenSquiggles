@@ -282,7 +282,7 @@ void init_signal_handlers()
   struct sigaction new_action;
   new_action.sa_sigaction = sigaction_handler;
   sigemptyset (&new_action.sa_mask);
-  new_action.sa_flags = SA_SIGINFO | SA_NOCLDSTOP | SA_NOCLDSTOP
+  new_action.sa_flags = SA_SIGINFO | SA_NOCLDSTOP | SA_NOCLDSTOP;
   
   sigaction (SIGCHLD, &new_action, NULL);
 }
