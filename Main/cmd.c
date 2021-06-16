@@ -36,6 +36,7 @@ void make_stdin_cannonical_again();
 #include <signal.h> //kill
 #include <sys/types.h>
 #include <unistd.h> //fork()
+#include <sys/wait.h> //wait();
 #include <pthread.h>
 #include "extras/Network.h"
 #include "extras/OSC.h"
@@ -148,7 +149,7 @@ void*  main_recv_thread_run_loop(void* SELF /*NULL*/)
             if(current_pid > 0) continue;
             current_program = PROGRAM_OP;
             current_pid = system2("op", &process_stdin, &process_stdout);
-            fprintf(stderr, "op ... ");
+            fprintf(stderr, "started op new PID %i ... \r\n", current_pid);
           }
       }
     else if(address_hash == 2085462503) // '/op2'
