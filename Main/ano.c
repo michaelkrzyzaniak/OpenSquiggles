@@ -14,7 +14,7 @@
 
 //Linux compile with:
 //sudo apt-get install libasound2-dev
-//gcc ano.c ../Robot_Communication_Framework/*.c -lasound -o ano
+//gcc ano.c ../Robot_Communication_Framework/*.c -lasound -lpthread -o ano
 
 #define __OPC_VERSION__ "0.3"
 
