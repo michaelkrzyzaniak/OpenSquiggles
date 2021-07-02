@@ -1,5 +1,7 @@
 #! /bin/sh
 
+cd /home/pi/Chord-Detection/
+git pull
 cd /home/pi/Dr_Squiggles/
 git pull
 mkdir /home/pi/Dr_Squiggles/Beat-and-Tempo-Tracking/
@@ -8,6 +10,8 @@ git pull
 sudo chmod a+x /home/pi/Dr_Squiggles/Pi_Scripts/startup.sh
 cd /home/pi/Dr_Squiggles/Main
 sudo apt-get install libasound2-dev
+gcc ano.c ../Robot_Communication_Framework/*.c -lasound -o ano
+sudo ano ./sq /usr/local/bin/ano
 gcc sq.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o sq
 sudo cp ./sq /usr/local/bin/sq
 gcc op.c core/*.c ../Robot_Communication_Framework/*.c ../Beat-and-Tempo-Tracking/src/*.c Rhythm_Generators/*.c extras/*.c -lasound -lm -lpthread -lrt -O2 -o op

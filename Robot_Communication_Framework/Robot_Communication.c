@@ -361,7 +361,14 @@ void robot_send_message(const char *fmt, ...)
 
       if(b-buffer >= ROBOT_SYSEX_BUFFER_SIZE)
         b = buffer + ROBOT_SYSEX_BUFFER_SIZE - 1;
-
+/*
+      int i;
+      fprintf(stderr, "%s\r\n", buffer+2);
+      int len = b - buffer;
+      for(i=0; i<len; i++)
+        fprintf(stderr, "%02X ", buffer[i]);
+      fprintf(stderr, "\r\n ");
+*/
       //replace '\0' with EOX
       *b++ = MIDI_STATUS_END_OF_EXCLUSIVE;
       
