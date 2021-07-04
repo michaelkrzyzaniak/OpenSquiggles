@@ -51,6 +51,7 @@ struct opaque_poly_harmonizer_struct
   double alpha;
   double beta;
   double delta;
+  double gamma;
   
   int band_center_freq_indices[NUM_BANDS+2];
   
@@ -90,6 +91,7 @@ Poly_Harmonizer* poly_harmonizer_new(double sample_rate)
       self->alpha = 27;
       self->beta  = 230;
       self->delta = POLY_HARMONIZER_DEFAULT_DELTA;
+      self->gamma = POLY_HARMONIZER_DEFAULT_GAMMA;
       
       self->on_for  = POLY_HARMONIZER_DEFAULT_ON_FOR;
       self->off_for = POLY_HARMONIZER_DEFAULT_OFF_FOR;
@@ -263,6 +265,18 @@ void    poly_harmonizer_set_delta(Poly_Harmonizer* self, double delta)
 double  poly_harmonizer_get_delta(Poly_Harmonizer* self)
 {
   return self->delta;
+}
+
+/*-----------------------------------------------------------------------*/
+void    poly_harmonizer_set_gamma(Poly_Harmonizer* self, double gamma)
+{
+  self->gamma = gamma;
+}
+
+/*-----------------------------------------------------------------------*/
+double  poly_harmonizer_get_gamma(Poly_Harmonizer* self)
+{
+  return self->gamma;
 }
 
 /*-----------------------------------------------------------------------*/
@@ -475,7 +489,7 @@ int poly_harmonizer_iterative_estimation_and_cancellation(Poly_Harmonizer* self,
   int m, k;
   int k_min, k_max;
   double equation_8_sum = 0;
-  double prev_S_j = -1;
+  double prev_S_j = 0;
             
   for(i=0; i<max_num_freqs; i++)
     {
@@ -555,7 +569,7 @@ int poly_harmonizer_iterative_estimation_and_cancellation(Poly_Harmonizer* self,
         }
        
       equation_8_sum += max_salience;
-      S_j = equation_8_sum / (pow(i+1, 0.7));
+      S_j = equation_8_sum / (pow(i+1, self->gamma));
       
       if(S_j <= prev_S_j)
         break;
@@ -647,8 +661,6 @@ void poly_harmonizer_stft_process_callback(void* SELF, dft_sample_t* magnitude, 
  
       if(self->notes_changed_callback != NULL)
         self->notes_changed_callback(self->notes_changed_callback_self, current_notes, num_current_notes);
-      
-      
     }
 
 }

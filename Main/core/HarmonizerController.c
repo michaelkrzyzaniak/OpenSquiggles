@@ -299,8 +299,8 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
   organ_pipe_filter_notify_sounding_notes(filter, self->sounding_notes);
   
   if(self->beep)
-    beep_set_notes(self->beep, harmony_notes, num_harmony_notes);
-    //beep_set_notes(self->beep, midi_notes, num_notes);
+    //beep_set_notes(self->beep, harmony_notes, num_harmony_notes);
+    beep_set_notes(self->beep, midi_notes, num_notes);
 }
 
 /*--------------------------------------------------------------------*/

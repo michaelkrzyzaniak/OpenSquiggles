@@ -386,6 +386,16 @@ int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Har
         .name = "poly_harmonizer_set_delta",
       },
       {
+        .set = (funct)poly_harmonizer_set_gamma,
+        .get = (funct)poly_harmonizer_get_gamma,
+        .enter = NULL,
+        .self = harmonizer_1,
+        .type = 'd',
+        .init = POLY_HARMONIZER_DEFAULT_GAMMA,
+        .increment = 0.01,
+        .name = "poly_harmonizer_set_gamma",
+      },
+      {
         .set = (funct)poly_harmonizer_set_M,
         .get = (funct)poly_harmonizer_get_M,
         .enter = NULL,

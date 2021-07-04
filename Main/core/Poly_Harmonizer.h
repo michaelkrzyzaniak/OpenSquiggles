@@ -24,6 +24,7 @@ extern "C"{
 #define POLY_HARMONIZER_DEFAULT_RESOLUTION  3.0
 #define POLY_HARMONIZER_DEFAULT_MAX_POLYPHONY 2
 #define POLY_HARMONIZER_DEFAULT_DELTA  0.5
+#define POLY_HARMONIZER_DEFAULT_GAMMA 0.7
 #define POLY_HARMONIZER_DEFAULT_M 20
 
 typedef void (*poly_harmonizer_notes_changed_callback_t)(void* SELF, int* midi_notes, int num_notes);
@@ -60,6 +61,10 @@ int     poly_harmonizer_get_max_polyphony(Poly_Harmonizer* self);
 /* this defines how much each candidate is subtracted out of the spectrum */
 void    poly_harmonizer_set_delta(Poly_Harmonizer* self, double delta);
 double  poly_harmonizer_get_delta(Poly_Harmonizer* self);
+
+/* controls how many f0s will be selected */
+void    poly_harmonizer_set_gamma(Poly_Harmonizer* self, double gamma);
+double  poly_harmonizer_get_gamma(Poly_Harmonizer* self);
 
 /* this defines how many partials to search */
 void    poly_harmonizer_set_M(Poly_Harmonizer* self, int M);
