@@ -15,7 +15,11 @@ multi-thread support and many small changes
 
 #include "LSTM_Harmonizer.h"
 #define MAXNUM_NOTES 10
+#define NUM_BANDS   30
+#define WINDOW_SIZE 2048
+#define K           (2*WINDOW_SIZE)
 
+void lstm_harmonizer_init_band_center_freqs(LSTM_Harmonizer* self);
 void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N);
 
 /*--------------------------------------------------------------------*/
@@ -27,10 +31,11 @@ struct opaque_lstm_harmonizer_struct
   unsigned num_layer_2_inputs;
   unsigned num_layer_3_inputs;
   unsigned lowest_midi_note;
-  //unsigned prev_note_out;
-  int      prev_notes_out[MAXNUM_NOTES];
-  unsigned num_prev_notes_out;
+  unsigned prev_note_out;
+  //int      prev_notes_out[MAXNUM_NOTES];
+  //unsigned num_prev_notes_out;
   unsigned note_timer;
+  int band_center_freq_indices[NUM_BANDS+2];
   
   void* notes_changed_callback_self;
   lstm_harmonizer_notes_changed_callback_t notes_changed_callback;
@@ -72,8 +77,8 @@ struct opaque_lstm_harmonizer_struct
   Matrix* layer_3_biases;
   Matrix* layer_3_out;
   
-  Matrix* autoregressive_histogram;
-  matrix_val_t histogram_coeff;
+  //Matrix* autoregressive_histogram;
+  //matrix_val_t histogram_coeff;
   
   pthread_mutex_t clear_mutex;
 };
@@ -126,8 +131,8 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
       self->num_layer_2_inputs  = matrix_get_num_rows(self->layer_1_weights);
       self->num_layer_3_inputs  = matrix_get_num_cols(self->layer_3_weights);
       self->num_outputs         = matrix_get_num_rows(self->layer_3_weights);
-      self->num_audio_inputs    = self->num_layer_1_inputs - self->num_outputs;
-      //self->num_audio_inputs    = self->num_layer_1_inputs - self->num_outputs - 1;
+      //self->num_audio_inputs    = self->num_layer_1_inputs - self->num_outputs;
+      self->num_audio_inputs    = self->num_layer_1_inputs - self->num_outputs - 1;
 
       self->audio_features      = matrix_new(self->num_audio_inputs  , 1);
       self->input_vector        = matrix_new(self->num_layer_1_inputs, 1);
@@ -148,6 +153,8 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
          {fprintf(stderr, "error allocating new matrices\r\n");  return lstm_harmonizer_destroy(self);}
 
      //check conformability of matrices read from disk
+      if(self->num_audio_inputs != 572)
+        {fprintf(stderr, "expecting 572 audio inputs for spectral whitening\r\n");  return lstm_harmonizer_destroy(self);}
       if(!matrix_has_shape(self->layer_1_weights, self->num_layer_2_inputs, self->num_layer_1_inputs) ||
          !matrix_has_shape(self->layer_1_biases , self->num_layer_2_inputs, 1)                        ||
          !matrix_has_shape(self->lstm_Wf        , self->num_layer_3_inputs, self->num_layer_2_inputs) ||
@@ -166,17 +173,21 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
          !matrix_has_same_shape_as(self->lstm_bf, self->lstm_bg))
          {fprintf(stderr, "conformability errors in saved matrices\r\n");  return lstm_harmonizer_destroy(self);}
       
-      self->autoregressive_histogram = matrix_new(self->num_outputs, 1);
-      self->histogram_coeff = 0.75;
-      if(self->autoregressive_histogram == NULL)
-        return lstm_harmonizer_destroy(self);
+      //self->autoregressive_histogram = matrix_new(self->num_outputs, 1);
+      //self->histogram_coeff = 0.75;
+      //if(self->autoregressive_histogram == NULL)
+      //  return lstm_harmonizer_destroy(self);
 
-      self->filter = organ_pipe_filter_new(self->num_audio_inputs, ORGAN_PIPE_FILTER_MODE_AUTOCORRELATION);
+
+      self->filter = organ_pipe_filter_new(WINDOW_SIZE, ORGAN_PIPE_FILTER_MODE_PADDED_DFT);
+      //self->filter = organ_pipe_filter_new(self->num_audio_inputs, ORGAN_PIPE_FILTER_MODE_AUTOCORRELATION);
       if(self->filter == NULL)
-        return lstm_harmonizer_destroy(self);
+        {fprintf(stderr, "unable to create organ pipe filter\r\n");  return lstm_harmonizer_destroy(self);}
         
       self->notes_changed_callback = NULL;
       self->lowest_midi_note = 36;
+      
+      lstm_harmonizer_init_band_center_freqs(self);
     }
   return self;
 }
@@ -358,6 +369,85 @@ void lstm_harmonizer_process_audio(LSTM_Harmonizer* self, auSample_t* buffer, in
 }
 
 /*-----------------------------------------------------------------------*/
+void lstm_harmonizer_init_band_center_freqs(LSTM_Harmonizer* self)
+{
+  int b;
+  double c_b;
+  //this ends up ranging from 26.0 Hz to 6935 Hz
+  for(b=0; b<NUM_BANDS+2; b++)
+    {
+      c_b = 229 * (pow(10, (b+1) / 21.4) - 1);
+      c_b = dft_bin_of_frequency(c_b, 44100, K);
+
+      //todo: could get better low-freq by not rounding and doing proper interpolation
+      self->band_center_freq_indices[b] = round(c_b);
+      if(self->band_center_freq_indices[b] < 1)
+        self->band_center_freq_indices[b] = 1;
+      if(self->band_center_freq_indices[b] >= WINDOW_SIZE)
+        self->band_center_freq_indices[b] = WINDOW_SIZE-1;
+    }
+}
+
+/*-----------------------------------------------------------------------*/
+//whitens magnitude from indices self->band_center_freq_indices[1] to self->band_center_freq_indices[NUM_BANDS] inclusive
+//k=5 to k=576, inclusive
+void lstm_harmonizer_spectral_whitening(LSTM_Harmonizer* self, dft_sample_t* magnitude, int N)
+{
+  int k, b;
+  double bands[NUM_BANDS] = {0};
+  double step;
+  double H_b_k;
+  int* centers = self->band_center_freq_indices;
+  double nu_minus_1 = 0.33 - 1;
+  double gamma_k;
+  
+  for(b=0; b<NUM_BANDS; b++)
+    {
+      //rising side of triangular window
+      step = 1.0 / (double)(centers[b+1] - centers[b]);
+      H_b_k = 0;
+      for(k=centers[b]; k<centers[b+1]; k++)
+        {
+          //first coefficient is H_b_k but it is left for clarity
+          bands[b] += H_b_k * magnitude[k];
+          H_b_k += step;
+        }
+      
+      //falling side of triangular window
+      step = 1.0 / (double)(centers[b+2] - centers[b+1]);
+      H_b_k = 1;
+      for(k=centers[b+1]; k<centers[b+2]; k++)
+        {
+          //todo: optimize by pre-computing magnitude[k] * magnitude[k]
+          bands[b] += H_b_k * magnitude[k] * magnitude[k];
+          H_b_k -= step;
+        }
+      
+      //rest of equation 2
+      bands[b] /= (double)(K);
+      if(bands[b] > 0)
+        {
+          bands[b] = sqrt(bands[b]);
+          //compression coefficients
+          bands[b] = pow(bands[b], nu_minus_1);
+        }
+    }
+
+  for(b=0; b<NUM_BANDS-1; b++)
+    {
+      step = (bands[b+1] - bands[b]) / (double)(centers[b+2] - centers[b+1]);
+      gamma_k = bands[b];
+      for(k=centers[b+1]; k<centers[b+2]; k++)
+        {
+          magnitude[k] *= gamma_k;
+          gamma_k += step;
+        }
+    }
+  magnitude[k] *= bands[b];
+}
+
+
+/*-----------------------------------------------------------------------*/
 void lstm_harmonizer_stft_process_callback_for_testing(void* SELF, dft_sample_t* real, int N)
 {
   LSTM_Harmonizer* self = SELF;
@@ -523,6 +613,7 @@ void lstm_harmonizer_stft_process_callback_for_testing(void* SELF, dft_sample_t*
 }
 
 /*-----------------------------------------------------------------------*/
+/*
 int lstm_harmonizer_check_notes_changed(LSTM_Harmonizer* self, int curr_notes[MAXNUM_NOTES], unsigned num_curr_notes)
 {
   int i, did_change = 0;
@@ -539,9 +630,10 @@ int lstm_harmonizer_check_notes_changed(LSTM_Harmonizer* self, int curr_notes[MA
     }
   return did_change;
 }
-
+*/
 /*-----------------------------------------------------------------------*/
-void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N)
+/*
+void lstm_harmonizer_poly_pitch_tracker_stft_process_callback(void* SELF, dft_sample_t* magnitude, int N)
 {
   LSTM_Harmonizer* self = SELF;
 
@@ -550,7 +642,7 @@ void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N
   unsigned num_curr_notes = 0;
 
   for(i=0; i<N; i++)
-    matrix_set_value(self->input_vector, i, 0, real[i]);
+    matrix_set_value(self->input_vector, i, 0, magnitude[i]);
 
   matrix_copy_partial(self->layer_3_out, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
   
@@ -582,31 +674,34 @@ void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* real, int N
       fprintf(stderr, "\r\n");
     }
 }
+*/
 
 /*-----------------------------------------------------------------------*/
-void lstm_harmonizer_stft_process_monophonic_callback(void* SELF, dft_sample_t* real, int N)
+void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* magnitude, int N)
 {
   LSTM_Harmonizer* self = SELF;
   
   int i;
 
-  for(i=0; i<N; i++)
-    matrix_set_value(self->input_vector, i, 0, real[i]);
+  lstm_harmonizer_spectral_whitening(self, magnitude, N);
+
+  for(i=5; i<=576; i++)
+    matrix_set_value(self->input_vector, i, 0, magnitude[i]);
 
   //matrix_copy_partial(self->autoregressive_histogram, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
   matrix_copy_partial(self->layer_3_out, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
-  //matrix_set_value(self->input_vector, self->num_audio_inputs+self->num_outputs, 0, self->note_timer);
+  matrix_set_value(self->input_vector, self->num_audio_inputs+self->num_outputs, 0, self->note_timer);
   
   Matrix* outputs = lstm_harmonizer_forward(self, self->input_vector);
   //lstm_harmonizer_softmax_with_temperature(outputs, 0.01);
   
   
   
-  //int  chosen_output_index = lstm_harmonizer_argmax(outputs);
-  //int note = 0;
-  //if(chosen_output_index < matrix_get_num_rows(outputs)-1)
-    //note = self->lowest_midi_note + chosen_output_index;
-/*
+  int  chosen_output_index = lstm_harmonizer_argmax(outputs);
+  int note = 0;
+  if(chosen_output_index < matrix_get_num_rows(outputs)-1)
+    note = self->lowest_midi_note + chosen_output_index;
+
   if(note == self->prev_note_out)
     ++self->note_timer;
   else
@@ -614,14 +709,15 @@ void lstm_harmonizer_stft_process_monophonic_callback(void* SELF, dft_sample_t* 
   
   if(self->prev_note_out != note)
     if(self->notes_changed_callback != NULL)
-      self->notes_changed_callback(self->notes_changed_callback_self, &note, 1);
-*/
-  //fprintf(stderr, "MIDI: %i\r\n", note);
+      {
+        self->notes_changed_callback(self->notes_changed_callback_self, &note, (note==0) ? 0 : 1);
+        fprintf(stderr, "MIDI: %i\r\n", note);
+      }
   
   //make output onehot for next input
-  //matrix_fill_zeros(outputs);
-  //matrix_set_value(outputs, chosen_output_index, 0, 1);
-  //self->prev_note_out = note;
+  matrix_fill_zeros(outputs);
+  matrix_set_value(outputs, chosen_output_index, 0, 1);
+  self->prev_note_out = note;
   
   //matrix_multiply_scalar(self->autoregressive_histogram, self->histogram_coeff, NULL);
   //matrix_set_value      (self->autoregressive_histogram, chosen_output_index, 0, 1.0);

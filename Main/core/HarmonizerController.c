@@ -15,9 +15,9 @@
 
 HarmonizerController* harmonizer_controller_destroy (HarmonizerController* self);
 void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_note, int num_notes);
-int harmonizer_controller_init_midi_note_params(HarmonizerController* self);
+int  harmonizer_controller_init_midi_note_params(HarmonizerController* self);
 void harmonizer_controller_message_recd_from_robot(void* self, char* message, robot_arg_t args[], int num_args);
-int harmonizer_controller_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_channels);
+int  harmonizer_controller_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_channels);
 
 /*--------------------------------------------------------------------*/
 struct OpaqueHarmonizerControllerStruct
@@ -26,7 +26,7 @@ struct OpaqueHarmonizerControllerStruct
   AUDIO_GUTS;
   int              harmonizer;
   Poly_Harmonizer* harmonizer_1;
-  Mono_Harmonizer* harmonizer_2;
+  LSTM_Harmonizer* harmonizer_2;
   Beep*            beep;
   int              sounding_notes[OP_NUM_SOLENOIDS];
   int              midi_notes[OP_NUM_SOLENOIDS];
@@ -47,7 +47,7 @@ HarmonizerController* harmonizer_controller_new ()
       if(self->harmonizer_1 == NULL)
         return (HarmonizerController*)auDestroy((Audio*)self);
         
-      self->harmonizer_2 = mono_harmonizer_new();
+      self->harmonizer_2 = lstm_harmonizer_new("Matrices");
       if(self->harmonizer_2 == NULL)
         return (HarmonizerController*)auDestroy((Audio*)self);
         
@@ -57,7 +57,7 @@ HarmonizerController* harmonizer_controller_new ()
         //return (HarmonizerController*)auDestroy((Audio*)self);
         
       poly_harmonizer_set_notes_changed_callback(self->harmonizer_1, harmonizer_controller_notes_changed_callback, self);
-      mono_harmonizer_set_notes_changed_callback(self->harmonizer_2, harmonizer_controller_notes_changed_callback, self);
+      lstm_harmonizer_set_notes_changed_callback(self->harmonizer_2, harmonizer_controller_notes_changed_callback, self);
 
       
       char *filename_string;
@@ -95,7 +95,7 @@ HarmonizerController* harmonizer_controller_destroy (HarmonizerController* self)
         robot_send_message(self->robot, robot_cmd_all_notes_off);
       
       self->harmonizer_1 = poly_harmonizer_destroy(self->harmonizer_1);
-      self->harmonizer_2 = mono_harmonizer_destroy(self->harmonizer_2);
+      self->harmonizer_2 = lstm_harmonizer_destroy(self->harmonizer_2);
       //self->robot = robot_destroy(self->robot);
       auDestroy((Audio*)self->beep);
     }
@@ -110,7 +110,7 @@ void harmonizer_controller_clear  (HarmonizerController*  self)
   if(self->beep)
     beep_set_notes(self->beep, NULL, 0);
   poly_harmonizer_init_state(self->harmonizer_1);
-  mono_harmonizer_init_state(self->harmonizer_2);
+  lstm_harmonizer_init_state(self->harmonizer_2);
 }
 
 /*--------------------------------------------------------------------*/
@@ -183,6 +183,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
     {
       num_harmony_notes = 0;
     }
+  /*
   else if(midi_notes[num_notes-1] == 76)
     {
       harmony_notes[0] = 52;
@@ -263,6 +264,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
       harmony_notes[0] = 60;
       num_harmony_notes = 1;
     }
+  */
   else
     {
       harmony_notes[0] = midi_notes[0];
@@ -294,7 +296,7 @@ void harmonizer_controller_notes_changed_callback(void* SELF, int* midi_notes, i
   if(self->harmonizer == 1)
     filter = poly_harmonizer_get_organ_pipe_filter(self->harmonizer_1);
   else
-    filter = mono_harmonizer_get_organ_pipe_filter(self->harmonizer_2);
+    filter = lstm_harmonizer_get_organ_pipe_filter(self->harmonizer_2);
     
   organ_pipe_filter_notify_sounding_notes(filter, self->sounding_notes);
   
@@ -310,7 +312,7 @@ Poly_Harmonizer* harmonizer_controller_get_harmonizer_1(HarmonizerController*  s
 }
 
 /*--------------------------------------------------------------------*/
-Mono_Harmonizer* harmonizer_controller_get_harmonizer_2(HarmonizerController*  self)
+LSTM_Harmonizer* harmonizer_controller_get_harmonizer_2(HarmonizerController*  self)
 {
   return self->harmonizer_2;
 }
@@ -350,7 +352,7 @@ int harmonizer_controller_audio_callback(void* SELF, auSample_t* buffer, int num
   if(self->harmonizer == 1)
     poly_harmonizer_process_audio(self->harmonizer_1, buffer, num_frames);
   else if(self->harmonizer == 2)
-    mono_harmonizer_process_audio(self->harmonizer_2, buffer, num_frames);
+    lstm_harmonizer_process_audio(self->harmonizer_2, buffer, num_frames);
 
   return  num_frames;
 }

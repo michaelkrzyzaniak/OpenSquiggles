@@ -237,10 +237,10 @@ int cycle_through_paramaters_and_get_input(const char* object_name, param_t* par
 }
 
 /*--------------------------------------------------------------------*/
-int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Harmonizer* harmonizer_1, Mono_Harmonizer* harmonizer_2)
+int enter_main_menu(HarmonizerController* controller, int indent_level, Poly_Harmonizer* harmonizer_1, LSTM_Harmonizer* harmonizer_2)
 {
     Organ_Pipe_Filter* filter_1 = poly_harmonizer_get_organ_pipe_filter(harmonizer_1);
-    Organ_Pipe_Filter* filter_2 = mono_harmonizer_get_organ_pipe_filter(harmonizer_2);
+    Organ_Pipe_Filter* filter_2 = lstm_harmonizer_get_organ_pipe_filter(harmonizer_2);
     
     param_t params[] =
     {
@@ -447,7 +447,7 @@ int main(int argc, char* argv[])
       auPlay((Audio*)global_controller);
       
       Poly_Harmonizer* harmonizer_1 = harmonizer_controller_get_harmonizer_1(global_controller);
-      Mono_Harmonizer* harmonizer_2 = harmonizer_controller_get_harmonizer_2(global_controller);
+      LSTM_Harmonizer* harmonizer_2 = harmonizer_controller_get_harmonizer_2(global_controller);
       
       enter_main_menu(global_controller, 0, harmonizer_1, harmonizer_2);
 
