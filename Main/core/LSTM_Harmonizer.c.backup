@@ -48,12 +48,7 @@ struct opaque_lstm_harmonizer_struct
   Matrix* layer_1_weights;
   Matrix* layer_1_biases;
   Matrix* layer_1_out;
-
-  Matrix* middle_layer_weights;
-  Matrix* middle_layer_biases;
-  Matrix* middle_layer_out;
-
-/*
+  
   Matrix* lstm_Wf;
   Matrix* lstm_Wi;
   Matrix* lstm_Wo;
@@ -77,7 +72,6 @@ struct opaque_lstm_harmonizer_struct
   
   Matrix* lstm_temp_w;
   Matrix* lstm_temp_u;
-*/
 
   Matrix* layer_3_weights;
   Matrix* layer_3_biases;
@@ -110,10 +104,6 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
       //leanred parameters
       self->layer_1_weights     = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "layer_1_weights.npy", buffer));
       self->layer_1_biases      = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "layer_1_biases.npy" , buffer));
-      
-      self->middle_layer_weights= matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "middle_layer_weights.npy", buffer));
-      self->middle_layer_biases = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "middle_layer_biases.npy" , buffer));
-      /*
       self->lstm_Wf             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Wf.npy", buffer));
       self->lstm_Wi             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Wi.npy", buffer));
       self->lstm_Wo             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "Wo.npy", buffer));
@@ -126,15 +116,9 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
       self->lstm_bi             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "bi.npy", buffer));
       self->lstm_bo             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "bo.npy", buffer));
       self->lstm_bg             = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "bg.npy", buffer));
-      */
       self->layer_3_weights     = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "layer_3_weights.npy", buffer));
       self->layer_3_biases      = matrix_new_from_numpy_file(lstm_harmonizer_filename(folder, "layer_3_biases.npy" , buffer));
-
-      if((self->layer_1_weights == NULL) || (self->layer_1_biases == NULL) ||
-         (self->layer_3_weights == NULL) || (self->layer_3_biases == NULL) ||
-         (self->middle_layer_weights == NULL) || (self->middle_layer_biases == NULL))
-         {fprintf(stderr, "error reading .npy matrices\r\n");  return lstm_harmonizer_destroy(self);}
- /*
+  
       if((self->layer_1_weights == NULL) || (self->layer_1_biases == NULL) || (self->lstm_Wf         == NULL) ||
          (self->lstm_Wi         == NULL) || (self->lstm_Wo        == NULL) || (self->lstm_Wg         == NULL) ||
          (self->lstm_Uf         == NULL) || (self->lstm_Ui        == NULL) || (self->lstm_Uo         == NULL) ||
@@ -142,7 +126,6 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
          (self->lstm_bo         == NULL) || (self->lstm_bg        == NULL) || (self->layer_3_weights == NULL) ||
          (self->layer_3_biases  == NULL))
          {fprintf(stderr, "error reading .npy matrices\r\n");  return lstm_harmonizer_destroy(self);}
-*/
 
       self->num_layer_1_inputs  = matrix_get_num_cols(self->layer_1_weights);
       self->num_layer_2_inputs  = matrix_get_num_rows(self->layer_1_weights);
@@ -154,8 +137,6 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
       self->audio_features      = matrix_new(self->num_audio_inputs  , 1);
       self->input_vector        = matrix_new(self->num_layer_1_inputs, 1);
       self->layer_1_out         = matrix_new(self->num_layer_2_inputs, 1);
-      self->middle_layer_out    = matrix_new(self->num_layer_3_inputs, 1);
-/*
       self->lstm_h_t            = matrix_new(self->num_layer_3_inputs, 1);
       self->lstm_c_t            = matrix_new(self->num_layer_3_inputs, 1);
       self->lstm_f_t            = matrix_new(self->num_layer_3_inputs, 1);
@@ -164,23 +145,33 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
       self->lstm_g_t            = matrix_new(self->num_layer_3_inputs, 1);
       self->lstm_temp_w         = matrix_new(self->num_layer_3_inputs, 1);
       self->lstm_temp_u         = matrix_new(self->num_layer_3_inputs, 1);
-*/
       self->layer_3_out         = matrix_new(self->num_outputs,        1);
-      /*
       if((self->audio_features  == NULL) || (self->input_vector == NULL) || (self->layer_1_out == NULL) ||
          (self->lstm_h_t        == NULL) || (self->lstm_c_t     == NULL) || (self->lstm_f_t    == NULL) ||
          (self->lstm_i_t        == NULL) || (self->lstm_o_t     == NULL) || (self->lstm_g_t    == NULL) ||
          (self->lstm_temp_w     == NULL) || (self->lstm_temp_u  == NULL) || (self->layer_3_out == NULL))
          {fprintf(stderr, "error allocating new matrices\r\n");  return lstm_harmonizer_destroy(self);}
-      */
-      if((self->audio_features  == NULL) || (self->input_vector == NULL) || (self->layer_1_out == NULL) ||
-         (self->middle_layer_out  == NULL) || (self->layer_3_out == NULL))
-         {fprintf(stderr, "error allocating new matrices\r\n");  return lstm_harmonizer_destroy(self);}
-         
+
      //check conformability of matrices read from disk
       if(self->num_audio_inputs != 572)
         {fprintf(stderr, "expecting 572 audio inputs for spectral whitening\r\n");  return lstm_harmonizer_destroy(self);}
-      //todo, check conformability
+      if(!matrix_has_shape(self->layer_1_weights, self->num_layer_2_inputs, self->num_layer_1_inputs) ||
+         !matrix_has_shape(self->layer_1_biases , self->num_layer_2_inputs, 1)                        ||
+         !matrix_has_shape(self->lstm_Wf        , self->num_layer_3_inputs, self->num_layer_2_inputs) ||
+         !matrix_has_shape(self->lstm_bf        , self->num_layer_3_inputs, 1)                        ||
+         !matrix_has_shape(self->layer_3_weights, self->num_outputs       , self->num_layer_3_inputs) ||
+         !matrix_has_shape(self->layer_3_biases , self->num_outputs       , 1)                        ||
+         !matrix_has_same_shape_as(self->lstm_Wf, self->lstm_Wi) ||
+         !matrix_has_same_shape_as(self->lstm_Wf, self->lstm_Wo) ||
+         !matrix_has_same_shape_as(self->lstm_Wf, self->lstm_Wg) ||
+         !matrix_has_same_shape_as(self->lstm_Wf, self->lstm_Uf) ||
+         !matrix_has_same_shape_as(self->lstm_Wf, self->lstm_Ui) ||
+         !matrix_has_same_shape_as(self->lstm_Wf, self->lstm_Uo) ||
+         !matrix_has_same_shape_as(self->lstm_Wf, self->lstm_Ug) ||
+         !matrix_has_same_shape_as(self->lstm_bf, self->lstm_bi) ||
+         !matrix_has_same_shape_as(self->lstm_bf, self->lstm_bo) ||
+         !matrix_has_same_shape_as(self->lstm_bf, self->lstm_bg))
+         {fprintf(stderr, "conformability errors in saved matrices\r\n");  return lstm_harmonizer_destroy(self);}
       
       //self->autoregressive_histogram = matrix_new(self->num_outputs, 1);
       //self->histogram_coeff = 0.75;
@@ -211,9 +202,6 @@ LSTM_Harmonizer*       lstm_harmonizer_destroy               (LSTM_Harmonizer* s
       self->input_vector    = matrix_destroy(self->input_vector);
       self->layer_1_weights = matrix_destroy(self->layer_1_weights);
       self->layer_1_biases  = matrix_destroy(self->layer_1_biases);
-      self->middle_layer_weights = matrix_destroy(self->middle_layer_weights);
-      self->middle_layer_biases  = matrix_destroy(self->middle_layer_biases);
-      /*
       self->layer_1_out     = matrix_destroy(self->layer_1_out);
       self->lstm_Wf         = matrix_destroy(self->lstm_Wf);
       self->lstm_Wi         = matrix_destroy(self->lstm_Wi);
@@ -235,7 +223,6 @@ LSTM_Harmonizer*       lstm_harmonizer_destroy               (LSTM_Harmonizer* s
       self->lstm_g_t        = matrix_destroy(self->lstm_g_t);
       self->lstm_temp_w     = matrix_destroy(self->lstm_temp_w);
       self->lstm_temp_u     = matrix_destroy(self->lstm_temp_u);
-      */
       self->layer_3_weights = matrix_destroy(self->layer_3_weights);
       self->layer_3_biases  = matrix_destroy(self->layer_3_biases);
       self->layer_3_out     = matrix_destroy(self->layer_3_out);
@@ -317,8 +304,8 @@ void lstm_harmonizer_softmax(Matrix* input, double temperature)
 void lstm_harmonizer_init_state(LSTM_Harmonizer* self)
 {
   pthread_mutex_lock(&self->clear_mutex);
-  //matrix_fill_zeros(self->lstm_h_t);
-  //matrix_fill_zeros(self->lstm_c_t);
+  matrix_fill_zeros(self->lstm_h_t);
+  matrix_fill_zeros(self->lstm_c_t);
   //matrix_fill_zeros(self->autoregressive_histogram);
   pthread_mutex_unlock(&self->clear_mutex);
 }
@@ -330,16 +317,10 @@ Matrix* lstm_harmonizer_forward(LSTM_Harmonizer* self, Matrix* inputs)
   matrix_multiply(self->layer_1_weights, inputs, self->layer_1_out);
   matrix_add(self->layer_1_out, self->layer_1_biases, NULL);
   matrix_apply_function(self->layer_1_out, lstm_harmonizer_relu, self, NULL);
-
-  //middle layer
-  matrix_multiply(self->middle_layer_weights, self->layer_1_out, self->middle_layer_out);
-  matrix_add(self->middle_layer_out, self->middle_layer_biases, NULL);
-  matrix_apply_function(self->middle_layer_out, lstm_harmonizer_relu, self, NULL);
-
+  
   //LSTM Layer
   //https://en.wikipedia.org/wiki/Long_short-term_memory
   //https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html
-  /*
   pthread_mutex_lock(&self->clear_mutex);
   matrix_multiply(self->lstm_Wf, self->layer_1_out, self->lstm_temp_w);
   matrix_multiply(self->lstm_Uf, self->lstm_h_t, self->lstm_temp_u);
@@ -371,10 +352,9 @@ Matrix* lstm_harmonizer_forward(LSTM_Harmonizer* self, Matrix* inputs)
   
   matrix_apply_function(self->lstm_c_t, lstm_harmonizer_tanh, self, self->lstm_h_t);
   matrix_multiply_pointwise(self->lstm_h_t, self->lstm_o_t, NULL);
-  */
   
   //Final linear fully connected layer
-  matrix_multiply(self->layer_3_weights, self->middle_layer_out, self->layer_3_out);
+  matrix_multiply(self->layer_3_weights, self->lstm_h_t, self->layer_3_out);
   pthread_mutex_unlock(&self->clear_mutex);
   
   matrix_add(self->layer_3_out, self->layer_3_biases, NULL);
