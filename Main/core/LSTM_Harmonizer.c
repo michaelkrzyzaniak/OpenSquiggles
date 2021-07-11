@@ -717,12 +717,12 @@ void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* magnitude, 
   
   
   
-  int  chosen_output_index = lstm_harmonizer_argmax(outputs);
+  int chosen_output_index = lstm_harmonizer_argmax(outputs);
   int note = 0;
   if(chosen_output_index < matrix_get_num_rows(outputs)-1)
     note = self->lowest_midi_note + chosen_output_index;
 
-  fprintf(stderr, "NOTE: %i\r\n", note);
+  //fprintf(stderr, "NOTE: %i\r\n", note);
 
   if(note == self->prev_note_out)
     ++self->note_timer;
