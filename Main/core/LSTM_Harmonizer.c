@@ -80,6 +80,8 @@ struct opaque_lstm_harmonizer_struct
   //Matrix* autoregressive_histogram;
   //matrix_val_t histogram_coeff;
   
+  int on_count;
+  
   pthread_mutex_t clear_mutex;
 };
 
@@ -700,12 +702,14 @@ void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* magnitude, 
   if(chosen_output_index < matrix_get_num_rows(outputs)-1)
     note = self->lowest_midi_note + chosen_output_index;
 
-  //if(note == self->prev_note_out)
+  if(note == self->prev_note_out)
     //++self->note_timer;
-  //else
+    ++self->on_count;
+  else
     //self->note_timer = 1;
+    self->on_count = 1;
   
-  if(self->prev_note_out != note)
+  if(self->on_count == 2)
     if(self->notes_changed_callback != NULL)
       {
         self->notes_changed_callback(self->notes_changed_callback_self, &note, (note==0) ? 0 : 1);
