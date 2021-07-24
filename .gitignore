@@ -6,4 +6,7 @@ sq
 opc
 op2
 cmd
-#Main/Matrices
+ano
+Main/Matrices
+Main/LSTM_Matrices
+*.npy

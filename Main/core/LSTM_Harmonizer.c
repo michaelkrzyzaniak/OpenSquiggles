@@ -16,7 +16,8 @@ multi-thread support and many small changes
 #include "LSTM_Harmonizer.h"
 #define MAXNUM_NOTES 10
 #define NUM_BANDS   30
-#define WINDOW_SIZE 2048
+//#define WINDOW_SIZE 2048
+#define WINDOW_SIZE 4096
 #define K           (2*WINDOW_SIZE)
 
 void lstm_harmonizer_init_band_center_freqs(LSTM_Harmonizer* self);
@@ -155,8 +156,10 @@ LSTM_Harmonizer* lstm_harmonizer_new(char* folder)
          {fprintf(stderr, "error allocating new matrices\r\n");  return lstm_harmonizer_destroy(self);}
 
      //check conformability of matrices read from disk
-      if(self->num_audio_inputs != 572)
-        {fprintf(stderr, "expecting 572 audio inputs for spectral whitening\r\n");  return lstm_harmonizer_destroy(self);}
+      if(self->num_audio_inputs != 1144)
+        {fprintf(stderr, "expecting 1144 audio inputs for spectral whitening, got %i\r\n", self->num_audio_inputs);  return lstm_harmonizer_destroy(self);}
+      //if(self->num_audio_inputs != 572)
+        //{fprintf(stderr, "expecting 572 audio inputs for spectral whitening, got %i\r\n", self->num_audio_inputs);  return lstm_harmonizer_destroy(self);}
       if(!matrix_has_shape(self->layer_1_weights, self->num_layer_2_inputs, self->num_layer_1_inputs) ||
          !matrix_has_shape(self->layer_1_biases , self->num_layer_2_inputs, 1)                        ||
          !matrix_has_shape(self->lstm_Wf        , self->num_layer_3_inputs, self->num_layer_2_inputs) ||
@@ -392,7 +395,8 @@ void lstm_harmonizer_init_band_center_freqs(LSTM_Harmonizer* self)
 
 /*-----------------------------------------------------------------------*/
 //whitens magnitude from indices self->band_center_freq_indices[1] to self->band_center_freq_indices[NUM_BANDS] inclusive
-//k=5 to k=576, inclusive
+//k=5 to k=576, inclusive for WINDOW_SIZE 2048
+//k=10 to k=1153 inclusive for WINDOW_SIZE 4096
 void lstm_harmonizer_spectral_whitening(LSTM_Harmonizer* self, dft_sample_t* magnitude, int N)
 {
   int k, b;
@@ -687,8 +691,10 @@ void lstm_harmonizer_stft_process_callback(void* SELF, dft_sample_t* magnitude, 
   
   lstm_harmonizer_spectral_whitening(self, magnitude, N);
 
-  for(i=5; i<=576; i++)
-    matrix_set_value(self->input_vector, i-5, 0, magnitude[i]);
+  //for(i=5; i<=576; i++)
+    //matrix_set_value(self->input_vector, i-5, 0, magnitude[i]);
+  for(i=10; i<=1153; i++)
+    matrix_set_value(self->input_vector, i-10, 0, magnitude[i]);
 
   //matrix_copy_partial(self->autoregressive_histogram, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);
   matrix_copy_partial(self->layer_3_out, self->input_vector, 0, 0, self->num_audio_inputs, 0, self->num_outputs, 1);

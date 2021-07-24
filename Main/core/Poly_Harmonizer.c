@@ -300,7 +300,8 @@ void poly_harmonizer_process_audio(Poly_Harmonizer* self, auSample_t* buffer, in
 
 /*-----------------------------------------------------------------------*/
 //whitens magnitude from indices self->band_center_freq_indices[1] to self->band_center_freq_indices[NUM_BANDS] inclusive
-//k=5 to k=576, inclusive
+//k=5 to k=576, inclusive for WINDOW_SIZE 2048
+//k=10 to k=1153 WINDOW_SIZE 4096
 void poly_harmonizer_spectral_whitening(Poly_Harmonizer* self, dft_sample_t* magnitude, int N)
 {
   int k, b;
@@ -310,6 +311,8 @@ void poly_harmonizer_spectral_whitening(Poly_Harmonizer* self, dft_sample_t* mag
   int* centers = self->band_center_freq_indices;
   double nu_minus_1 = 0.33 - 1;
   double gamma_k;
+  
+  //fprintf(stderr, "k=%i to k=%i\r\n", self->band_center_freq_indices[1], self->band_center_freq_indices[NUM_BANDS]);
   
   for(b=0; b<NUM_BANDS; b++)
     {

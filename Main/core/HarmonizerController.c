@@ -47,7 +47,7 @@ HarmonizerController* harmonizer_controller_new ()
       if(self->harmonizer_1 == NULL)
         return (HarmonizerController*)auDestroy((Audio*)self);
         
-      self->harmonizer_2 = lstm_harmonizer_new("Matrices");
+      self->harmonizer_2 = lstm_harmonizer_new("LSTM_Matrices");
       if(self->harmonizer_2 == NULL)
         return (HarmonizerController*)auDestroy((Audio*)self);
         
