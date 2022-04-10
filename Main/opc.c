@@ -180,6 +180,7 @@ double main_poor_mans_max_salience(auSample_t* spectrum)
   int m;
   double salience, max_salience=0, max_midi=min_note;
   
+  
   for(note=min_note; note<=max_note; note+=increment)
     {
       double freq = AU_MIDI2CPS(note);
