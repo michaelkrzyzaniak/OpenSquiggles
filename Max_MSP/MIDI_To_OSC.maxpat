@@ -81,7 +81,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 135.0, 195.0, 75.0, 22.0 ],
-					"text" : "523.251131"
+					"text" : "164.813779"
 				}
 
 			}
@@ -195,7 +195,6 @@
 , 			{
 				"box" : 				{
 					"id" : "obj-71",
-					"int" : 1,
 					"maxclass" : "gswitch2",
 					"numinlets" : 2,
 					"numoutlets" : 2,
@@ -471,8 +470,8 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 105.0, 300.0, 165.0, 22.0 ],
-					"text" : "udpsend 192.168.0.166 9001"
+					"patching_rect" : [ 105.0, 300.0, 170.0, 22.0 ],
+					"text" : "udpsend 192.168.43.211 9001"
 				}
 
 			}
@@ -482,8 +481,8 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 105.0, 270.0, 165.0, 22.0 ],
-					"text" : "udpsend 192.168.0.145 9001"
+					"patching_rect" : [ 105.0, 270.0, 171.0, 22.0 ],
+					"text" : "udpsend 192.168.43.124 9001"
 				}
 
 			}
@@ -553,7 +552,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 105.0, 330.0, 165.0, 22.0 ],
-					"text" : "udpsend 192.168.0.163 9001"
+					"text" : "udpsend 192.168.43.75 9001"
 				}
 
 			}
